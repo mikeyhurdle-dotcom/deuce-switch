@@ -1,0 +1,349 @@
+// Supabase table types — mirrored from schema
+// Ported from deuce-switch-web/src/lib/types.ts
+
+// ─── Format Types ─────────────────────────────────────────────────────────────
+
+export type TournamentFormat = 'americano' | 'mexicano' | 'team_americano' | 'mixicano';
+
+export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
+  americano: 'Americano',
+  mexicano: 'Mexicano',
+  team_americano: 'Team Americano',
+  mixicano: 'Mixicano',
+};
+
+export const TOURNAMENT_FORMAT_DESCRIPTIONS: Record<TournamentFormat, string> = {
+  americano: 'Rotate partners every round. Individual scoring.',
+  mexicano: 'Dynamic pairing based on standings each round.',
+  team_americano: 'Fixed teams of 2. Round-robin format.',
+  mixicano: 'Mixed doubles — 1 male + 1 female per team.',
+};
+
+// ─── Core Tables ──────────────────────────────────────────────────────────────
+
+export type Profile = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  game_face_url: string | null;
+  bio: string | null;
+  location: string | null;
+  smashd_level: number | null;
+  playtomic_level: number | null;
+  matches_played: number;
+  matches_won: number;
+  preferred_position: 'left' | 'right' | 'both' | null;
+  gender: 'M' | 'F' | 'Other' | null;
+  visibility: 'public' | 'private';
+  marketing_email: boolean;
+  marketing_push: boolean;
+  marketing_consented_at: string | null;
+  marketing_updated_at: string | null;
+  is_ghost: boolean;
+  claimed_by: string | null;
+  claimed_at: string | null;
+  created_at: string;
+};
+
+export type Tournament = {
+  id: string;
+  name: string;
+  organizer_id: string;
+  tournament_format: TournamentFormat;
+  points_per_match: number;
+  time_per_round_seconds: number;
+  max_players: number | null;
+  club_id: string | null;
+  join_code: string | null;
+  status: 'draft' | 'running' | 'completed';
+  current_round: number | null;
+  current_round_started_at: string | null;
+  current_round_duration_seconds: number | null;
+  master_clock_running: boolean;
+  created_at: string;
+};
+
+export type TournamentPlayer = {
+  id: string;
+  tournament_id: string;
+  player_id: string;
+  tournament_status: 'active' | 'waitlist' | 'dropped';
+  waitlist_position: number | null;
+  bye_count: number;
+  created_at: string;
+};
+
+export type Match = {
+  id: string;
+  tournament_id: string;
+  round_number: number;
+  court_number: number | null;
+  player1_id: string;
+  player2_id: string;
+  player3_id: string;
+  player4_id: string;
+  bye_player_id: string | null;
+  team_a_score: number | null;
+  team_b_score: number | null;
+  status: 'pending' | 'in_progress' | 'reported' | 'approved';
+  target_start_time: string | null;
+  actual_start_time: string | null;
+  actual_end_time: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScoreReport = {
+  id: string;
+  tournament_id: string;
+  round_number: number;
+  court_label: string | null;
+  team_a_player_ids: string[];
+  team_b_player_ids: string[];
+  team_a_score: number;
+  team_b_score: number;
+  reporter_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+};
+
+export type MatchSource =
+  | 'americano'
+  | 'mexicano'
+  | 'team_americano'
+  | 'mixicano'
+  | 'playtomic'
+  | 'screenshot'
+  | 'manual';
+
+export type PlayerMatchResult = {
+  id: string;
+  player_id: string;
+  tournament_id: string | null;
+  match_id: string | null;
+  partner_id: string | null;
+  opponent1_id: string | null;
+  opponent2_id: string | null;
+  team_score: number;
+  opponent_score: number;
+  won: boolean;
+  source: MatchSource;
+  played_at: string;
+  created_at: string;
+  partner_name: string | null;
+  opponent1_name: string | null;
+  opponent2_name: string | null;
+  tournaments?: {
+    name: string;
+    tournament_format: TournamentFormat;
+  } | null;
+};
+
+export type Club = {
+  id: string;
+  name: string;
+  slug: string;
+  playtomic_tenant_id: string | null;
+  address: string | null;
+  city: string | null;
+  postcode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
+  website: string | null;
+  court_count: number | null;
+  indoor_courts: number;
+  outdoor_courts: number;
+  description: string | null;
+  image_url: string | null;
+  is_partner: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Team = {
+  id: string;
+  tournament_id: string;
+  team_name: string;
+  player1_id: string;
+  player2_id: string;
+  created_at: string;
+};
+
+export type ConsentAuditLog = {
+  id: string;
+  player_id: string;
+  action: 'opt_in' | 'opt_out' | 'update';
+  channel: 'email' | 'push' | 'all';
+  new_value: boolean;
+  source: 'registration' | 'settings' | 'api' | 'admin';
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+};
+
+// ─── Connections ─────────────────────────────────────────────────────────────
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'rejected' | 'blocked';
+export type ConnectionDirection = 'outgoing' | 'incoming';
+
+export type Connection = {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: ConnectionStatus;
+  created_at: string;
+  updated_at: string;
+  accepted_at: string | null;
+};
+
+/** Returned by `get_connection_status` RPC */
+export type ConnectionStatusResult = {
+  status: ConnectionStatus | 'none' | 'self';
+  connection_id?: string;
+  direction?: ConnectionDirection;
+};
+
+/** Returned by `get_connections` RPC */
+export type ConnectionProfile = {
+  connection_id: string;
+  accepted_at: string;
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+  game_face_url: string | null;
+  smashd_level: number | null;
+  matches_played: number;
+  matches_won: number;
+  preferred_position: 'left' | 'right' | 'both' | null;
+  location: string | null;
+};
+
+/** Returned by `get_pending_requests` RPC */
+export type PendingRequest = {
+  connection_id: string;
+  requested_at: string;
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+  game_face_url: string | null;
+  smashd_level: number | null;
+  location: string | null;
+};
+
+/** Returned by mutation RPCs (send/respond/remove) */
+export type ConnectionMutationResult = {
+  success?: boolean;
+  error?: string;
+  connection_id?: string;
+  status?: string;
+  message?: string;
+  removed?: boolean;
+};
+
+/** Returned by `get_player_suggestions` RPC */
+export type PlayerSuggestion = {
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+  game_face_url: string | null;
+  smashd_level: number | null;
+  matches_played: number;
+  matches_won: number;
+  preferred_position: 'left' | 'right' | 'both' | null;
+  location: string | null;
+  shared_tournament_count: number;
+  last_played_together: string;
+};
+
+// ─── Tournament Feed ─────────────────────────────────────────────────────────
+
+export type ReactionType = 'like' | 'fire' | 'laugh';
+
+export type ReactionCounts = Record<ReactionType, number>;
+
+/** Returned by `get_tournament_feed` RPC */
+export type FeedPost = {
+  post_id: string;
+  author_id: string;
+  author_name: string | null;
+  author_avatar: string | null;
+  content: string;
+  image_url: string | null;
+  created_at: string;
+  comment_count: number;
+  reaction_counts: ReactionCounts;
+  user_reactions: ReactionType[];
+};
+
+/** Returned by `get_post_comments` RPC */
+export type FeedComment = {
+  comment_id: string;
+  author_id: string;
+  author_name: string | null;
+  author_avatar: string | null;
+  content: string;
+  created_at: string;
+};
+
+/** Returned by mutation RPCs (create_tournament_post, add_comment, toggle_reaction) */
+export type FeedMutationResult = {
+  success?: boolean;
+  error?: string;
+  post_id?: string;
+  comment_id?: string;
+  action?: 'added' | 'removed';
+  reaction?: ReactionType;
+  created_at?: string;
+};
+
+// ─── Engine Types (used by pairing algorithm + standings) ─────────────────────
+
+export type AmericanoPlayer = {
+  id: string;
+  displayName: string;
+  gameFaceUrl?: string | null;
+};
+
+export type AmericanoMatch = {
+  id: string;
+  roundNumber: number;
+  courtNumber?: number;
+  teamA: string[];
+  teamB: string[];
+  byePlayerId?: string | null;
+};
+
+export type AmericanoResult = {
+  matchId: string;
+  teamAScore: number;
+  teamBScore: number;
+};
+
+export type AmericanoStanding = {
+  playerId: string;
+  displayName: string;
+  gameFaceUrl?: string | null;
+  pointsFor: number;
+  pointsAgainst: number;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+};
+
+export type TeamStanding = {
+  teamId: string;
+  teamName: string;
+  player1Id: string;
+  player2Id: string;
+  player1Name: string;
+  player2Name: string;
+  pointsFor: number;
+  pointsAgainst: number;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+};

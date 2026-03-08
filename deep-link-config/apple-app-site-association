@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "JJ273J48DJ.com.playsmashd.app"
+        ],
+        "components": [
+          {
+            "/": "/player/*",
+            "comment": "Open player profiles in the native app"
+          },
+          {
+            "/": "/join/*",
+            "comment": "Open tournament join links in the native app"
+          }
+        ]
+      }
+    ]
+  }
+}

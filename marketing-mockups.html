@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1">
+<title>Smashd Marketing Mockups</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0A0A0F;
+    --card: #141419;
+    --card-hl: #1A1A22;
+    --yellow: #CCFF00;
+    --aqua: #00E5CC;
+    --text: #F5F5F7;
+    --dim: #A1A1AA;
+    --muted: #71717A;
+    --border: #27272A;
+    --red: #FF4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px;
+    padding: 40px 0;
+  }
+
+  .screen {
+    width: 375px;
+    min-height: 812px;
+    background: var(--bg);
+    overflow: hidden;
+    position: relative;
+    border-radius: 0;
+  }
+
+  .screen-label {
+    font-family: 'Space Mono', monospace;
+    color: var(--yellow);
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* Header bar */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .header-back {
+    position: absolute;
+    left: 16px;
+    color: var(--yellow);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+  }
+  .header-title {
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* Content area */
+  .content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-hl {
+    background: var(--card-hl);
+    border-color: var(--yellow);
+    border-width: 1px;
+  }
+
+  /* Typography */
+  .mono { font-family: 'Space Mono', monospace; }
+  .body { font-family: 'Outfit', sans-serif; }
+  .text-yellow { color: var(--yellow); }
+  .text-aqua { color: var(--aqua); }
+  .text-primary { color: var(--text); }
+  .text-dim { color: var(--dim); }
+  .text-muted { color: var(--muted); }
+  .text-center { text-align: center; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 24px;
+    font-size: 15px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+  }
+  .btn-primary {
+    background: var(--yellow);
+    color: #0A0A0F;
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--yellow);
+    border: 1px solid var(--yellow);
+  }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-sm {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+
+  /* Clock display */
+  .clock {
+    font-family: 'Space Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--yellow);
+    text-align: center;
+  }
+  .clock-expired {
+    color: var(--red);
+  }
+
+  /* Round header */
+  .round-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  /* Match card */
+  .teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 8px;
+  }
+  .team-col {
+    flex: 1;
+    text-align: center;
+  }
+  .team-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .team-names {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .vs-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .court-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* Score input mock */
+  .score-section { text-align: center; }
+  .score-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .score-input-mock {
+    font-family: 'Space Mono', monospace;
+    font-size: 36px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    width: 120px;
+    text-align: center;
+    margin: 0 auto 8px;
+    display: block;
+  }
+  .auto-calc {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    color: var(--aqua);
+    margin-bottom: 16px;
+  }
+
+  /* Leaderboard */
+  .lb-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.highlight { background: rgba(204,255,0,0.06); }
+  .lb-rank {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--yellow);
+    width: 32px;
+    text-align: center;
+  }
+  .lb-rank.silver { color: #C0C0C0; }
+  .lb-rank.bronze { color: #CD7F32; }
+  .lb-rank.normal { color: var(--muted); }
+  .lb-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-hl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--yellow);
+  }
+  .lb-info { flex: 1; }
+  .lb-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .lb-stats {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .lb-points {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .lb-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Lobby */
+  .player-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .player-chip {
+    background: var(--card-hl);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .player-chip-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--yellow);
+  }
+  .player-chip-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .player-chip .ready-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--aqua);
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  /* Join code */
+  .join-code {
+    font-family: 'Space Mono', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--yellow);
+    letter-spacing: 8px;
+    text-align: center;
+    padding: 16px;
+    background: var(--bg);
+    border: 2px dashed var(--yellow);
+    border-radius: 12px;
+  }
+
+  /* Organiser controls */
+  .control-row {
+    display: flex;
+    gap: 12px;
+  }
+  .control-row .btn { flex: 1; }
+
+  /* Score overview grid */
+  .match-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .match-ov-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .match-ov-court {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .match-ov-teams {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    color: var(--dim);
+    flex: 1;
+    margin: 0 10px;
+  }
+  .match-ov-score {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .match-ov-score.done { color: var(--aqua); }
+  .match-ov-score.pending { color: var(--muted); }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+  .badge-yellow { background: var(--yellow); color: #0A0A0F; }
+  .badge-aqua { background: var(--aqua); color: #0A0A0F; }
+  .badge-muted { background: var(--card-hl); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Tab bar mock */
+  .tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 0 28px;
+  }
+  .tab-item {
+    text-align: center;
+  }
+  .tab-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+  .tab-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .tab-label.active { color: var(--yellow); }
+
+  /* Home */
+  .home-hero {
+    text-align: center;
+    padding: 40px 0 20px;
+  }
+  .home-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--yellow);
+    margin-bottom: 8px;
+  }
+  .home-subtitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: var(--dim);
+  }
+
+  /* Profile */
+  .profile-header {
+    text-align: center;
+    padding: 20px 0;
+  }
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--card-hl);
+    border: 2px solid var(--yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--yellow);
+  }
+  .profile-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .profile-bio {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-box {
+    background: var(--card-hl);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 8px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+  .stat-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* History */
+  .history-item {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .history-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .history-result {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+
+  /* Results */
+  .trophy { font-size: 48px; text-align: center; margin-bottom: 8px; }
+  .results-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yellow);
+    text-align: center;
+  }
+
+  /* Nav row */
+  .nav-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .nav-row .btn { width: auto; flex: 1; }
+
+  /* Input mock */
+  .input-mock {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    width: 100%;
+  }
+  .input-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1: HOME -->
+<!-- ============================================================ -->
+<div class="screen-label">Home</div>
+<div class="screen" id="screen-home">
+  <div class="content">
+    <div class="home-hero">
+      <div class="home-title">SMASHD</div>
+      <div class="home-subtitle">The Community Hub for Padel</div>
+    </div>
+
+    <button class="btn btn-primary" style="font-size:17px; padding:20px;">CREATE TOURNAMENT</button>
+    <button class="btn btn-outline" style="font-size:17px; padding:20px;">JOIN TOURNAMENT</button>
+
+    <div class="card" style="margin-top: 8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span class="mono text-muted" style="font-size:12px; letter-spacing:1px;">ACTIVE TOURNAMENT</span>
+        <span class="badge badge-yellow">LIVE</span>
+      </div>
+      <div class="body text-primary" style="font-size:16px; font-weight:600;">Sunday Smash Showdown</div>
+      <div class="mono text-muted" style="font-size:12px; margin-top:4px;">Round 3 of 5 &middot; 8 players</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item"><div class="tab-icon">&#9751;</div><div class="tab-label active">Home</div></div>
+    <div class="tab-item"><div class="tab-icon">&#9734;</div><div class="tab-label">History</div></div>
+    <div class="tab-item"><div class="tab-icon">&#9787;</div><div class="tab-label">Profile</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2: TOURNAMENT LOBBY -->
+<!-- ============================================================ -->
+<div class="screen-label">Tournament Lobby</div>
+<div class="screen" id="screen-lobby">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Lobby</span>
+  </div>
+  <div class="content">
+    <div style="text-align:center;">
+      <div class="body text-primary" style="font-size:20px; font-weight:700;">Sunday Smash Showdown</div>
+      <div class="mono text-muted" style="font-size:12px; margin-top:4px;">AMERICANO &middot; 24 POINTS &middot; 15 MIN ROUNDS</div>
+    </div>
+
+    <div>
+      <div class="mono text-muted" style="font-size:11px; letter-spacing:1px; margin-bottom:8px; text-align:center;">SHARE THIS CODE</div>
+      <div class="join-code">SM7K</div>
+    </div>
+
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span class="mono text-muted" style="font-size:11px; letter-spacing:1px;">PLAYERS</span>
+        <span class="badge badge-aqua">8 / 8</span>
+      </div>
+      <div class="player-grid">
+        <div class="player-chip">
+          <div class="player-chip-avatar">MH</div>
+          <div class="player-chip-name">Mikey H</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">CR</div>
+          <div class="player-chip-name">Carlos R</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">SP</div>
+          <div class="player-chip-name">Sofia P</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">LJ</div>
+          <div class="player-chip-name">Lars J</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">AK</div>
+          <div class="player-chip-name">Aisha K</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">MS</div>
+          <div class="player-chip-name">Marco S</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">EC</div>
+          <div class="player-chip-name">Emma C</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-avatar">AH</div>
+          <div class="player-chip-name">Ahmed H</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="font-size:17px;">START TOURNAMENT</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3: PLAY (Score Entry) -->
+<!-- ============================================================ -->
+<div class="screen-label">Play &mdash; Score Entry</div>
+<div class="screen" id="screen-play">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Round 3</span>
+  </div>
+  <div class="content">
+    <div style="text-align:center;">
+      <div class="clock">12:37</div>
+      <div class="body text-dim" style="font-size:14px; margin-top:4px;">Sunday Smash Showdown</div>
+    </div>
+
+    <div class="card card-hl">
+      <div class="court-label">COURT 1</div>
+      <div class="teams-row">
+        <div class="team-col">
+          <div class="team-label">YOUR TEAM</div>
+          <div class="team-names">Mikey H &amp; Ahmed H</div>
+        </div>
+        <div class="vs-label">VS</div>
+        <div class="team-col">
+          <div class="team-label">OPPONENTS</div>
+          <div class="team-names">Carlos R &amp; Aisha K</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="score-section">
+          <div class="score-label">YOUR TEAM'S SCORE</div>
+          <div class="score-input-mock">14</div>
+          <div class="auto-calc">Opponent: 10</div>
+          <button class="btn btn-primary">SUBMIT SCORE</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-outline btn-sm">LEADERBOARD</button>
+      <button class="btn btn-secondary btn-sm">DASHBOARD</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4: LEADERBOARD -->
+<!-- ============================================================ -->
+<div class="screen-label">Live Leaderboard</div>
+<div class="screen" id="screen-leaderboard">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Leaderboard</span>
+  </div>
+  <div class="content" style="padding:0;">
+    <div style="text-align:center; padding:20px 20px 0;">
+      <div class="body text-primary" style="font-size:18px; font-weight:700;">Sunday Smash Showdown</div>
+      <div class="mono text-muted" style="font-size:12px; margin-top:4px;">ROUND 3 OF 5 &middot; LIVE</div>
+    </div>
+
+    <div class="lb-header">
+      <span class="mono text-muted" style="font-size:10px; letter-spacing:1px;">PLAYER</span>
+      <span class="mono text-muted" style="font-size:10px; letter-spacing:1px;">PTS</span>
+    </div>
+
+    <div class="lb-row highlight">
+      <div class="lb-rank">1</div>
+      <div class="lb-avatar">MH</div>
+      <div class="lb-info">
+        <div class="lb-name">Mikey H</div>
+        <div class="lb-stats">4 played &middot; 100% W</div>
+      </div>
+      <div class="lb-points text-yellow">30</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank silver">2</div>
+      <div class="lb-avatar">SP</div>
+      <div class="lb-info">
+        <div class="lb-name">Sofia P</div>
+        <div class="lb-stats">4 played &middot; 75% W</div>
+      </div>
+      <div class="lb-points">27</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank bronze">3</div>
+      <div class="lb-avatar">LJ</div>
+      <div class="lb-info">
+        <div class="lb-name">Lars J</div>
+        <div class="lb-stats">4 played &middot; 75% W</div>
+      </div>
+      <div class="lb-points">25</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank normal">4</div>
+      <div class="lb-avatar">AK</div>
+      <div class="lb-info">
+        <div class="lb-name">Aisha K</div>
+        <div class="lb-stats">4 played &middot; 50% W</div>
+      </div>
+      <div class="lb-points">22</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank normal">5</div>
+      <div class="lb-avatar">MS</div>
+      <div class="lb-info">
+        <div class="lb-name">Marco S</div>
+        <div class="lb-stats">4 played &middot; 50% W</div>
+      </div>
+      <div class="lb-points">20</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank normal">6</div>
+      <div class="lb-avatar">EC</div>
+      <div class="lb-info">
+        <div class="lb-name">Emma C</div>
+        <div class="lb-stats">4 played &middot; 25% W</div>
+      </div>
+      <div class="lb-points">18</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank normal">7</div>
+      <div class="lb-avatar">CR</div>
+      <div class="lb-info">
+        <div class="lb-name">Carlos R</div>
+        <div class="lb-stats">4 played &middot; 25% W</div>
+      </div>
+      <div class="lb-points">16</div>
+    </div>
+
+    <div class="lb-row">
+      <div class="lb-rank normal">8</div>
+      <div class="lb-avatar">AH</div>
+      <div class="lb-info">
+        <div class="lb-name">Ahmed H</div>
+        <div class="lb-stats">4 played &middot; 25% W</div>
+      </div>
+      <div class="lb-points">14</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 5: ORGANISER DASHBOARD -->
+<!-- ============================================================ -->
+<div class="screen-label">Organiser Dashboard</div>
+<div class="screen" id="screen-organiser">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Dashboard</span>
+  </div>
+  <div class="content">
+    <div style="text-align:center;">
+      <div class="clock">12:37</div>
+      <div class="body text-dim" style="font-size:14px; margin-top:4px;">Round 3 of 5</div>
+    </div>
+
+    <div class="control-row">
+      <button class="btn btn-outline btn-sm" style="background:rgba(255,68,68,0.1); color:var(--red); border-color:var(--red);">PAUSE</button>
+      <button class="btn btn-outline btn-sm">RESET</button>
+    </div>
+
+    <div>
+      <div class="mono text-muted" style="font-size:11px; letter-spacing:1px; margin-bottom:10px;">ROUND 3 SCORES</div>
+      <div class="match-overview">
+        <div class="match-ov-row">
+          <div class="match-ov-court">CT 1</div>
+          <div class="match-ov-teams">Mikey &amp; Ahmed vs Carlos &amp; Aisha</div>
+          <div class="match-ov-score pending">--</div>
+        </div>
+        <div class="match-ov-row">
+          <div class="match-ov-court">CT 2</div>
+          <div class="match-ov-teams">Sofia &amp; Marco vs Lars &amp; Emma</div>
+          <div class="match-ov-score pending">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mono text-muted" style="font-size:11px; letter-spacing:1px; margin-bottom:10px;">ROUND 2 SCORES</div>
+      <div class="match-overview">
+        <div class="match-ov-row">
+          <div class="match-ov-court">CT 1</div>
+          <div class="match-ov-teams">Mikey &amp; Sofia vs Aisha &amp; Marco</div>
+          <div class="match-ov-score done">16 – 8</div>
+        </div>
+        <div class="match-ov-row">
+          <div class="match-ov-court">CT 2</div>
+          <div class="match-ov-teams">Carlos &amp; Lars vs Emma &amp; Ahmed</div>
+          <div class="match-ov-score done">12 – 12</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary">ADVANCE TO ROUND 4</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 6: RESULTS -->
+<!-- ============================================================ -->
+<div class="screen-label">Final Results</div>
+<div class="screen" id="screen-results">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Results</span>
+  </div>
+  <div class="content" style="padding-top:24px;">
+    <div style="text-align:center;">
+      <div class="trophy">&#127942;</div>
+      <div class="results-title">TOURNAMENT COMPLETE!</div>
+      <div class="body text-dim" style="font-size:14px; margin-top:4px;">Sunday Smash Showdown</div>
+      <div class="mono text-muted" style="font-size:11px; margin-top:4px;">5 ROUNDS &middot; 8 PLAYERS</div>
+    </div>
+
+    <!-- Podium -->
+    <div class="card card-hl" style="text-align:center; padding:24px;">
+      <div class="mono text-yellow" style="font-size:12px; letter-spacing:2px; margin-bottom:8px;">CHAMPION</div>
+      <div class="lb-avatar" style="width:56px; height:56px; font-size:22px; margin:0 auto 8px; border:2px solid var(--yellow);">MH</div>
+      <div class="body text-primary" style="font-size:20px; font-weight:700;">Mikey H</div>
+      <div class="mono text-yellow" style="font-size:28px; font-weight:700; margin-top:4px;">68 pts</div>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <div class="card" style="flex:1; text-align:center; padding:16px;">
+        <div class="mono" style="font-size:11px; color:#C0C0C0; letter-spacing:1px;">2ND</div>
+        <div class="lb-avatar" style="width:40px; height:40px; font-size:16px; margin:8px auto;">SP</div>
+        <div class="body text-primary" style="font-size:14px; font-weight:600;">Sofia P</div>
+        <div class="mono text-dim" style="font-size:16px; font-weight:700;">61 pts</div>
+      </div>
+      <div class="card" style="flex:1; text-align:center; padding:16px;">
+        <div class="mono" style="font-size:11px; color:#CD7F32; letter-spacing:1px;">3RD</div>
+        <div class="lb-avatar" style="width:40px; height:40px; font-size:16px; margin:8px auto;">LJ</div>
+        <div class="body text-primary" style="font-size:14px; font-weight:600;">Lars J</div>
+        <div class="mono text-dim" style="font-size:16px; font-weight:700;">57 pts</div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline">VIEW FULL STANDINGS</button>
+    <button class="btn btn-secondary">BACK TO HOME</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 7: PROFILE -->
+<!-- ============================================================ -->
+<div class="screen-label">Player Profile</div>
+<div class="screen" id="screen-profile">
+  <div class="content">
+    <div class="profile-header">
+      <div class="profile-avatar">MH</div>
+      <div class="profile-name">Mikey Hurdle</div>
+      <div class="profile-bio">Padel enthusiast. Left-side specialist.</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-value">42</div>
+        <div class="stat-label">Matches</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">71%</div>
+        <div class="stat-label">Win Rate</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Tournaments</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mono text-muted" style="font-size:11px; letter-spacing:1px; margin-bottom:12px;">RECENT RESULTS</div>
+      <div class="history-item" style="padding:12px 0;">
+        <div class="history-name">Sunday Smash Showdown</div>
+        <div class="history-meta">1 Mar 2026 &middot; Americano &middot; 8 players</div>
+        <div class="history-result text-yellow">1st Place &middot; 68 pts</div>
+      </div>
+      <div class="history-item" style="padding:12px 0;">
+        <div class="history-name">Friday Night Lights</div>
+        <div class="history-meta">28 Feb 2026 &middot; Americano &middot; 12 players</div>
+        <div class="history-result text-aqua">3rd Place &middot; 54 pts</div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline btn-sm">EDIT PROFILE</button>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item"><div class="tab-icon">&#9751;</div><div class="tab-label">Home</div></div>
+    <div class="tab-item"><div class="tab-icon">&#9734;</div><div class="tab-label">History</div></div>
+    <div class="tab-item"><div class="tab-icon">&#9787;</div><div class="tab-label active">Profile</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 8: CREATE TOURNAMENT -->
+<!-- ============================================================ -->
+<div class="screen-label">Create Tournament</div>
+<div class="screen" id="screen-create">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Create Tournament</span>
+  </div>
+  <div class="content">
+    <div>
+      <div class="input-label">TOURNAMENT NAME</div>
+      <div class="input-mock">Sunday Smash Showdown</div>
+    </div>
+    <div>
+      <div class="input-label">FORMAT</div>
+      <div class="input-mock" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Americano</span>
+        <span class="text-muted">&darr;</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:12px;">
+      <div style="flex:1;">
+        <div class="input-label">POINTS PER MATCH</div>
+        <div class="input-mock" style="text-align:center;">24</div>
+      </div>
+      <div style="flex:1;">
+        <div class="input-label">TIME PER ROUND</div>
+        <div class="input-mock" style="text-align:center;">15 min</div>
+      </div>
+    </div>
+    <div>
+      <div class="input-label">MAX PLAYERS</div>
+      <div class="input-mock" style="text-align:center;">8</div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:12px;">CREATE &amp; GET JOIN CODE</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 9: JOIN TOURNAMENT -->
+<!-- ============================================================ -->
+<div class="screen-label">Join Tournament</div>
+<div class="screen" id="screen-join">
+  <div class="header">
+    <span class="header-back">&larr;</span>
+    <span class="header-title">Join</span>
+  </div>
+  <div class="content" style="padding-top:60px;">
+    <div style="text-align:center;">
+      <div class="mono text-yellow" style="font-size:18px; font-weight:700; margin-bottom:8px;">Enter Join Code</div>
+      <div class="body text-dim" style="font-size:14px;">Ask the organiser for the 4-character code</div>
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:center; margin:20px 0;">
+      <div style="width:56px; height:68px; background:var(--card); border:2px solid var(--yellow); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <span class="mono text-primary" style="font-size:28px; font-weight:700;">S</span>
+      </div>
+      <div style="width:56px; height:68px; background:var(--card); border:2px solid var(--yellow); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <span class="mono text-primary" style="font-size:28px; font-weight:700;">M</span>
+      </div>
+      <div style="width:56px; height:68px; background:var(--card); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <span class="mono text-muted" style="font-size:28px;">_</span>
+      </div>
+      <div style="width:56px; height:68px; background:var(--card); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+        <span class="mono text-muted" style="font-size:28px;">_</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary">JOIN</button>
+
+    <div style="text-align:center; margin-top:20px;">
+      <div class="body text-dim" style="font-size:14px; margin-bottom:12px;">or</div>
+      <button class="btn btn-outline btn-sm" style="width:auto; display:inline-block; padding:12px 24px;">SCAN QR CODE</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
