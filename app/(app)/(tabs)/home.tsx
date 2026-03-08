@@ -54,7 +54,7 @@ export default function Home() {
             current_round
           )
         `)
-        .eq('profile_id', user.id)
+        .eq('player_id', user.id)
         .in('tournaments.status', ['draft', 'running'])
         .order('created_at', { ascending: false })
         .limit(1);
