@@ -84,7 +84,7 @@ export default function CreateTournament() {
       // Auto-join the organiser as a player
       await supabase.from('tournament_players').insert({
         tournament_id: data.id,
-        profile_id: user?.id,
+        player_id: user?.id,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
