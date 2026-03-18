@@ -1,216 +1,415 @@
-import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router, Stack } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import {
+  Alert,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+let ImagePicker: typeof import('expo-image-picker') | null = null;
+try {
+  ImagePicker = require('expo-image-picker');
+} catch {
+  // Native module not available (e.g. Expo Go) — banner picker disabled
+}
+import Animated, { FadeInRight, FadeInLeft } from 'react-native-reanimated';
+
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/providers/AuthProvider';
-import { Colors, Fonts, TournamentDefaults } from '../../../src/lib/constants';
-import { Button } from '../../../src/components/ui/Button';
-import { Input } from '../../../src/components/ui/Input';
+import { Colors } from '../../../src/lib/constants';
+import type { Club } from '../../../src/lib/types';
 
-function generateJoinCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for clarity
-  let code = '';
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
+import {
+  FORMATS,
+  TOGGLES,
+  ADVANCED_SETTINGS,
+  generateJoinCode,
+} from '../../../src/components/tournament/wizard-data';
+
+import WizardProgressBar from '../../../src/components/tournament/WizardProgressBar';
+import WizardNavBar from '../../../src/components/tournament/WizardNavBar';
+import StepBasics from '../../../src/components/tournament/StepBasics';
+import StepSettings from '../../../src/components/tournament/StepSettings';
+import StepPreview from '../../../src/components/tournament/StepPreview';
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function CreateTournament() {
   const { user } = useAuth();
+
+  // ── Wizard step ──────────────────────────────────────────────────────────
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+
+  // ── Step 1: Basics ───────────────────────────────────────────────────────
   const [name, setName] = useState('');
-  const [pointsPerMatch, setPointsPerMatch] = useState(
-    String(TournamentDefaults.pointsPerMatch)
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState(0);
+  const [bannerUri, setBannerUri] = useState<string | null>(null);
+
+  // ── Step 2: Settings ─────────────────────────────────────────────────────
+  const [players, setPlayers] = useState(8);
+  const [courts, setCourts] = useState(2);
+  const [points, setPoints] = useState(21);
+  const [time, setTime] = useState(12);
+  const [toggles, setToggles] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    TOGGLES.forEach((t) => (init[t.key] = t.defaultOn));
+    return init;
+  });
+  const [selectedVenue, setSelectedVenue] = useState<Club | null>(null);
+  const [venueModalVisible, setVenueModalVisible] = useState(false);
+  const [venueSearch, setVenueSearch] = useState('');
+  const [venueResults, setVenueResults] = useState<Club[]>([]);
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [roundLimit, setRoundLimit] = useState(0);
+  const [advancedValues, setAdvancedValues] = useState<Record<string, string>>(
+    () => {
+      const init: Record<string, string> = {};
+      ADVANCED_SETTINGS.forEach((s) => (init[s.key] = s.defaultValue));
+      return init;
+    },
   );
-  const [timePerRound, setTimePerRound] = useState(
-    String(TournamentDefaults.timePerRoundSeconds / 60)
-  );
-  const [maxPlayers, setMaxPlayers] = useState(
-    String(TournamentDefaults.maxPlayers)
-  );
+
+  // ── Creation state ───────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
 
-  const handleCreate = async () => {
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const handleToggle = useCallback((key: string, value: boolean) => {
+    Haptics.selectionAsync();
+    setToggles((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handlePickBanner = useCallback(async () => {
+    if (!ImagePicker) {
+      Alert.alert('Not Available', 'Image picker requires a native build. It will work in the installed app.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setBannerUri(result.assets[0].uri);
+    }
+  }, []);
+
+  const handleVenueSearch = useCallback(async (query: string) => {
+    setVenueSearch(query);
+    if (query.length < 2) {
+      setVenueResults([]);
+      return;
+    }
+    // Search both clubs and scout_venues for maximum coverage
+    const [clubsRes, scoutRes] = await Promise.all([
+      supabase
+        .from('clubs')
+        .select('*')
+        .ilike('name', `%${query}%`)
+        .limit(10),
+      supabase
+        .from('scout_venues')
+        .select('id, name, address, city, postcode, latitude, longitude')
+        .or(`name.ilike.%${query}%,city.ilike.%${query}%`)
+        .limit(10),
+    ]);
+
+    const clubs: Club[] = clubsRes.data ?? [];
+    // Map scout_venues to Club shape for UI compatibility
+    const scoutAsClubs: Club[] = (scoutRes.data ?? []).map((sv) => ({
+      id: sv.id,
+      name: sv.name,
+      slug: sv.name.toLowerCase().replace(/\s+/g, '-'),
+      playtomic_tenant_id: null,
+      address: sv.address,
+      city: sv.city,
+      postcode: sv.postcode,
+      latitude: sv.latitude ? Number(sv.latitude) : null,
+      longitude: sv.longitude ? Number(sv.longitude) : null,
+      phone: null,
+      website: null,
+      court_count: null,
+      indoor_courts: 0,
+      outdoor_courts: 0,
+      description: null,
+      image_url: null,
+      is_partner: false,
+      created_at: '',
+      updated_at: '',
+    }));
+
+    // Merge and deduplicate by name
+    const seen = new Set<string>();
+    const merged: Club[] = [];
+    for (const c of [...clubs, ...scoutAsClubs]) {
+      const key = c.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(c);
+      }
+    }
+    setVenueResults(merged.slice(0, 15));
+  }, []);
+
+  const handleSelectVenue = useCallback((club: Club) => {
+    setSelectedVenue(club);
+    setVenueModalVisible(false);
+    setVenueSearch('');
+    setVenueResults([]);
+  }, []);
+
+  const handleNameChange = useCallback((v: string) => {
+    setName(v);
+    if (v.trim().length > 0) setNameError(null);
+  }, []);
+
+  // ── Navigation ───────────────────────────────────────────────────────────
+
+  const handleNext = useCallback(() => {
+    if (currentStep === 1) {
+      // Validate Step 1
+      if (!name.trim()) {
+        setNameError('Tournament name is required');
+        return;
+      }
+      setNameError(null);
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    }
+  }, [currentStep, name]);
+
+  const handleBack = useCallback(() => {
+    if (currentStep === 2) setCurrentStep(1);
+    else if (currentStep === 3) setCurrentStep(2);
+  }, [currentStep]);
+
+  const handleEditStep = useCallback((step: 1 | 2) => {
+    setCurrentStep(step);
+  }, []);
+
+  // ── Create Tournament ────────────────────────────────────────────────────
+
+  const handleCreate = useCallback(async () => {
+    if (!user) return;
     if (!name.trim()) {
-      Alert.alert('Name required', 'Give your tournament a name.');
-      return;
-    }
-
-    const points = parseInt(pointsPerMatch, 10);
-    const time = parseInt(timePerRound, 10);
-    const players = parseInt(maxPlayers, 10);
-
-    if (isNaN(points) || points < 1) {
-      Alert.alert('Invalid', 'Points per match must be a positive number.');
-      return;
-    }
-    if (isNaN(time) || time < 1) {
-      Alert.alert('Invalid', 'Time per round must be at least 1 minute.');
-      return;
-    }
-    if (isNaN(players) || players < 4) {
-      Alert.alert('Invalid', 'Need at least 4 players for an Americano.');
+      setCurrentStep(1);
+      setNameError('Tournament name is required');
       return;
     }
 
     setLoading(true);
     try {
+      let bannerUrl: string | null = null;
+
+      // Upload banner if present
+      if (bannerUri) {
+        const ext = bannerUri.split('.').pop() ?? 'jpg';
+        const fileName = `${user.id}/${Date.now()}.${ext}`;
+        const response = await fetch(bannerUri);
+        const blob = await response.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from('tournament-assets')
+          .upload(fileName, blob, { contentType: `image/${ext}` });
+
+        if (!uploadError) {
+          const {
+            data: { publicUrl },
+          } = supabase.storage
+            .from('tournament-assets')
+            .getPublicUrl(fileName);
+          bannerUrl = publicUrl;
+        }
+      }
+
+      const format = FORMATS[selectedFormat];
       const joinCode = generateJoinCode();
 
-      const { data, error } = await supabase
+      const { data: tournament, error } = await supabase
         .from('tournaments')
         .insert({
           name: name.trim(),
-          format: 'americano',
+          organizer_id: user.id,
+          tournament_format: format.id,
+          join_code: joinCode,
+          max_players: players,
           points_per_match: points,
           time_per_round_seconds: time * 60,
-          max_players: players,
-          join_code: joinCode,
-          status: 'draft',
-          organiser_id: user?.id,
+          club_id: selectedVenue?.id ?? null,
+          venue_name: selectedVenue?.name ?? null,
+          venue_address: selectedVenue?.address ?? null,
+          venue_city: selectedVenue?.city ?? null,
+          status: 'lobby',
           current_round: 0,
-          master_clock_running: false,
         })
         .select()
         .single();
 
-      if (error) {
-        Alert.alert('Creation failed', error.message);
-        return;
-      }
+      if (error) throw error;
 
-      // Auto-join the organiser as a player
+      // Add organiser as first player
       await supabase.from('tournament_players').insert({
         tournament_id: data.id,
         player_id: user?.id,
+        tournament_status: 'active',
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/(app)/tournament/${data.id}/lobby`);
-    } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', e.message ?? 'Something went wrong');
+      router.replace(`/tournament/${data.id}/lobby`);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to create tournament. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    user,
+    name,
+    bannerUri,
+    selectedFormat,
+    players,
+    courts,
+    points,
+    time,
+    toggles,
+    roundLimit,
+    advancedValues,
+    selectedVenue,
+  ]);
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  const nextDisabled = currentStep === 1 && !name.trim();
 
   return (
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: 'New Tournament',
-          headerStyle: { backgroundColor: Colors.darkBg },
-          headerTintColor: Colors.textPrimary,
-          headerTitleStyle: { fontFamily: Fonts.mono, fontSize: 16, letterSpacing: 2 } as any,
+          headerShown: false,
+          animation: 'slide_from_right',
         }}
       />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.form}>
-            <Input
-              label="Tournament Name"
-              placeholder="e.g. Friday Night Smash"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Progress Bar */}
+        <WizardProgressBar currentStep={currentStep} />
 
-            <View style={styles.row}>
-              <View style={styles.half}>
-                <Input
-                  label="Points / Match"
-                  placeholder="24"
-                  value={pointsPerMatch}
-                  onChangeText={setPointsPerMatch}
-                  keyboardType="number-pad"
-                />
-              </View>
-              <View style={styles.half}>
-                <Input
-                  label="Minutes / Round"
-                  placeholder="15"
-                  value={timePerRound}
-                  onChangeText={setTimePerRound}
-                  keyboardType="number-pad"
-                />
-              </View>
-            </View>
+        {/* Step Content */}
+        <View style={styles.stepContent}>
+          {currentStep === 1 && (
+            <Animated.View
+              key="step1"
+              entering={FadeInLeft.duration(250)}
+              style={styles.stepFill}
+            >
+              <StepBasics
+                name={name}
+                onNameChange={handleNameChange}
+                nameError={nameError}
+                selectedFormat={selectedFormat}
+                onSelectFormat={setSelectedFormat}
+                bannerUri={bannerUri}
+                onPickBanner={handlePickBanner}
+                onRemoveBanner={() => setBannerUri(null)}
+              />
+            </Animated.View>
+          )}
 
-            <Input
-              label="Max Players"
-              placeholder="16"
-              value={maxPlayers}
-              onChangeText={setMaxPlayers}
-              keyboardType="number-pad"
-            />
+          {currentStep === 2 && (
+            <Animated.View
+              key="step2"
+              entering={FadeInRight.duration(250)}
+              style={styles.stepFill}
+            >
+              <StepSettings
+                players={players}
+                onPlayersChange={setPlayers}
+                courts={courts}
+                onCourtsChange={setCourts}
+                points={points}
+                onPointsChange={setPoints}
+                time={time}
+                onTimeChange={setTime}
+                toggles={toggles}
+                onToggle={handleToggle}
+                selectedVenue={selectedVenue}
+                onOpenVenueModal={() => setVenueModalVisible(true)}
+                onClearVenue={() => setSelectedVenue(null)}
+                venueModalVisible={venueModalVisible}
+                venueResults={venueResults}
+                venueSearch={venueSearch}
+                onVenueSearch={handleVenueSearch}
+                onSelectVenue={handleSelectVenue}
+                onCloseVenueModal={() => {
+                  setVenueModalVisible(false);
+                  setVenueSearch('');
+                  setVenueResults([]);
+                }}
+                advancedExpanded={advancedExpanded}
+                onToggleAdvanced={() => setAdvancedExpanded((v) => !v)}
+                advancedValues={advancedValues}
+                onAdvancedValueChange={(key, value) =>
+                  setAdvancedValues((prev) => ({ ...prev, [key]: value }))
+                }
+                roundLimit={roundLimit}
+                onRoundLimitChange={setRoundLimit}
+              />
+            </Animated.View>
+          )}
 
-            <View style={styles.formatBadge}>
-              <Text style={styles.formatLabel}>FORMAT</Text>
-              <Text style={styles.formatValue}>Americano</Text>
-            </View>
-          </View>
+          {currentStep === 3 && (
+            <Animated.View
+              key="step3"
+              entering={FadeInRight.duration(250)}
+              style={styles.stepFill}
+            >
+              <StepPreview
+                name={name}
+                selectedFormat={selectedFormat}
+                bannerUri={bannerUri}
+                players={players}
+                courts={courts}
+                points={points}
+                time={time}
+                toggles={toggles}
+                selectedVenue={selectedVenue}
+                advancedValues={advancedValues}
+                roundLimit={roundLimit}
+                onEditStep={handleEditStep}
+              />
+            </Animated.View>
+          )}
+        </View>
 
-          <Button
-            title="CREATE TOURNAMENT"
-            onPress={handleCreate}
-            loading={loading}
-            variant="primary"
-            size="lg"
-          />
-        </ScrollView>
+        {/* Bottom Nav */}
+        <WizardNavBar
+          currentStep={currentStep}
+          onBack={handleBack}
+          onNext={handleNext}
+          onCreate={handleCreate}
+          nextDisabled={nextDisabled}
+          createLoading={loading}
+        />
       </SafeAreaView>
     </>
   );
 }
+
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: Colors.darkBg,
   },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 32,
-  },
-  form: {
-    gap: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  half: {
+  stepContent: {
     flex: 1,
   },
-  formatBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  formatLabel: {
-    fontFamily: Fonts.mono,
-    fontSize: 11,
-    color: Colors.textMuted,
-    letterSpacing: 1,
-  },
-  formatValue: {
-    fontFamily: Fonts.heading,
-    fontSize: 16,
-    color: Colors.opticYellow,
+  stepFill: {
+    flex: 1,
   },
 });
