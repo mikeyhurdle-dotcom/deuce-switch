@@ -1,7 +1,16 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+  FadeIn,
+  FadeInDown,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentClock } from '../../../../src/hooks/useTournamentClock';
@@ -20,6 +29,9 @@ import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
 import { ClockDisplay } from '../../../../src/components/ClockDisplay';
 import { TournamentQR } from '../../../../src/components/TournamentQR';
+import { AnimatedPressable, useSpringPress } from '../../../../src/hooks/useSpringPress';
+
+const ROW_STAGGER = 60; // ms between each match card / standings row
 
 export default function OrganiserDashboard() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -249,20 +261,23 @@ export default function OrganiserDashboard() {
           }
         >
           {/* Clock Display */}
-          <Card variant="highlighted">
-            <View style={styles.clockSection}>
-              <ClockDisplay
-                formattedTime={clock.formattedTime}
-                isRunning={clock.isRunning}
-                isExpired={clock.isExpired}
-                size="lg"
-              />
-            </View>
-          </Card>
+          <Animated.View entering={FadeIn.duration(400)}>
+            <Card variant="highlighted">
+              <View style={styles.clockSection}>
+                <ClockDisplay
+                  formattedTime={clock.formattedTime}
+                  isRunning={clock.isRunning}
+                  isExpired={clock.isExpired}
+                  size="lg"
+                />
+              </View>
+            </Card>
+          </Animated.View>
 
           {/* Status Bar */}
-          <Card>
-            <View style={styles.statusRow}>
+          <Animated.View entering={FadeInDown.delay(100).duration(400).springify()}>
+            <Card>
+              <View style={styles.statusRow}>
               <View style={styles.statusItem}>
                 <Text style={styles.statusValue}>
                   {tournament.current_round ?? 1}
@@ -282,7 +297,8 @@ export default function OrganiserDashboard() {
                 <Text style={styles.statusLabel}>PLAYERS</Text>
               </View>
             </View>
-          </Card>
+            </Card>
+          </Animated.View>
 
           {/* QR Code — compact mode for in-tournament sharing */}
           {tournament.id && (
@@ -295,7 +311,7 @@ export default function OrganiserDashboard() {
           )}
 
           {/* Clock Controls */}
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(200).duration(400).springify()} style={styles.section}>
             <Text style={styles.sectionTitle}>CLOCK</Text>
             <View style={styles.buttonRow}>
               <View style={styles.flex1}>
@@ -319,10 +335,10 @@ export default function OrganiserDashboard() {
                 />
               </View>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Current Round Matches */}
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.section}>
             <Text style={styles.sectionTitle}>
               ROUND {tournament.current_round ?? 1} MATCHES
             </Text>
@@ -344,7 +360,7 @@ export default function OrganiserDashboard() {
                     : match.status;
 
                 return (
-                  <Pressable
+                  <AnimatedPressable
                     key={match.id}
                     onPress={() => {
                       if (!isEditing && !match.bye_player_id) {
@@ -356,6 +372,9 @@ export default function OrganiserDashboard() {
                       }
                     }}
                     disabled={isEditing || !!match.bye_player_id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Court ${match.court_number ?? 'unknown'}: ${playerName(match.player1_id)} and ${playerName(match.player2_id)} versus ${playerName(match.player3_id)} and ${playerName(match.player4_id)}${hasScore ? `, score ${match.team_a_score} to ${match.team_b_score}` : ''}`}
+                    accessibilityHint={hasScore ? 'Tap to override score' : 'Tap to enter score'}
                   >
                     <Card>
                       <View style={styles.matchHeader}>
@@ -416,9 +435,10 @@ export default function OrganiserDashboard() {
                                 placeholder="0"
                                 placeholderTextColor={Colors.textMuted}
                                 selectTextOnFocus
+                                accessibilityLabel="Team A score"
                               />
                             </View>
-                            <Text style={styles.editDash}>–</Text>
+                            <Text style={styles.editDash} accessible={false}>–</Text>
                             <View style={styles.editScoreField}>
                               <Text style={styles.editScoreLabel}>TEAM B</Text>
                               <TextInput
@@ -430,6 +450,7 @@ export default function OrganiserDashboard() {
                                 placeholder="0"
                                 placeholderTextColor={Colors.textMuted}
                                 selectTextOnFocus
+                                accessibilityLabel="Team B score"
                               />
                             </View>
                           </View>
@@ -467,15 +488,15 @@ export default function OrganiserDashboard() {
                         </Text>
                       )}
                     </Card>
-                  </Pressable>
+                  </AnimatedPressable>
                 );
               })
             )}
-          </View>
+          </Animated.View>
 
           {/* Live Standings */}
           {standings.length > 0 && (
-            <View style={styles.section}>
+            <Animated.View entering={FadeInDown.delay(400).duration(400).springify()} style={styles.section}>
               <Text style={styles.sectionTitle}>LIVE STANDINGS</Text>
               <Card>
                 {/* Header */}
@@ -512,11 +533,11 @@ export default function OrganiserDashboard() {
                   );
                 })}
               </Card>
-            </View>
+            </Animated.View>
           )}
 
           {/* Actions */}
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(500).duration(400).springify()} style={styles.section}>
             <Text style={styles.sectionTitle}>ACTIONS</Text>
             <Button
               title="ADVANCE ROUND"
@@ -532,7 +553,7 @@ export default function OrganiserDashboard() {
               variant="outline"
               size="lg"
             />
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </>

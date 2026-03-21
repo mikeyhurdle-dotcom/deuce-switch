@@ -16,8 +16,19 @@ export function ClockDisplay({
 }: ClockDisplayProps) {
   const fontSize = size === 'lg' ? 56 : size === 'md' ? 36 : 20;
 
+  const stateLabel = isExpired
+    ? 'Time expired'
+    : !isRunning
+      ? 'Paused'
+      : 'Running';
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessible
+      accessibilityRole="timer"
+      accessibilityLabel={`Tournament clock: ${formattedTime}, ${stateLabel}`}
+    >
       <Text
         style={[
           styles.time,

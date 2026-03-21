@@ -3,10 +3,11 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../../src/lib/supabase';
-import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
+import { Colors, Fonts } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 import { SmashdLogo } from '../../src/components/ui/SmashdLogo';
+import { SmashdWordmark } from '../../src/components/ui/SmashdWordmark';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignUp() {
@@ -62,7 +63,7 @@ export default function SignUp() {
       >
         <View style={styles.branding}>
           <SmashdLogo size={80} />
-          <Text style={styles.logo}>{AppConfig.name}</Text>
+          <SmashdWordmark size={42} />
           <Text style={styles.tagline}>Create your player profile</Text>
         </View>
 
@@ -127,13 +128,6 @@ const styles = StyleSheet.create({
   branding: {
     alignItems: 'center',
     gap: 8,
-  },
-  logo: {
-    fontFamily: Fonts.mono,
-    fontSize: 42,
-    color: Colors.opticYellow,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
   },
   tagline: {
     fontFamily: Fonts.body,

@@ -71,13 +71,16 @@ export const smashdTheme = {
   },
 
   fontFamily: {
-    display: 'Outfit',
-    body: 'Outfit',
+    // Wordmark / display — Electric Court identity
+    display: 'PermanentMarker', // logo, rank numbers, hero CTAs
+    // Body system — Exo 2 (geometric sans-serif, sport/tech feel)
+    body: 'Exo2_400Regular',
+    heading: 'Exo2_700Bold',
     mono: 'SpaceMono',
     // React Native weight-specific families
-    bodyMedium: 'Outfit-Medium',
-    bodySemiBold: 'Outfit-SemiBold',
-    bodyBold: 'Outfit-Bold',
+    bodyMedium: 'Exo2_500Medium',
+    bodySemiBold: 'Exo2_600SemiBold',
+    bodyBold: 'Exo2_700Bold',
   },
 
   fontSize: {

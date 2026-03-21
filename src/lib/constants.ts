@@ -7,8 +7,8 @@
 export const Colors = {
   // Core Triadic Palette
   opticYellow: '#CCFF00',
-  violet: '#7C3AED',
-  aquaGreen: '#2DD4BF',
+  violet: '#7B2FBE',
+  aquaGreen: '#00CFC1',
 
   // Complementary brand colours
   yellowMuted: '#9CB800',    // Pressed/hover state for yellow
@@ -17,7 +17,7 @@ export const Colors = {
   coral: '#F472B6',          // Special events, social features
 
   // Dark UI Foundation
-  darkBg: '#0F0A1A',         // Deepest background — Night (violet-tinted)
+  darkBg: '#0A0F1C',         // Deepest background — Night (aligned to smashd-theme)
   card: '#111827',            // Primary surface — cards, content areas
   cardHover: '#334155',       // Hovered cards/rows
   surface: '#1E293B',         // Elevated surfaces — inputs, modals
@@ -34,7 +34,7 @@ export const Colors = {
   success: '#22C55E',         // Distinct green (not aqua)
   error: '#EF4444',
   warning: '#FB923C',
-  info: '#2DD4BF',            // Aqua for info states
+  info: '#00CFC1',            // Aqua for info states
 
   // Borders
   border: '#334155',          // Default borders
@@ -51,11 +51,12 @@ export const Colors = {
 
 export const Fonts = {
   mono: 'SpaceMono',
-  body: 'Outfit',
-  heading: 'Outfit',
-  bodyMedium: 'Outfit-Medium',
-  bodySemiBold: 'Outfit-SemiBold',
-  bodyBold: 'Outfit-Bold',
+  body: 'Exo2_400Regular',
+  heading: 'Exo2_700Bold',
+  bodyMedium: 'Exo2_500Medium',
+  bodySemiBold: 'Exo2_600SemiBold',
+  bodyBold: 'Exo2_700Bold',
+  display: 'PermanentMarker', // Electric Court wordmark — logo, rank numbers, display CTAs
 } as const;
 
 // ─── Spacing (4px base unit) ────────────────────────────────────────────────
@@ -73,6 +74,7 @@ export const Spacing = {
   12: 48,
   16: 64,
   20: 80,
+  24: 96,
 } as const;
 
 // ─── Border Radius ──────────────────────────────────────────────────────────
@@ -117,14 +119,14 @@ export const Shadows = {
     elevation: 8,
   },
   glowViolet: {
-    shadowColor: '#7C3AED',
+    shadowColor: '#7B2FBE',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
   },
   glowAqua: {
-    shadowColor: '#2DD4BF',
+    shadowColor: '#00CFC1',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
@@ -139,6 +141,15 @@ export const Duration = {
   fast: 200,
   normal: 300,
   slow: 500,
+  glacial: 800,
+} as const;
+
+// ─── Animation Stagger ────────────────────────────────────────────────────────
+
+export const Stagger = {
+  fast: 50,
+  normal: 100,
+  slow: 150,
 } as const;
 
 // ─── Tournament Defaults ─────────────────────────────────────────────────────
@@ -163,7 +174,26 @@ export const SupabaseConfig = {
 
 export const AppConfig = {
   name: 'Smashd',
-  tagline: 'The rally never ends.',
+  tagline: 'Every point counts.',
   website: 'https://playsmashd.com',
   scheme: 'smashd',
+} as const;
+
+// ─── Share Card Variant Colours ───────────────────────────────────────────────
+// Custom backgrounds for the PlayerShareCard 4-variant system.
+// These are intentionally distinct from the main palette — they're
+// rich, oversaturated backgrounds designed to look great as social-share images.
+
+export const ShareCardColors = {
+  // Dark variant backgrounds
+  darkBg: '#130E24',       // Deep purple-black — default share card
+  neonBg: '#141E00',       // Dark night-green — neon variant
+  violetBg: '#1F0D3A',     // Rich deep violet — violet variant
+  lightBg: '#EEEAF5',      // Soft lavender — light variant
+
+  // Light variant text (dark text on light background)
+  lightText: '#1A1A2E',    // Near-black text for light cards
+  lightMuted: '#8888AA',   // Muted purple-grey for secondary text
+  lightAvatar: '#D8D0E8',  // Light purple for avatar background
+  lightCard: '#DDD8E8',    // Light card surface background
 } as const;

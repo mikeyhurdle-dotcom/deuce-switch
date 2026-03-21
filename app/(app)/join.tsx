@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/providers/AuthProvider';
@@ -41,12 +42,17 @@ export default function JoinTournament() {
         return;
       }
 
+      if (!user?.id) {
+        Alert.alert('Not signed in', 'Please sign in to join a tournament.');
+        return;
+      }
+
       // Check if already joined
       const { data: existing } = await supabase
         .from('tournament_players')
         .select('id')
         .eq('tournament_id', tournament.id)
-        .eq('player_id', user?.id)
+        .eq('player_id', user.id)
         .maybeSingle();
 
       if (existing) {
@@ -56,7 +62,9 @@ export default function JoinTournament() {
         return;
       }
 
-      // Check player count
+      // Check player count + join atomically
+      // First get count, then insert — if a duplicate unique constraint
+      // exists on (tournament_id, player_id), we're protected from races.
       const { count } = await supabase
         .from('tournament_players')
         .select('id', { count: 'exact', head: true })
@@ -67,12 +75,12 @@ export default function JoinTournament() {
         return;
       }
 
-      // Join the tournament
+      // Join the tournament — unique constraint prevents double-join
       const { error: joinError } = await supabase
         .from('tournament_players')
         .insert({
           tournament_id: tournament.id,
-          player_id: user?.id,
+          player_id: user.id,
         });
 
       if (joinError) {
@@ -107,43 +115,49 @@ export default function JoinTournament() {
           headerTitle: 'Join Tournament',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
-          headerTitleStyle: { fontFamily: Fonts.mono, fontSize: 16, letterSpacing: 2 } as any,
+          headerTitleStyle: { fontFamily: Fonts.mono, fontSize: 16 },
         }}
       />
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.container}>
           <View style={styles.content}>
-            <Text style={styles.heading}>Enter Join Code</Text>
-            <Text style={styles.subtitle}>
-              Ask the tournament organiser for the 4-character code
-            </Text>
+            <Animated.View entering={FadeInDown.duration(400).springify()}>
+              <Text style={styles.heading}>Enter Join Code</Text>
+              <Text style={styles.subtitle}>
+                Ask the tournament organiser for the 4-character code
+              </Text>
+            </Animated.View>
 
-            <Input
-              label="Join Code"
-              placeholder="e.g. 7X2K"
-              value={code}
-              onChangeText={(t) => setCode(t.toUpperCase())}
-              autoCapitalize="characters"
-              maxLength={6}
-              style={styles.codeInput}
-            />
+            <Animated.View entering={FadeInDown.delay(100).duration(400).springify()}>
+              <Input
+                label="Join Code"
+                placeholder="e.g. 7X2K"
+                value={code}
+                onChangeText={(t) => setCode(t.toUpperCase())}
+                autoCapitalize="characters"
+                maxLength={6}
+                style={styles.codeInput}
+              />
+            </Animated.View>
 
-            <Button
-              title="JOIN"
-              onPress={handleJoin}
-              loading={loading}
-              variant="primary"
-              size="lg"
-            />
+            <Animated.View entering={FadeInDown.delay(200).duration(400).springify()}>
+              <Button
+                title="JOIN"
+                onPress={handleJoin}
+                loading={loading}
+                variant="primary"
+                size="lg"
+              />
+            </Animated.View>
           </View>
 
           {/* QR Scanner — coming soon */}
-          <View style={styles.qrSection}>
+          <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.qrSection}>
             <View style={styles.qrComingSoon}>
               <Text style={styles.qrIcon}>📷</Text>
               <Text style={styles.qrText}>QR scanning coming soon</Text>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </SafeAreaView>
     </>

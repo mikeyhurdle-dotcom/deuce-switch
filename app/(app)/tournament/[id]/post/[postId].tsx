@@ -24,6 +24,15 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+  FadeIn,
+  FadeInDown,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -35,6 +44,7 @@ import {
   addComment,
   toggleReaction,
 } from '../../../../../src/services/feed-service';
+import { AnimatedPressable, useSpringPress } from '../../../../../src/hooks/useSpringPress';
 import type { FeedPost, FeedComment, ReactionType } from '../../../../../src/lib/types';
 
 const REACTION_CONFIG: { type: ReactionType; emoji: string; label: string }[] = [
@@ -44,6 +54,121 @@ const REACTION_CONFIG: { type: ReactionType; emoji: string; label: string }[] = 
 ];
 
 const COMMENT_PAGE_SIZE = 50;
+const COMMENT_STAGGER = 60; // ms between each comment row animation
+
+// ── Animated Comment Row ──────────────────────────────────────────────────────
+function AnimatedCommentRow({
+  children,
+  index,
+}: {
+  children: React.ReactNode;
+  index: number;
+}) {
+  const translateY = useSharedValue(16);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const delay = 150 + index * COMMENT_STAGGER;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return <Animated.View style={animStyle}>{children}</Animated.View>;
+}
+
+// ── Reaction Button with spring press ─────────────────────────────────────────
+function ReactionButton({
+  type,
+  emoji,
+  count,
+  isActive,
+  disabled,
+  onPress,
+}: {
+  type: string;
+  emoji: string;
+  count: number;
+  isActive: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { animatedStyle, onPressIn, onPressOut } = useSpringPress(0.9);
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.reactionButton,
+        isActive && styles.reactionButtonActive,
+        animatedStyle,
+      ]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={`${type} reaction${count > 0 ? `, ${count}` : ''}`}
+      accessibilityState={{ selected: isActive }}
+    >
+      <Text style={styles.reactionEmoji}>{emoji}</Text>
+      {count > 0 && (
+        <Text
+          style={[
+            styles.reactionCount,
+            isActive && styles.reactionCountActive,
+          ]}
+        >
+          {count}
+        </Text>
+      )}
+    </AnimatedPressable>
+  );
+}
+
+// ── Send Button with spring press ─────────────────────────────────────────────
+function SendButton({
+  disabled,
+  submitting,
+  onPress,
+}: {
+  disabled: boolean;
+  submitting: boolean;
+  onPress: () => void;
+}) {
+  const { animatedStyle, onPressIn, onPressOut } = useSpringPress(0.9);
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.sendButton,
+        disabled && styles.sendButtonDisabled,
+        animatedStyle,
+      ]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="Send comment"
+      accessibilityState={{ disabled, busy: submitting }}
+    >
+      {submitting ? (
+        <ActivityIndicator size="small" color={Colors.darkBg} />
+      ) : (
+        <Ionicons name="send" size={18} color={Colors.darkBg} />
+      )}
+    </AnimatedPressable>
+  );
+}
 
 export default function PostDetailScreen() {
   const { id, postId } = useLocalSearchParams<{ id: string; postId: string }>();
@@ -220,41 +345,43 @@ export default function PostDetailScreen() {
 
   // ── Comment row renderer ─────────────────────────────────────────────
 
-  const renderComment = ({ item }: { item: FeedComment }) => {
+  const renderComment = ({ item, index }: { item: FeedComment; index: number }) => {
     const initials = getInitials(item.author_name);
     const hasAvatar = !!item.author_avatar;
 
     return (
-      <View style={styles.commentCard}>
-        {hasAvatar ? (
-          <Image
-            source={{ uri: item.author_avatar! }}
-            style={styles.commentAvatar}
-          />
-        ) : (
-          <View style={styles.commentAvatarFallback}>
-            <Text style={styles.commentAvatarText}>{initials}</Text>
+      <AnimatedCommentRow index={index}>
+        <View style={styles.commentCard}>
+          {hasAvatar ? (
+            <Image
+              source={{ uri: item.author_avatar! }}
+              style={styles.commentAvatar}
+            />
+          ) : (
+            <View style={styles.commentAvatarFallback}>
+              <Text style={styles.commentAvatarText}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.commentBody}>
+            <View style={styles.commentHeader}>
+              <Text style={styles.commentAuthor} numberOfLines={1}>
+                {item.author_name ?? 'Player'}
+              </Text>
+              <Text style={styles.commentTime}>
+                {timeSince(item.created_at)}
+              </Text>
+            </View>
+            <Text style={styles.commentContent}>{item.content}</Text>
           </View>
-        )}
-        <View style={styles.commentBody}>
-          <View style={styles.commentHeader}>
-            <Text style={styles.commentAuthor} numberOfLines={1}>
-              {item.author_name ?? 'Player'}
-            </Text>
-            <Text style={styles.commentTime}>
-              {timeSince(item.created_at)}
-            </Text>
-          </View>
-          <Text style={styles.commentContent}>{item.content}</Text>
         </View>
-      </View>
+      </AnimatedCommentRow>
     );
   };
 
   // ── Post header (rendered as FlatList header) ────────────────────────
 
   const postHeader = (
-    <View style={styles.postSection}>
+    <Animated.View entering={FadeIn.duration(400)} style={styles.postSection}>
       {/* Author row */}
       <View style={styles.authorRow}>
         {post.author_avatar ? (
@@ -297,28 +424,15 @@ export default function PostDetailScreen() {
           const count = post.reaction_counts[type] ?? 0;
           const isActive = post.user_reactions.includes(type);
           return (
-            <Pressable
+            <ReactionButton
               key={type}
-              style={[
-                styles.reactionButton,
-                isActive && styles.reactionButtonActive,
-              ]}
-              onPress={() => handleReaction(type)}
+              type={type}
+              emoji={emoji}
+              count={count}
+              isActive={isActive}
               disabled={reacting}
-              hitSlop={4}
-            >
-              <Text style={styles.reactionEmoji}>{emoji}</Text>
-              {count > 0 && (
-                <Text
-                  style={[
-                    styles.reactionCount,
-                    isActive && styles.reactionCountActive,
-                  ]}
-                >
-                  {count}
-                </Text>
-              )}
-            </Pressable>
+              onPress={() => handleReaction(type)}
+            />
           );
         })}
       </View>
@@ -334,7 +448,7 @@ export default function PostDetailScreen() {
           {comments.length} COMMENT{comments.length !== 1 ? 'S' : ''}
         </Text>
       </View>
-    </View>
+    </Animated.View>
   );
 
   return (
@@ -392,23 +506,13 @@ export default function PostDetailScreen() {
               maxLength={1000}
               multiline
               textAlignVertical="center"
+              accessibilityLabel="Write a comment"
             />
-            <Pressable
-              style={[
-                styles.sendButton,
-                (!commentText.trim() || submitting) &&
-                  styles.sendButtonDisabled,
-              ]}
-              onPress={handleSubmitComment}
+            <SendButton
               disabled={!commentText.trim() || submitting}
-              hitSlop={8}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color={Colors.darkBg} />
-              ) : (
-                <Ionicons name="send" size={18} color={Colors.darkBg} />
-              )}
-            </Pressable>
+              submitting={submitting}
+              onPress={handleSubmitComment}
+            />
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>

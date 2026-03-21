@@ -5,6 +5,7 @@
  * round advancement, clock control, and tournament lifecycle operations.
  */
 
+import { randomUUID } from 'expo-crypto';
 import { supabase } from '../lib/supabase';
 import { generateAmericanoRounds } from '../engine/americano';
 import type {
@@ -52,6 +53,42 @@ export async function getPlayerProfiles(
     displayName: p.profiles?.display_name ?? 'Player',
     gameFaceUrl: p.profiles?.game_face_url ?? null,
   }));
+}
+
+// ─── Add Guest Player ────────────────────────────────────────────────────────
+
+/**
+ * Creates a ghost profile for a guest player and adds them to the tournament.
+ * Ghost profiles have is_ghost = true and can be claimed later.
+ */
+export async function addGuestPlayer(
+  tournamentId: string,
+  displayName: string,
+): Promise<string> {
+  // 1. Create a ghost profile (profiles.id has no default — supply a UUID)
+  const ghostId = randomUUID();
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .insert({
+      id: ghostId,
+      display_name: displayName.trim(),
+      is_ghost: true,
+    })
+    .select('id')
+    .single();
+  if (profileError) throw profileError;
+
+  // 2. Add to tournament_players
+  const { error: tpError } = await supabase
+    .from('tournament_players')
+    .insert({
+      tournament_id: tournamentId,
+      player_id: profile.id,
+      tournament_status: 'active',
+    });
+  if (tpError) throw tpError;
+
+  return profile.id;
 }
 
 // ─── Start Tournament (generate all rounds + matches) ────────────────────────
@@ -266,20 +303,37 @@ export async function getMatchesForRound(
 
 // ─── Score Operations ────────────────────────────────────────────────────────
 
+export type ScoreMetadata = {
+  conditions?: 'indoor' | 'outdoor' | null;
+  court_side?: 'left' | 'right' | 'both' | null;
+  intensity?: 'casual' | 'competitive' | 'intense' | null;
+};
+
 export async function submitScore(
   matchId: string,
   teamAScore: number,
   teamBScore: number,
+  metadata?: ScoreMetadata,
 ): Promise<void> {
-  const { error } = await supabase
+  // Optimistic locking: only update if the match is still pending or in_progress
+  const { data, error } = await supabase
     .from('matches')
     .update({
       team_a_score: teamAScore,
       team_b_score: teamBScore,
       status: 'reported',
+      ...(metadata?.conditions && { conditions: metadata.conditions }),
+      ...(metadata?.court_side && { court_side: metadata.court_side }),
+      ...(metadata?.intensity && { intensity: metadata.intensity }),
     })
-    .eq('id', matchId);
+    .eq('id', matchId)
+    .in('status', ['pending', 'in_progress'])
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!data) {
+    throw new Error('Score already submitted for this match. Pull to refresh.');
+  }
 }
 
 export async function overrideScore(

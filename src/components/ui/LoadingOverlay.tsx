@@ -10,9 +10,14 @@ export function LoadingOverlay({ message, visible = true }: LoadingOverlayProps)
   if (!visible) return null;
 
   return (
-    <View style={styles.overlay}>
+    <View
+      style={styles.overlay}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={message ?? 'Loading'}
+    >
       <View style={styles.content}>
-        <ActivityIndicator size="large" color={Colors.opticYellow} />
+        <ActivityIndicator size="large" color={Colors.opticYellow} accessibilityLabel="Loading" />
         {message && <Text style={styles.message}>{message}</Text>}
       </View>
     </View>

@@ -1,4 +1,11 @@
 import { useFonts } from 'expo-font';
+import { PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
+import {
+  Exo2_400Regular,
+  Exo2_500Medium,
+  Exo2_600SemiBold,
+  Exo2_700Bold,
+} from '@expo-google-fonts/exo-2';
 import { Slot, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -21,14 +28,21 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    Outfit: require('../assets/fonts/Outfit-Variable.ttf'),
-    'Outfit-Medium': require('../assets/fonts/Outfit-Variable.ttf'),
-    'Outfit-SemiBold': require('../assets/fonts/Outfit-Variable.ttf'),
-    'Outfit-Bold': require('../assets/fonts/Outfit-Variable.ttf'),
+    // Exo 2 — body/heading font (replaces Outfit)
+    Exo2_400Regular,
+    Exo2_500Medium,
+    Exo2_600SemiBold,
+    Exo2_700Bold,
+    // Permanent Marker — display/CTA font
+    PermanentMarker: PermanentMarker_400Regular,
   });
 
   useEffect(() => {
-    if (fontError) throw fontError;
+    if (fontError) {
+      // Log font error but don't crash — render with system fonts instead
+      console.warn('Font loading failed:', fontError);
+      SplashScreen.hideAsync();
+    }
   }, [fontError]);
 
   useEffect(() => {
@@ -52,7 +66,7 @@ export default function RootLayout() {
     return cleanup;
   }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 

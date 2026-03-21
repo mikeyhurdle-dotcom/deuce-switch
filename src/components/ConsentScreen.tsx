@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radius } from '../lib/constants';
 import { Button } from './ui/Button';
 
@@ -42,7 +43,7 @@ export function ConsentScreen({ onAccept }: ConsentScreenProps) {
       <View style={styles.container}>
         {/* Hero Section */}
         <View style={styles.hero}>
-          <Text style={styles.emoji}>🎾</Text>
+          <Ionicons name="tennisball" size={56} color={Colors.opticYellow} style={styles.heroIcon} />
           <Text style={styles.title}>Welcome to Smashd</Text>
           <Text style={styles.subtitle}>The Community Hub for Padel</Text>
         </View>
@@ -92,7 +93,12 @@ export function ConsentScreen({ onAccept }: ConsentScreenProps) {
             size="lg"
           />
 
-          <Text style={styles.privacyLink} onPress={openPrivacyPolicy}>
+          <Text
+            style={styles.privacyLink}
+            onPress={openPrivacyPolicy}
+            accessibilityRole="link"
+            accessibilityLabel="Read our Privacy Policy"
+          >
             Read our Privacy Policy →
           </Text>
         </View>
@@ -117,8 +123,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  emoji: {
-    fontSize: 56,
+  heroIcon: {
     marginBottom: 8,
   },
   title: {

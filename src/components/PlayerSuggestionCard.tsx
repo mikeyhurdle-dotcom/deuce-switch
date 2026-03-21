@@ -71,6 +71,8 @@ export function PlayerSuggestionCard({ suggestion, onConnected }: Props) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         // Future: navigate to player profile
       }}
+      accessibilityRole="button"
+      accessibilityLabel={`${suggestion.display_name ?? 'Player'}, ${sharedLabel}`}
     >
       {/* Avatar */}
       <View style={styles.avatarContainer}>
@@ -112,6 +114,9 @@ export function PlayerSuggestionCard({ suggestion, onConnected }: Props) {
         ]}
         onPress={handleConnect}
         disabled={sending || sent}
+        accessibilityRole="button"
+        accessibilityLabel={sent ? 'Connection request sent' : `Connect with ${suggestion.display_name ?? 'player'}`}
+        accessibilityState={{ disabled: sending || sent, busy: sending }}
       >
         <Text
           style={[
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: Spacing.md,
+    padding: Spacing[4],
     alignItems: 'center',
     gap: 8,
   },

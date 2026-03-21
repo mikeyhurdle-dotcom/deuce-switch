@@ -9,6 +9,14 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+  FadeInDown,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
@@ -17,7 +25,10 @@ import { Button } from '../../../src/components/ui/Button';
 import { Card } from '../../../src/components/ui/Card';
 import { Badge } from '../../../src/components/ui/Badge';
 import { ListSkeleton } from '../../../src/components/ui/Skeleton';
+import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import type { TournamentFormat } from '../../../src/lib/types';
+
+const ROW_STAGGER = 60; // ms between each tournament card animation
 
 type TournamentHistoryItem = {
   tournament_id: string;
@@ -30,6 +41,110 @@ type TournamentHistoryItem = {
   };
   playerCount: number;
 };
+
+// ── Animated Tournament Card ─────────────────────────────────────────────────
+function AnimatedTournamentCard({
+  item,
+  index,
+  onPress,
+}: {
+  item: TournamentHistoryItem;
+  index: number;
+  onPress: (item: TournamentHistoryItem) => void;
+}) {
+  const translateY = useSharedValue(20);
+  const opacity = useSharedValue(0);
+  const { animatedStyle: pressStyle, onPressIn, onPressOut } = useSpringPress();
+
+  useEffect(() => {
+    const delay = 150 + index * ROW_STAGGER;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+
+  const entranceStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const formatLabel = (format: TournamentFormat) => {
+    const labels: Record<TournamentFormat, string> = {
+      americano: 'Americano',
+      mexicano: 'Mexicano',
+      team_americano: 'Team',
+      mixicano: 'Mixicano',
+    };
+    return labels[format] ?? format;
+  };
+
+  const statusVariant = (
+    status: string,
+  ): 'success' | 'info' | 'default' | 'warning' => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'running':
+        return 'info';
+      default:
+        return 'default';
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <Animated.View style={entranceStyle}>
+      <AnimatedPressable
+        style={pressStyle}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress(item);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.tournament.name}, ${formatLabel(item.tournament.tournament_format)}, ${item.playerCount} players, ${item.tournament.status}`}
+      >
+        <Card>
+          <View style={styles.tournamentCard}>
+            <View style={styles.tournamentHeader}>
+              <Text style={styles.tournamentName} numberOfLines={1}>
+                {item.tournament.name}
+              </Text>
+              <Badge
+                label={item.tournament.status.toUpperCase()}
+                variant={statusVariant(item.tournament.status)}
+              />
+            </View>
+            <View style={styles.tournamentMeta}>
+              <Text style={styles.metaText}>
+                {formatLabel(item.tournament.tournament_format)}
+              </Text>
+              <Text style={styles.metaDot}>·</Text>
+              <Text style={styles.metaText}>
+                {item.playerCount} players
+              </Text>
+              <Text style={styles.metaDot}>·</Text>
+              <Text style={styles.metaText}>
+                {formatDate(item.tournament.created_at)}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
 
 export default function History() {
   const { user } = useAuth();
@@ -98,40 +213,7 @@ export default function History() {
     setRefreshing(false);
   }, [fetchHistory]);
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const formatLabel = (format: TournamentFormat) => {
-    const labels: Record<TournamentFormat, string> = {
-      americano: 'Americano',
-      mexicano: 'Mexicano',
-      team_americano: 'Team',
-      mixicano: 'Mixicano',
-    };
-    return labels[format] ?? format;
-  };
-
-  const statusVariant = (
-    status: string,
-  ): 'success' | 'info' | 'default' | 'warning' => {
-    switch (status) {
-      case 'completed':
-        return 'success';
-      case 'running':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
   const handleTournamentPress = (item: TournamentHistoryItem) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const tid = item.tournament.id;
     if (item.tournament.status === 'completed') {
       router.push(`/(app)/tournament/${tid}/results`);
@@ -165,67 +247,45 @@ export default function History() {
           />
         }
       >
-        <Text style={styles.title}>HISTORY</Text>
+        <Animated.View entering={FadeInDown.duration(350).springify()}>
+          <Text style={styles.title}>HISTORY</Text>
+        </Animated.View>
 
         {tournaments.length === 0 ? (
-          <Card>
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>📋</Text>
-              <Text style={styles.emptyTitle}>No tournaments yet</Text>
-              <Text style={styles.emptyDesc}>
-                Create or join a tournament to get started.
-              </Text>
-              <View style={styles.emptyCtas}>
-                <Button
-                  title="CREATE"
-                  onPress={() => router.push('/(app)/tournament/create')}
-                  variant="primary"
-                  size="md"
-                />
-                <Button
-                  title="JOIN"
-                  onPress={() => router.push('/(app)/join')}
-                  variant="outline"
-                  size="md"
-                />
+          <Animated.View entering={FadeInDown.delay(100).duration(400).springify()}>
+            <Card>
+              <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>📋</Text>
+                <Text style={styles.emptyTitle}>No tournaments yet</Text>
+                <Text style={styles.emptyDesc}>
+                  Create or join a tournament to get started.
+                </Text>
+                <View style={styles.emptyCtas}>
+                  <Button
+                    title="CREATE"
+                    onPress={() => router.push('/(app)/tournament/create')}
+                    variant="primary"
+                    size="md"
+                  />
+                  <Button
+                    title="JOIN"
+                    onPress={() => router.push('/(app)/join')}
+                    variant="outline"
+                    size="md"
+                  />
+                </View>
               </View>
-            </View>
-          </Card>
+            </Card>
+          </Animated.View>
         ) : (
           <View style={styles.list}>
-            {tournaments.map((item) => (
-              <Pressable
+            {tournaments.map((item, index) => (
+              <AnimatedTournamentCard
                 key={item.tournament_id}
-                onPress={() => handleTournamentPress(item)}
-                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-              >
-                <Card>
-                  <View style={styles.tournamentCard}>
-                    <View style={styles.tournamentHeader}>
-                      <Text style={styles.tournamentName} numberOfLines={1}>
-                        {item.tournament.name}
-                      </Text>
-                      <Badge
-                        label={item.tournament.status.toUpperCase()}
-                        variant={statusVariant(item.tournament.status)}
-                      />
-                    </View>
-                    <View style={styles.tournamentMeta}>
-                      <Text style={styles.metaText}>
-                        {formatLabel(item.tournament.tournament_format)}
-                      </Text>
-                      <Text style={styles.metaDot}>·</Text>
-                      <Text style={styles.metaText}>
-                        {item.playerCount} players
-                      </Text>
-                      <Text style={styles.metaDot}>·</Text>
-                      <Text style={styles.metaText}>
-                        {formatDate(item.tournament.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-                </Card>
-              </Pressable>
+                item={item}
+                index={index}
+                onPress={handleTournamentPress}
+              />
             ))}
           </View>
         )}

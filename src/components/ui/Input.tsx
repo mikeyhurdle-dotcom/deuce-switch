@@ -34,6 +34,9 @@ export function Input({ label, error, containerStyle, style, ...props }: InputPr
             error && styles.inputError,
             style,
           ]}
+          accessibilityLabel={label}
+          accessibilityState={error ? { disabled: false } : undefined}
+          accessibilityHint={error ? `Error: ${error}` : undefined}
           placeholderTextColor={Colors.textMuted}
           onFocus={(e) => {
             setFocused(true);
@@ -48,7 +51,11 @@ export function Input({ label, error, containerStyle, style, ...props }: InputPr
           {...props}
         />
       </AnimatedView>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Text style={styles.error} accessibilityRole="alert">
+          {error}
+        </Text>
+      )}
     </View>
   );
 }

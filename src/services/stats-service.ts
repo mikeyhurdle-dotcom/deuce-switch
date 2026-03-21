@@ -1,0 +1,473 @@
+/**
+ * Stats Service
+ *
+ * Queries player match results from Supabase and computes
+ * stats for the Stats dashboard. All aggregation is done
+ * client-side from `player_match_results`.
+ *
+ * "The most important step a man can take is the next one."
+ */
+
+import { supabase } from '../lib/supabase';
+import type { PlayerMatchResult, MatchSource, MatchType, TournamentFormat } from '../lib/types';
+
+// ─── Public Types ───────────────────────────────────────────────────────────
+
+export type FormResult = 'W' | 'L' | 'D';
+
+export type PartnerStat = {
+  id: string;
+  name: string;
+  initials: string;
+  matchesTogether: number;
+  winRate: number;
+};
+
+export type RivalStat = {
+  id: string;
+  name: string;
+  initials: string;
+  wins: number;
+  draws: number;
+  losses: number;
+};
+
+export type FormatBreakdown = {
+  label: string;
+  winRate: number;
+  matchCount: number;
+};
+
+export type Streak = {
+  type: 'W' | 'L' | 'D';
+  count: number;
+};
+
+export type PlayerStats = {
+  // Hero card
+  matchesPlayed: number;
+  matchesWon: number;
+  winRate: number;
+  tournamentWins: number;
+  tournamentCount: number;
+  currentStreak: Streak;
+
+  // Recent form (last 10)
+  recentForm: FormResult[];
+
+  // Best partners (top 5)
+  partners: PartnerStat[];
+
+  // Head-to-head rivals (top 5)
+  rivals: RivalStat[];
+
+  // Breakdowns (win % per category)
+  formatBreakdown: FormatBreakdown[];
+  conditionsBreakdown: FormatBreakdown[];
+  courtSideBreakdown: FormatBreakdown[];
+  intensityBreakdown: FormatBreakdown[];
+  matchTypeBreakdown: FormatBreakdown[];
+  winRateTrend: WinRatePoint[];
+};
+
+export type Period = 'Week' | 'Month' | 'Season' | 'All Time';
+
+export type MatchTypeFilter = 'all' | 'competitive' | 'friendly' | 'tournament';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function getPeriodStart(period: Period): string | null {
+  const now = new Date();
+  switch (period) {
+    case 'Week':
+      return new Date(now.getTime() - 7 * 86_400_000).toISOString();
+    case 'Month':
+      return new Date(now.getTime() - 30 * 86_400_000).toISOString();
+    case 'Season':
+      return new Date(now.getTime() - 90 * 86_400_000).toISOString();
+    case 'All Time':
+      return null;
+  }
+}
+
+function getInitials(name: string | null): string {
+  if (!name) return '??';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function toFormResult(row: PlayerMatchResult): FormResult {
+  if (row.won) return 'W';
+  if (row.team_score === row.opponent_score) return 'D';
+  return 'L';
+}
+
+const FORMAT_LABELS: Record<string, string> = {
+  americano: 'Americano',
+  mexicano: 'Mexicano',
+  team_americano: 'Team',
+  mixicano: 'Mixicano',
+  playtomic: 'Playtomic',
+  screenshot: 'Screenshot',
+  manual: 'Manual',
+};
+
+// ─── Core fetch ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all player_match_results for a user, optionally filtered by period.
+ * Returns rows sorted by played_at DESC (newest first).
+ */
+async function fetchResults(
+  userId: string,
+  period: Period,
+  matchType: MatchTypeFilter = 'all',
+): Promise<PlayerMatchResult[]> {
+  const periodStart = getPeriodStart(period);
+
+  let query = supabase
+    .from('player_match_results')
+    .select('*')
+    .eq('player_id', userId)
+    .order('played_at', { ascending: false });
+
+  if (periodStart) {
+    query = query.gte('played_at', periodStart);
+  }
+
+  if (matchType !== 'all') {
+    query = query.eq('match_type', matchType);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as PlayerMatchResult[];
+}
+
+// ─── Aggregations ───────────────────────────────────────────────────────────
+
+function computeStreak(rows: PlayerMatchResult[]): Streak {
+  if (rows.length === 0) return { type: 'W', count: 0 };
+
+  const first = toFormResult(rows[0]);
+  let count = 1;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (toFormResult(rows[i]) === first) {
+      count++;
+    } else {
+      break;
+    }
+  }
+
+  return { type: first, count };
+}
+
+function computeTournamentWins(rows: PlayerMatchResult[]): number {
+  // Group by tournament_id, check if user won the majority of matches
+  // For a proper "tournament win" we'd need final standings, but as an
+  // approximation we count distinct tournaments where the user won > 50% of matches
+  const tournamentMap = new Map<string, { wins: number; total: number }>();
+
+  for (const row of rows) {
+    if (!row.tournament_id) continue;
+    const entry = tournamentMap.get(row.tournament_id) ?? { wins: 0, total: 0 };
+    entry.total++;
+    if (row.won) entry.wins++;
+    tournamentMap.set(row.tournament_id, entry);
+  }
+
+  let tournamentWins = 0;
+  for (const entry of tournamentMap.values()) {
+    // Only count tournaments with 3+ matches (not trivial) where win rate > 60%
+    if (entry.total >= 3 && entry.wins / entry.total > 0.6) {
+      tournamentWins++;
+    }
+  }
+  return tournamentWins;
+}
+
+function computePartners(rows: PlayerMatchResult[]): PartnerStat[] {
+  const map = new Map<string, { name: string; total: number; wins: number }>();
+
+  for (const row of rows) {
+    if (!row.partner_id) continue;
+    const entry = map.get(row.partner_id) ?? { name: row.partner_name ?? 'Unknown', total: 0, wins: 0 };
+    entry.total++;
+    if (row.won) entry.wins++;
+    // Update name in case a later row has a non-null name
+    if (row.partner_name) entry.name = row.partner_name;
+    map.set(row.partner_id, entry);
+  }
+
+  return Array.from(map.entries())
+    .map(([id, entry]) => ({
+      id,
+      name: entry.name,
+      initials: getInitials(entry.name),
+      matchesTogether: entry.total,
+      winRate: entry.total > 0 ? Math.round((entry.wins / entry.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.matchesTogether - a.matchesTogether)
+    .slice(0, 5);
+}
+
+function computeRivals(rows: PlayerMatchResult[]): RivalStat[] {
+  const map = new Map<string, { name: string; wins: number; draws: number; losses: number }>();
+
+  const trackOpponent = (
+    opponentId: string | null,
+    opponentName: string | null,
+    won: boolean,
+    isDraw: boolean,
+  ) => {
+    if (!opponentId) return;
+    const entry = map.get(opponentId) ?? { name: opponentName ?? 'Unknown', wins: 0, draws: 0, losses: 0 };
+    if (isDraw) entry.draws++;
+    else if (won) entry.wins++;
+    else entry.losses++;
+    if (opponentName) entry.name = opponentName;
+    map.set(opponentId, entry);
+  };
+
+  for (const row of rows) {
+    const isDraw = row.team_score === row.opponent_score;
+    trackOpponent(row.opponent1_id, row.opponent1_name, row.won, isDraw);
+    trackOpponent(row.opponent2_id, row.opponent2_name, row.won, isDraw);
+  }
+
+  return Array.from(map.entries())
+    .map(([id, entry]) => ({
+      id,
+      name: entry.name,
+      initials: getInitials(entry.name),
+      wins: entry.wins,
+      draws: entry.draws,
+      losses: entry.losses,
+    }))
+    .sort((a, b) => (b.wins + b.draws + b.losses) - (a.wins + a.draws + a.losses))
+    .slice(0, 5);
+}
+
+function computeFormatBreakdown(rows: PlayerMatchResult[]): FormatBreakdown[] {
+  const map = new Map<string, { total: number; wins: number }>();
+
+  for (const row of rows) {
+    const key = row.source;
+    const entry = map.get(key) ?? { total: 0, wins: 0 };
+    entry.total++;
+    if (row.won) entry.wins++;
+    map.set(key, entry);
+  }
+
+  return Array.from(map.entries())
+    .map(([key, entry]) => ({
+      label: FORMAT_LABELS[key] ?? key,
+      winRate: entry.total > 0 ? Math.round((entry.wins / entry.total) * 100) : 0,
+      matchCount: entry.total,
+    }))
+    .sort((a, b) => b.matchCount - a.matchCount);
+}
+
+const CONDITIONS_LABELS: Record<string, string> = {
+  indoor: 'Indoor',
+  outdoor: 'Outdoor',
+};
+
+const COURT_SIDE_LABELS: Record<string, string> = {
+  left: 'Left Side',
+  right: 'Right Side',
+  both: 'Both Sides',
+};
+
+const INTENSITY_LABELS: Record<string, string> = {
+  casual: 'Casual',
+  competitive: 'Competitive',
+  intense: 'Intense',
+};
+
+/**
+ * Generic breakdown by a nullable string field on PlayerMatchResult.
+ * Skips rows where the field is null.
+ */
+function computeBreakdown(
+  rows: PlayerMatchResult[],
+  field: 'conditions' | 'court_side' | 'intensity' | 'match_type',
+  labels: Record<string, string>,
+): FormatBreakdown[] {
+  const map = new Map<string, { total: number; wins: number }>();
+
+  for (const row of rows) {
+    const key = row[field];
+    if (!key) continue;
+    const entry = map.get(key) ?? { total: 0, wins: 0 };
+    entry.total++;
+    if (row.won) entry.wins++;
+    map.set(key, entry);
+  }
+
+  return Array.from(map.entries())
+    .map(([key, entry]) => ({
+      label: labels[key] ?? key,
+      winRate: entry.total > 0 ? Math.round((entry.wins / entry.total) * 100) : 0,
+      matchCount: entry.total,
+    }))
+    .sort((a, b) => b.matchCount - a.matchCount);
+}
+
+// ─── Main export ────────────────────────────────────────────────────────────
+
+/**
+ * Fetch and compute all stats for the Stats dashboard.
+ * Single function, single Supabase call, all aggregation client-side.
+ */
+const MATCH_TYPE_LABELS: Record<string, string> = {
+  competitive: 'Competitive',
+  friendly: 'Friendly',
+  tournament: 'Tournament',
+};
+
+export async function fetchPlayerStats(
+  userId: string,
+  period: Period,
+  matchType: MatchTypeFilter = 'all',
+): Promise<PlayerStats> {
+  const rows = await fetchResults(userId, period, matchType);
+
+  const matchesPlayed = rows.length;
+  const matchesWon = rows.filter((r) => r.won).length;
+  const uniqueTournaments = new Set(rows.map((r) => r.tournament_id).filter(Boolean));
+
+  return {
+    matchesPlayed,
+    matchesWon,
+    winRate: matchesPlayed > 0 ? Math.round((matchesWon / matchesPlayed) * 100) : 0,
+    tournamentWins: computeTournamentWins(rows),
+    tournamentCount: uniqueTournaments.size,
+    currentStreak: computeStreak(rows),
+    recentForm: rows.slice(0, 10).map(toFormResult),
+    partners: computePartners(rows),
+    rivals: computeRivals(rows),
+    formatBreakdown: computeFormatBreakdown(rows),
+    conditionsBreakdown: computeBreakdown(rows, 'conditions', CONDITIONS_LABELS),
+    courtSideBreakdown: computeBreakdown(rows, 'court_side', COURT_SIDE_LABELS),
+    intensityBreakdown: computeBreakdown(rows, 'intensity', INTENSITY_LABELS),
+    matchTypeBreakdown: computeBreakdown(rows, 'match_type', MATCH_TYPE_LABELS),
+    winRateTrend: computeWinRateTrend(rows),
+  };
+}
+
+// ─── Platform Ratings ───────────────────────────────────────────────────────
+
+export type RatingPoint = {
+  date: string;
+  rating: number;
+  platform: string;
+};
+
+export async function fetchPlatformRatings(
+  userId: string,
+  platform?: string,
+): Promise<RatingPoint[]> {
+  let query = supabase
+    .from('platform_ratings')
+    .select('platform, rating, recorded_at')
+    .eq('player_id', userId)
+    .order('recorded_at', { ascending: true });
+
+  if (platform) {
+    query = query.eq('platform', platform);
+  }
+
+  const { data, error } = await query;
+  if (error) return []; // table may not exist yet
+
+  return (data ?? []).map((r: { platform: string; rating: number; recorded_at: string }) => ({
+    date: r.recorded_at,
+    rating: Number(r.rating),
+    platform: r.platform,
+  }));
+}
+
+// ─── Win Rate Over Time ─────────────────────────────────────────────────────
+
+export type WinRatePoint = {
+  matchIndex: number;
+  rollingWinRate: number;
+  date: string;
+};
+
+export function computeWinRateTrend(
+  rows: PlayerMatchResult[],
+  windowSize: number = 5,
+): WinRatePoint[] {
+  if (rows.length === 0) return [];
+  const sorted = [...rows].reverse();
+  const points: WinRatePoint[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const windowStart = Math.max(0, i - windowSize + 1);
+    const windowSlice = sorted.slice(windowStart, i + 1);
+    const wins = windowSlice.filter((r) => r.won).length;
+    const rate = Math.round((wins / windowSlice.length) * 100);
+    points.push({ matchIndex: i + 1, rollingWinRate: rate, date: sorted[i].played_at });
+  }
+
+  return points;
+}
+
+// ─── Match History ──────────────────────────────────────────────────────────
+
+export type MatchHistoryItem = {
+  id: string;
+  date: string;
+  venue: string | null;
+  won: boolean;
+  teamScore: number;
+  opponentScore: number;
+  partnerName: string | null;
+  opponent1Name: string | null;
+  opponent2Name: string | null;
+  matchType: string | null;
+  source: string;
+  platformSource: string | null;
+  setScores: Array<{ team_a: number; team_b: number }> | null;
+};
+
+export async function fetchMatchHistory(
+  userId: string,
+  limit: number = 20,
+  offset: number = 0,
+  matchType: MatchTypeFilter = 'all',
+): Promise<MatchHistoryItem[]> {
+  let query = supabase
+    .from('player_match_results')
+    .select('*')
+    .eq('player_id', userId)
+    .order('played_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (matchType !== 'all') {
+    query = query.eq('match_type', matchType);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).map((r: PlayerMatchResult) => ({
+    id: r.id,
+    date: r.played_at,
+    venue: r.venue ?? null,
+    won: r.won,
+    teamScore: r.team_score,
+    opponentScore: r.opponent_score,
+    partnerName: r.partner_name ?? null,
+    opponent1Name: r.opponent1_name ?? null,
+    opponent2Name: r.opponent2_name ?? null,
+    matchType: r.match_type ?? null,
+    source: r.source,
+    platformSource: r.platform_source ?? null,
+    setScores: r.set_scores ?? null,
+  }));
+}

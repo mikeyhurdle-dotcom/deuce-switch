@@ -1,17 +1,18 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Fonts, Shadows, AppConfig } from '../lib/constants';
-import type { TournamentFormat } from '../lib/types';
+import { Colors, Fonts, ShareCardColors, AppConfig } from '../lib/constants';
 import { TOURNAMENT_FORMAT_LABELS } from '../lib/types';
+import type { TournamentFormat } from '../lib/types';
+import Logo from '../../assets/images/smashd-logo.svg';
 
-// ─── Ordinal helper ─────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
+export type CardStyle = 'dark' | 'neon' | 'violet' | 'light';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+export type PlayerShareCardBadge = {
+  emoji: string;
+  label: string;
+  variant: 'gold' | 'green' | 'aqua';
+};
 
 export type PlayerShareCardProps = {
   playerName: string;
@@ -24,10 +25,104 @@ export type PlayerShareCardProps = {
   tournamentName: string;
   tournamentFormat: TournamentFormat;
   tournamentDate: string;
+  avatarUrl?: string;
+  badges?: PlayerShareCardBadge[];
+  cardStyle?: CardStyle;
 };
 
-// ─── Component ──────────────────────────────────────────────────────────────
-// "The most important step a man can take is the next one."
+// ── Theme Maps ─────────────────────────────────────────────────────────────
+
+const THEME_BG: Record<CardStyle, string> = {
+  dark: ShareCardColors.darkBg,
+  neon: ShareCardColors.neonBg,
+  violet: ShareCardColors.violetBg,
+  light: ShareCardColors.lightBg,
+};
+
+const THEME_TEXT: Record<CardStyle, string> = {
+  dark: Colors.textPrimary,
+  neon: Colors.textPrimary,
+  violet: Colors.textPrimary,
+  light: ShareCardColors.lightText,
+};
+
+const THEME_MUTED: Record<CardStyle, string> = {
+  dark: Colors.textDim,
+  neon: Colors.textDim,
+  violet: Colors.textDim,
+  light: ShareCardColors.lightMuted,
+};
+
+const THEME_ACCENT: Record<CardStyle, string> = {
+  dark: Colors.opticYellow,
+  neon: Colors.opticYellow,
+  violet: Colors.violetLight,
+  light: Colors.violet,
+};
+
+const THEME_CARD: Record<CardStyle, string> = {
+  dark: 'rgba(255,255,255,0.06)',
+  neon: 'rgba(204,255,0,0.06)',
+  violet: 'rgba(168,85,247,0.08)',
+  light: 'rgba(0,0,0,0.05)',
+};
+
+const THEME_BORDER: Record<CardStyle, string> = {
+  dark: 'rgba(255,255,255,0.08)',
+  neon: 'rgba(204,255,0,0.12)',
+  violet: 'rgba(168,85,247,0.15)',
+  light: 'rgba(0,0,0,0.08)',
+};
+
+const BADGE_COLORS: Record<
+  PlayerShareCardBadge['variant'],
+  { bg: string; border: string; text: string }
+> = {
+  gold: {
+    bg: 'rgba(255,215,0,0.12)',
+    border: 'rgba(255,215,0,0.25)',
+    text: Colors.gold,
+  },
+  green: {
+    bg: 'rgba(34,197,94,0.12)',
+    border: 'rgba(34,197,94,0.25)',
+    text: Colors.success,
+  },
+  aqua: {
+    bg: 'rgba(0,207,193,0.12)',
+    border: 'rgba(0,207,193,0.25)',
+    text: Colors.aquaGreen,
+  },
+};
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function getRankSuffix(rank: number): string {
+  if (rank >= 11 && rank <= 13) return 'th';
+  switch (rank % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+// "Strength does not make one capable of rule; it makes one capable of service."
 
 export function PlayerShareCard({
   playerName,
@@ -40,160 +135,254 @@ export function PlayerShareCard({
   tournamentName,
   tournamentFormat,
   tournamentDate,
+  badges = [],
+  cardStyle = 'dark',
 }: PlayerShareCardProps) {
+  const bg = THEME_BG[cardStyle];
+  const text = THEME_TEXT[cardStyle];
+  const muted = THEME_MUTED[cardStyle];
+  const accent = THEME_ACCENT[cardStyle];
+  const cardBg = THEME_CARD[cardStyle];
+  const border = THEME_BORDER[cardStyle];
+  const isLight = cardStyle === 'light';
+
   const date = new Date(tournamentDate).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
-  const formatLabel = TOURNAMENT_FORMAT_LABELS[tournamentFormat] ?? 'Tournament';
-  const isChampion = rank === 1;
-  const isPodium = rank <= 3;
-
-  // Medal emoji for podium finishes
-  const medalEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
-
-  // Rank colour
-  const rankColor =
-    rank === 1
-      ? Colors.gold
-      : rank === 2
-        ? Colors.silver
-        : rank === 3
-          ? Colors.bronze
-          : Colors.opticYellow;
-
-  // Win rate colour — aquaGreen for ≥50%, coral for below
-  const winRateColor = winRate >= 0.5 ? Colors.aquaGreen : Colors.coral;
-
-  // Podium border colour (subtle glow on card edge)
-  const podiumBorderColor =
-    rank === 1
-      ? Colors.gold
-      : rank === 2
-        ? Colors.silver
-        : rank === 3
-          ? Colors.bronze
-          : undefined;
+  const formatLabel =
+    TOURNAMENT_FORMAT_LABELS[tournamentFormat] ?? 'Tournament';
+  const matchesLost = matchesPlayed - matchesWon;
+  const winPct = Math.round(winRate * 100);
 
   return (
-    <View
-      style={[
-        styles.card,
-        isPodium && { borderWidth: 1, borderColor: podiumBorderColor },
-        isChampion && Shadows.glowYellow,
-      ]}
-    >
-      {/* ─── Accent Bar ──────────────────────────────────────────────── */}
-      <View style={[styles.accentBar, { backgroundColor: rankColor }]} />
+    <View style={[styles.card, { backgroundColor: bg }]}>
+      {/* ─── Accent Bar ───────────────────────────────────────────── */}
+      <View style={[styles.accentBar, { backgroundColor: accent }]} />
 
-      {/* ─── Brand Header ──────────────────────────────────────────────── */}
+      {/* ─── Brand Header ─────────────────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.brandName}>{AppConfig.name.toUpperCase()}</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.logoWrap}>
+            <Logo width={28} height={28} />
+          </View>
+          <Text style={[styles.brandName, { color: accent }]}>
+            {AppConfig.name.toUpperCase()}
+          </Text>
+        </View>
         <View style={styles.headerDots}>
-          <View style={[styles.dot, { backgroundColor: Colors.opticYellow }]} />
+          <View
+            style={[styles.dot, { backgroundColor: Colors.opticYellow }]}
+          />
           <View style={[styles.dot, { backgroundColor: Colors.violet }]} />
-          <View style={[styles.dot, { backgroundColor: Colors.aquaGreen }]} />
+          <View
+            style={[styles.dot, { backgroundColor: Colors.aquaGreen }]}
+          />
         </View>
       </View>
 
-      {/* ─── Hero: Player Result ───────────────────────────────────────── */}
-      <View style={styles.hero}>
-        {medalEmoji && <Text style={styles.medal}>{medalEmoji}</Text>}
+      {/* ─── Player Identity ──────────────────────────────────────── */}
+      <View style={styles.identity}>
+        {/* Avatar */}
+        <View
+          style={[
+            styles.avatar,
+            {
+              backgroundColor: isLight
+                ? ShareCardColors.lightAvatar
+                : 'rgba(204,255,0,0.08)',
+              borderColor: accent,
+            },
+          ]}
+        >
+          <Text style={[styles.avatarText, { color: accent }]}>
+            {getInitials(playerName)}
+          </Text>
+        </View>
 
-        {isChampion && (
-          <View style={styles.championBadge}>
-            <Text style={styles.championLabel}>CHAMPION</Text>
-          </View>
-        )}
-
-        <Text style={styles.playerName} numberOfLines={1}>
+        {/* Name */}
+        <Text
+          style={[styles.playerName, { color: text }]}
+          numberOfLines={1}
+        >
           {playerName}
         </Text>
 
-        {/* Rank badge */}
-        <View style={[styles.rankBadge, { borderColor: rankColor }]}>
-          <Text style={[styles.rankText, { color: rankColor }]}>
-            {ordinal(rank)}
+        {/* Rank Badge */}
+        <View
+          style={[
+            styles.rankBadge,
+            { backgroundColor: cardBg, borderColor: border },
+          ]}
+        >
+          <Text style={[styles.rankText, { color: accent }]}>
+            {rank}
+            {getRankSuffix(rank)}
           </Text>
-          <Text style={styles.rankOf}>of {totalPlayers}</Text>
+          <Text style={[styles.rankOf, { color: muted }]}>
+            {' '}
+            of {totalPlayers}
+          </Text>
         </View>
       </View>
 
-      {/* ─── Stats Row ─────────────────────────────────────────────────── */}
-      <View style={styles.statsRow}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{totalPoints}</Text>
-          <Text style={styles.statLabel}>POINTS</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>
-            {matchesWon}/{matchesPlayed}
+      {/* ─── Divider ──────────────────────────────────────────────── */}
+      <View style={[styles.divider, { backgroundColor: border }]} />
+
+      {/* ─── Stats Grid ───────────────────────────────────────────── */}
+      <View style={styles.statsGrid}>
+        <View
+          style={[
+            styles.statCell,
+            { backgroundColor: cardBg, borderColor: border },
+          ]}
+        >
+          <Text style={[styles.statValue, { color: accent }]}>
+            {matchesWon}
           </Text>
-          <Text style={styles.statLabel}>WINS</Text>
+          <Text style={[styles.statLabel, { color: muted }]}>Wins</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: winRateColor }]}>
-            {Math.round(winRate * 100)}%
+        <View
+          style={[
+            styles.statCell,
+            { backgroundColor: cardBg, borderColor: border },
+          ]}
+        >
+          <Text style={[styles.statValue, { color: text }]}>
+            {matchesLost}
           </Text>
-          <Text style={styles.statLabel}>WIN RATE</Text>
+          <Text style={[styles.statLabel, { color: muted }]}>Losses</Text>
+        </View>
+        <View
+          style={[
+            styles.statCell,
+            { backgroundColor: cardBg, borderColor: border },
+          ]}
+        >
+          <Text style={[styles.statValue, { color: accent }]}>
+            {winPct}%
+          </Text>
+          <Text style={[styles.statLabel, { color: muted }]}>Win Rate</Text>
+        </View>
+        <View
+          style={[
+            styles.statCell,
+            { backgroundColor: cardBg, borderColor: border },
+          ]}
+        >
+          <Text style={[styles.statValue, { color: text }]}>
+            {totalPoints}
+          </Text>
+          <Text style={[styles.statLabel, { color: muted }]}>Points</Text>
         </View>
       </View>
 
-      {/* ─── Tournament Info ───────────────────────────────────────────── */}
+      {/* ─── Badges ───────────────────────────────────────────────── */}
+      {badges.length > 0 && (
+        <View style={styles.badgeRow}>
+          {badges.map((badge, i) => {
+            const c = BADGE_COLORS[badge.variant];
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.badge,
+                  { backgroundColor: c.bg, borderColor: c.border },
+                ]}
+              >
+                <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+                <Text style={[styles.badgeLabel, { color: c.text }]}>
+                  {badge.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ─── Divider ──────────────────────────────────────────────── */}
+      <View style={[styles.divider, { backgroundColor: border }]} />
+
+      {/* ─── Tournament Footer ────────────────────────────────────── */}
       <View style={styles.footer}>
-        <Text style={styles.tournamentName} numberOfLines={2}>
+        <Text
+          style={[styles.tournamentName, { color: text }]}
+          numberOfLines={1}
+        >
           {tournamentName}
         </Text>
-        <Text style={styles.meta}>
+        <Text style={[styles.meta, { color: muted }]}>
           {formatLabel} · {date}
         </Text>
 
-        {/* CTA */}
-        <View style={styles.ctaRow}>
-          <View style={styles.ctaPill}>
-            <Text style={styles.cta}>playsmashd.com</Text>
+        <View style={[styles.ctaRow, { borderTopColor: border }]}>
+          <View
+            style={[
+              styles.ctaPill,
+              {
+                backgroundColor: isLight
+                  ? 'rgba(123,47,190,0.08)'
+                  : 'rgba(204,255,0,0.08)',
+                borderColor: isLight
+                  ? 'rgba(123,47,190,0.2)'
+                  : 'rgba(204,255,0,0.2)',
+              },
+            ]}
+          >
+            <Text style={[styles.cta, { color: accent }]}>
+              playsmashd.com
+            </Text>
           </View>
-          <Text style={styles.tagline}>{AppConfig.tagline}</Text>
+          <Text style={[styles.tagline, { color: muted }]}>
+            {AppConfig.tagline}
+          </Text>
         </View>
       </View>
     </View>
   );
 }
 
-// ─── Styles ─────────────────────────────────────────────────────────────────
+// ── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   card: {
     width: 390,
-    backgroundColor: Colors.darkBg,
     paddingTop: 0,
-    paddingBottom: 36,
+    paddingBottom: 28,
     paddingHorizontal: 28,
-    gap: 20,
+    gap: 16,
     overflow: 'hidden',
   },
 
-  // Accent bar — thin coloured strip at the very top
+  // Accent
   accentBar: {
     height: 3,
     width: '100%',
-    marginBottom: 8,
+    marginBottom: 2,
   },
 
   // Header
   header: {
     alignItems: 'center',
+    gap: 8,
+    paddingTop: 14,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    paddingTop: 20,
+  },
+  logoWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   brandName: {
     fontFamily: Fonts.mono,
-    fontSize: 28,
-    color: Colors.opticYellow,
-    letterSpacing: 10,
+    fontSize: 22,
+    letterSpacing: 8,
   },
   headerDots: {
     flexDirection: 'row',
@@ -207,138 +396,140 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // Hero
-  hero: {
+  // Identity
+  identity: {
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 8,
   },
-  medal: {
-    fontSize: 60,
-    marginBottom: 2,
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
-  championBadge: {
-    backgroundColor: 'rgba(255, 215, 0, 0.12)',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.25)',
-  },
-  championLabel: {
-    fontFamily: Fonts.mono,
-    fontSize: 12,
-    color: Colors.gold,
-    letterSpacing: 5,
+  avatarText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 26,
   },
   playerName: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 34,
-    color: Colors.textPrimary,
+    fontSize: 24,
     textAlign: 'center',
-    marginTop: 4,
   },
   rankBadge: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   rankText: {
     fontFamily: Fonts.mono,
-    fontSize: 22,
-    letterSpacing: 1,
+    fontSize: 14,
   },
   rankOf: {
     fontFamily: Fonts.mono,
-    fontSize: 14,
-    color: Colors.textDim,
-    letterSpacing: 1,
+    fontSize: 12,
+  },
+
+  // Divider
+  divider: {
+    height: 1,
   },
 
   // Stats
-  statsRow: {
+  statsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    paddingVertical: 22,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  stat: {
+  statCell: {
     flex: 1,
+    minWidth: '45%',
     alignItems: 'center',
-    gap: 6,
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.border,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 2,
   },
   statValue: {
     fontFamily: Fonts.mono,
-    fontSize: 24,
-    color: Colors.opticYellow,
+    fontSize: 22,
   },
   statLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 9,
-    color: Colors.textMuted,
-    letterSpacing: 2.5,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+
+  // Badges
+  badgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  badgeEmoji: {
+    fontSize: 14,
+  },
+  badgeLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
 
   // Footer
   footer: {
     alignItems: 'center',
     gap: 6,
-    paddingTop: 4,
+    paddingTop: 2,
   },
   tournamentName: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 17,
-    color: Colors.textPrimary,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 24,
   },
   meta: {
     fontFamily: Fonts.mono,
-    fontSize: 12,
-    color: Colors.textDim,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
   ctaRow: {
     alignItems: 'center',
     gap: 6,
-    marginTop: 14,
-    paddingTop: 14,
+    marginTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
     width: '100%',
   },
   ctaPill: {
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
     paddingHorizontal: 16,
     paddingVertical: 5,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.2)',
   },
   cta: {
     fontFamily: Fonts.mono,
     fontSize: 14,
-    color: Colors.opticYellow,
     letterSpacing: 1,
   },
   tagline: {
     fontFamily: Fonts.body,
     fontSize: 11,
-    color: Colors.textMuted,
     letterSpacing: 0.5,
   },
 });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../../src/lib/supabase';
@@ -7,6 +8,7 @@ import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 import { SmashdLogo } from '../../src/components/ui/SmashdLogo';
+import { SmashdWordmark } from '../../src/components/ui/SmashdWordmark';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignIn() {
@@ -39,9 +41,12 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         Alert.alert('Sign in failed', error.message);
+      } else if (!data.session) {
+        // Edge case: Supabase returned success but no session
+        Alert.alert('Sign in failed', 'No session returned. Please try again.');
       }
       // AuthProvider handles the redirect via onAuthStateChange
     } catch (e: any) {
@@ -58,14 +63,14 @@ export default function SignIn() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo / Branding */}
-        <View style={styles.branding}>
+        <Animated.View entering={FadeInDown.springify()} style={styles.branding}>
           <SmashdLogo size={80} />
-          <Text style={styles.logo}>{AppConfig.name}</Text>
+          <SmashdWordmark size={42} />
           <Text style={styles.tagline}>{AppConfig.tagline}</Text>
-        </View>
+        </Animated.View>
 
         {/* Email Sign In */}
-        <View style={styles.form}>
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.form}>
           <Input
             label="Email"
             placeholder="you@example.com"
@@ -90,37 +95,41 @@ export default function SignIn() {
             variant="primary"
             size="lg"
           />
-        </View>
+        </Animated.View>
 
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
+        {/* Divider + Google Sign In */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={{ gap: 32 }}>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-        {/* Google Sign In — placeholder, wired up in Step 2 */}
-        <Button
-          title="Continue with Google"
-          onPress={() => Alert.alert('Coming soon', 'Google sign-in is being configured.')}
-          variant="outline"
-          size="lg"
-        />
+          {/* Google Sign In — placeholder, wired up in Step 2 */}
+          <Button
+            title="Continue with Google"
+            onPress={() => Alert.alert('Coming soon', 'Google sign-in is being configured.')}
+            variant="outline"
+            size="lg"
+          />
+        </Animated.View>
 
-        {/* Forgot Password */}
-        <View style={styles.forgotRow}>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleForgotPassword(); }}>
-            <Text style={styles.forgotLink}>Forgot password?</Text>
-          </Pressable>
-        </View>
+        {/* Forgot Password + Sign Up Link */}
+        <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <View style={styles.forgotRow}>
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleForgotPassword(); }} accessibilityRole="button" accessibilityLabel="Forgot password">
+              <Text style={styles.forgotLink}>Forgot password?</Text>
+            </Pressable>
+          </View>
 
-        {/* Sign Up Link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/sign-up'); }}>
-            <Text style={styles.footerLink}>Sign up</Text>
-          </Pressable>
-        </View>
+          {/* Sign Up Link */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/sign-up'); }} accessibilityRole="button" accessibilityLabel="Sign up for a new account">
+              <Text style={styles.footerLink}>Sign up</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -141,13 +150,6 @@ const styles = StyleSheet.create({
   branding: {
     alignItems: 'center',
     gap: 8,
-  },
-  logo: {
-    fontFamily: Fonts.mono,
-    fontSize: 42,
-    color: Colors.opticYellow,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
   },
   tagline: {
     fontFamily: Fonts.body,

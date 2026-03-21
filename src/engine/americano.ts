@@ -29,6 +29,8 @@ export function generateAmericanoRounds(
   let hasBye = false;
   const BYE = '__BYE__';
 
+  // Pad to nearest multiple of 4 for clean court allocation
+  // (e.g., 5 players → 1 bye, 6 players → 2 byes per round, 7 → 1 bye)
   if (ids.length % 2 !== 0) {
     ids.push(BYE);
     hasBye = true;
@@ -114,11 +116,14 @@ export function generateAmericanoRounds(
       partnerCounts[b2][b1] += 1;
 
       const allPlayers = [...teamA, ...teamB];
-      if (allPlayers.includes(BYE)) continue;
-
-      // Determine bye player for this round
-      const leftOver = Array.from(available).filter((id) => id !== BYE);
-      const byePlayer = leftOver.length > 0 ? leftOver[0] : null;
+      if (allPlayers.includes(BYE)) {
+        // Undo partner counts for this BYE match — it's not a real match
+        partnerCounts[teamA[0]][teamA[1]] -= 1;
+        partnerCounts[teamA[1]][teamA[0]] -= 1;
+        partnerCounts[teamB[0]][teamB[1]] -= 1;
+        partnerCounts[teamB[1]][teamB[0]] -= 1;
+        continue;
+      }
 
       matches.push({
         id: matchId(roundNumber, court),
@@ -126,23 +131,27 @@ export function generateAmericanoRounds(
         courtNumber: court,
         teamA,
         teamB,
-        byePlayerId: court === 1 && byePlayer ? byePlayer : undefined,
       });
     }
 
-    // Track who got a bye this round
+    // Track who got a bye this round and annotate the first match
     const playersInMatches = new Set<string>();
-    matches
-      .filter((m) => m.roundNumber === roundNumber)
-      .forEach((m) => {
-        m.teamA.forEach((id) => playersInMatches.add(id));
-        m.teamB.forEach((id) => playersInMatches.add(id));
-      });
+    const roundMatches = matches.filter((m) => m.roundNumber === roundNumber);
+    roundMatches.forEach((m) => {
+      m.teamA.forEach((id) => playersInMatches.add(id));
+      m.teamB.forEach((id) => playersInMatches.add(id));
+    });
+    const byePlayers: string[] = [];
     playerIds.forEach((id) => {
       if (!playersInMatches.has(id)) {
         roundByeCounts[id] = (roundByeCounts[id] ?? 0) + 1;
+        byePlayers.push(id);
       }
     });
+    // Annotate first match with the first bye player (for standings display)
+    if (byePlayers.length > 0 && roundMatches.length > 0) {
+      roundMatches[0].byePlayerId = byePlayers[0];
+    }
 
     roundNumber += 1;
     if (roundNumber > 100) break;

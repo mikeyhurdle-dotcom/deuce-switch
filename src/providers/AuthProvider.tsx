@@ -112,8 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         setSession(session);
         if (session?.user) {
-          const p = await ensureProfile(session.user);
-          setProfile(p);
+          try {
+            const p = await ensureProfile(session.user);
+            setProfile(p);
+          } catch (err) {
+            // Don't let a profile fetch failure block the auth flow.
+            // Session is already set — the user can still navigate.
+            // Profile fetch failed — session is already set, user can still navigate
+            setProfile(null);
+          }
         } else {
           setProfile(null);
         }

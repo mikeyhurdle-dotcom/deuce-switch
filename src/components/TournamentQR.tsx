@@ -59,7 +59,12 @@ export function TournamentQR({
         )}
 
         {/* QR Code — white bg for high contrast scanning */}
-        <View style={styles.qrWrapper}>
+        <View
+          style={styles.qrWrapper}
+          accessible
+          accessibilityLabel={`QR code to join tournament ${tournamentName}`}
+          accessibilityRole="image"
+        >
           <View style={[styles.qrBorder, { padding: compact ? 6 : 10 }]}>
             <QRCode
               value={joinUrl}
@@ -73,7 +78,13 @@ export function TournamentQR({
 
         {/* Join URL */}
         {!compact && (
-          <Pressable onPress={handleCopyUrl} style={styles.urlRow}>
+          <Pressable
+            onPress={handleCopyUrl}
+            style={styles.urlRow}
+            accessibilityRole="button"
+            accessibilityLabel={`Copy join link: ${joinUrl}`}
+            accessibilityHint="Copies the tournament join link to your clipboard"
+          >
             <Text style={styles.urlText} numberOfLines={1}>
               {joinUrl}
             </Text>
@@ -82,7 +93,12 @@ export function TournamentQR({
         )}
 
         {/* Share Button */}
-        <Pressable onPress={handleShare} style={styles.shareButton}>
+        <Pressable
+          onPress={handleShare}
+          style={styles.shareButton}
+          accessibilityRole="button"
+          accessibilityLabel="Share tournament invite"
+        >
           <Text style={styles.shareText}>SHARE INVITE</Text>
         </Pressable>
       </View>
@@ -129,8 +145,10 @@ const styles = StyleSheet.create({
   shareButton: {
     backgroundColor: Colors.violet,
     borderRadius: Radius.md,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 32,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   shareText: {
     fontFamily: Fonts.bodySemiBold,

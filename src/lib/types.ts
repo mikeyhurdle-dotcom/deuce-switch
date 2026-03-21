@@ -42,6 +42,13 @@ export type Profile = {
   is_ghost: boolean;
   claimed_by: string | null;
   claimed_at: string | null;
+  ghost_email: string | null;
+  claim_token: string | null;
+  // Platform-specific display names (for OCR profile matching)
+  playtomic_name: string | null;
+  padelmates_name: string | null;
+  nettla_name: string | null;
+  matchii_name: string | null;
   created_at: string;
 };
 
@@ -73,6 +80,10 @@ export type TournamentPlayer = {
   created_at: string;
 };
 
+export type MatchConditions = 'indoor' | 'outdoor';
+export type CourtSide = 'left' | 'right' | 'both';
+export type MatchIntensity = 'casual' | 'competitive' | 'intense';
+
 export type Match = {
   id: string;
   tournament_id: string;
@@ -86,6 +97,9 @@ export type Match = {
   team_a_score: number | null;
   team_b_score: number | null;
   status: 'pending' | 'in_progress' | 'reported' | 'approved';
+  conditions: MatchConditions | null;
+  court_side: CourtSide | null;
+  intensity: MatchIntensity | null;
   target_start_time: string | null;
   actual_start_time: string | null;
   actual_end_time: string | null;
@@ -114,7 +128,17 @@ export type MatchSource =
   | 'mixicano'
   | 'playtomic'
   | 'screenshot'
-  | 'manual';
+  | 'manual'
+  | 'open_game';
+
+export type MatchType = 'competitive' | 'friendly' | 'tournament';
+
+export type DetectedPlatform = 'playtomic' | 'padelmates' | 'nettla' | 'matchii' | 'unknown';
+
+export type SetScore = {
+  team_a: number;
+  team_b: number;
+};
 
 export type PlayerMatchResult = {
   id: string;
@@ -128,6 +152,15 @@ export type PlayerMatchResult = {
   opponent_score: number;
   won: boolean;
   source: MatchSource;
+  match_type: MatchType | null;
+  platform_source: string | null;
+  venue: string | null;
+  set_scores: SetScore[] | null;
+  import_batch_id: string | null;
+  score_edited: boolean;
+  conditions: MatchConditions | null;
+  court_side: CourtSide | null;
+  intensity: MatchIntensity | null;
   played_at: string;
   created_at: string;
   partner_name: string | null;
@@ -137,6 +170,39 @@ export type PlayerMatchResult = {
     name: string;
     tournament_format: TournamentFormat;
   } | null;
+};
+
+export type PlatformRating = {
+  id: string;
+  player_id: string;
+  platform: DetectedPlatform;
+  rating: number;
+  rating_label: string | null;
+  match_result_id: string | null;
+  recorded_at: string;
+  created_at: string;
+};
+
+// ─── OCR Match Import Types ──────────────────────────────────────────────────
+
+export type OCRMatch = {
+  date: string | null;
+  time: string | null;
+  venue: string | null;
+  court: string | null;
+  sets: SetScore[];
+  team_a: string[];
+  team_b: string[];
+  user_team: 'a' | 'b' | null;
+  won: boolean | null;
+  ratings: Record<string, number>;
+  match_type_hint: 'competitive' | 'friendly' | null;
+};
+
+export type OCRMatchImportResult = {
+  platform: DetectedPlatform;
+  confidence: number;
+  matches: OCRMatch[];
 };
 
 export type Club = {
@@ -207,7 +273,8 @@ export type ConnectionStatusResult = {
 /** Returned by `get_connections` RPC */
 export type ConnectionProfile = {
   connection_id: string;
-  accepted_at: string;
+  accepted_at?: string;
+  connected_since?: string;
   user_id: string;
   display_name: string | null;
   username: string | null;

@@ -1,11 +1,144 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
-import { Colors, Fonts } from '../../../../src/lib/constants';
+import { Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { Card } from '../../../../src/components/ui/Card';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0]?.[0] ?? '?').toUpperCase();
+}
+
+function getMedalColor(index: number): string | undefined {
+  if (index === 0) return Colors.gold;
+  if (index === 1) return Colors.silver;
+  if (index === 2) return Colors.bronze;
+  return undefined;
+}
+
+// ── Animated Row ──────────────────────────────────────────────────────────────
+
+const ROW_STAGGER = 60; // ms between each row animation
+
+interface Standing {
+  playerId: string;
+  displayName: string;
+  pointsFor: number;
+  wins: number;
+  losses?: number;
+  matchesPlayed: number;
+}
+
+function LeaderboardRow({
+  entry,
+  index,
+  isMe,
+}: {
+  entry: Standing;
+  index: number;
+  isMe: boolean;
+}) {
+  const medal = getMedalColor(index);
+  const translateY = useSharedValue(24);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const delay = 200 + index * ROW_STAGGER;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 350 }));
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const losses = entry.losses ?? Math.max(0, entry.matchesPlayed - entry.wins);
+
+  return (
+    <Animated.View
+      style={[
+        styles.row,
+        medal != null && { borderLeftWidth: 3, borderLeftColor: medal },
+        isMe && styles.myRow,
+        animStyle,
+      ]}
+    >
+      {/* Rank */}
+      <View style={styles.rankCol}>
+        <Text
+          style={[
+            styles.rank,
+            index === 0 && styles.goldText,
+            index === 1 && styles.silverText,
+            index === 2 && styles.bronzeText,
+          ]}
+        >
+          {index + 1}
+        </Text>
+      </View>
+
+      {/* Avatar + Name */}
+      <View style={styles.playerCol}>
+        <View
+          style={[
+            styles.avatar,
+            { borderColor: medal ?? Colors.surfaceLight },
+          ]}
+        >
+          <Text
+            style={[
+              styles.avatarText,
+              medal != null && { color: medal },
+            ]}
+          >
+            {getInitials(entry.displayName)}
+          </Text>
+        </View>
+        <View style={styles.nameWrap}>
+          <Text style={styles.name} numberOfLines={1}>
+            {entry.displayName}
+          </Text>
+          {isMe && (
+            <View style={styles.youBadge}>
+              <Text style={styles.youBadgeText}>YOU</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Stats */}
+      <Text style={[styles.stat, styles.wCol, styles.winText]}>{entry.wins}</Text>
+      <Text style={[styles.stat, styles.lCol, styles.lossText]}>{losses}</Text>
+      <Text style={[styles.points, styles.ptsCol]}>{entry.pointsFor}</Text>
+    </Animated.View>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function Leaderboard() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,80 +180,51 @@ export default function Leaderboard() {
             />
           }
         >
+          {/* Tournament title */}
           <Text style={styles.title}>{tournament?.name ?? 'Tournament'}</Text>
+
+          {/* Subtitle — round info */}
+          {tournament?.current_round != null && (
+            <Text style={styles.subtitle}>
+              Round {tournament.current_round}
+              {tournament.status === 'running' ? ' · Live' : ''}
+            </Text>
+          )}
 
           {standings.length === 0 ? (
             <Card>
               <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>📊</Text>
+                <Text style={styles.emptyTitle}>No scores yet</Text>
                 <Text style={styles.emptyText}>
-                  No scores reported yet. The leaderboard will update in
-                  real-time.
+                  The leaderboard will update in real-time as matches are scored.
                 </Text>
               </View>
             </Card>
           ) : (
             <View style={styles.list}>
-              {/* Header */}
+              {/* Column headers */}
               <View style={styles.headerRow}>
-                <Text style={[styles.headerText, styles.rankCol]}>#</Text>
-                <Text style={[styles.headerText, styles.nameCol]}>PLAYER</Text>
-                <Text style={[styles.headerText, styles.statCol]}>PTS</Text>
-                <Text style={[styles.headerText, styles.statCol]}>W</Text>
-                <Text style={[styles.headerText, styles.statCol]}>P</Text>
+                <View style={styles.rankCol}>
+                  <Text style={styles.headerText}>#</Text>
+                </View>
+                <View style={styles.playerCol}>
+                  <Text style={styles.headerText}>PLAYER</Text>
+                </View>
+                <Text style={[styles.headerText, styles.wCol]}>W</Text>
+                <Text style={[styles.headerText, styles.lCol]}>L</Text>
+                <Text style={[styles.headerText, styles.ptsCol]}>PTS</Text>
               </View>
 
-              {standings.map((entry, i) => {
-                const isMe = entry.playerId === user?.id;
-                const medalColor =
-                  i === 0
-                    ? Colors.gold
-                    : i === 1
-                      ? Colors.silver
-                      : i === 2
-                        ? Colors.bronze
-                        : undefined;
-                return (
-                  <View
-                    key={entry.playerId}
-                    style={[
-                      styles.row,
-                      medalColor != null && {
-                        borderLeftWidth: 3,
-                        borderLeftColor: medalColor,
-                      },
-                      isMe && styles.myRow,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.rank,
-                        styles.rankCol,
-                        i === 0 && styles.goldText,
-                        i === 1 && styles.silverText,
-                        i === 2 && styles.bronzeText,
-                      ]}
-                    >
-                      {i + 1}
-                    </Text>
-                    <Text
-                      style={[styles.name, styles.nameCol]}
-                      numberOfLines={1}
-                    >
-                      {entry.displayName}
-                      {isMe ? ' (You)' : ''}
-                    </Text>
-                    <Text style={[styles.points, styles.statCol]}>
-                      {entry.pointsFor}
-                    </Text>
-                    <Text style={[styles.stat, styles.statCol]}>
-                      {entry.wins}
-                    </Text>
-                    <Text style={[styles.stat, styles.statCol]}>
-                      {entry.matchesPlayed}
-                    </Text>
-                  </View>
-                );
-              })}
+              {/* Rows */}
+              {standings.map((entry: Standing, i: number) => (
+                <LeaderboardRow
+                  key={entry.playerId}
+                  entry={entry}
+                  index={i}
+                  isMe={entry.playerId === user?.id}
+                />
+              ))}
             </View>
           )}
         </ScrollView>
@@ -129,78 +233,169 @@ export default function Leaderboard() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.darkBg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  loadingText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.textDim },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[4],
+  },
+  loadingText: {
+    fontFamily: Fonts.body,
+    fontSize: 16,
+    color: Colors.textDim,
+  },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 20,
+    paddingHorizontal: Spacing[5],
+    paddingTop: Spacing[5],
+    paddingBottom: Spacing[10],
+    gap: Spacing[4],
   },
+
+  // ── Header
   title: {
-    fontFamily: Fonts.heading,
-    fontSize: 20,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 22,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
-  empty: { padding: 32, alignItems: 'center' },
+  subtitle: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.aquaGreen,
+    textAlign: 'center',
+    marginTop: -8,
+  },
+
+  // ── Empty state
+  empty: { padding: Spacing[8], alignItems: 'center', gap: Spacing[2] },
+  emptyEmoji: { fontSize: 32 },
+  emptyTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textDim,
     textAlign: 'center',
+    lineHeight: 20,
   },
-  list: { gap: 2 },
+
+  // ── List
+  list: { gap: 3 },
+
+  // ── Header row
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[2],
+    marginBottom: Spacing[1],
   },
   headerText: {
     fontFamily: Fonts.mono,
     fontSize: 10,
     color: Colors.textMuted,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
+
+  // ── Row
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[3],
   },
   myRow: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.opticYellow,
   },
-  rankCol: { width: 30 },
-  nameCol: { flex: 1 },
-  statCol: { width: 40, textAlign: 'center' },
+
+  // ── Column widths
+  rankCol: { width: 28, alignItems: 'center' as const },
+  playerCol: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: Spacing[2],
+  },
+  wCol: { width: 34, textAlign: 'center' as const },
+  lCol: { width: 34, textAlign: 'center' as const },
+  ptsCol: { width: 44, textAlign: 'center' as const },
+
+  // ── Rank
   rank: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 16,
     color: Colors.textDim,
+  },
+
+  // ── Avatar
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    borderWidth: 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  avatarText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.textDim,
+  },
+
+  // ── Name + YOU badge
+  nameWrap: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: Spacing[2],
   },
   name: {
     fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textPrimary,
+    flexShrink: 1,
   },
-  points: {
+  youBadge: {
+    backgroundColor: Colors.opticYellow,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  youBadgeText: {
     fontFamily: Fonts.mono,
-    fontSize: 16,
-    color: Colors.opticYellow,
+    fontSize: 9,
+    color: Colors.darkBg,
+    letterSpacing: 0.5,
   },
+
+  // ── Stats
   stat: {
     fontFamily: Fonts.mono,
     fontSize: 14,
-    color: Colors.textDim,
   },
+  winText: { color: Colors.success },
+  lossText: { color: Colors.error },
+  points: {
+    fontFamily: Fonts.mono,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.opticYellow,
+  },
+
+  // ── Medal text
   goldText: { color: Colors.gold },
   silverText: { color: Colors.silver },
   bronzeText: { color: Colors.bronze },

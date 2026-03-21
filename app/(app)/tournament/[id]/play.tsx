@@ -1,18 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentClock } from '../../../../src/hooks/useTournamentClock';
 import { useTournamentNotifications } from '../../../../src/hooks/useNotifications';
-import { submitScore } from '../../../../src/services/tournament-service';
+import {
+  submitScore,
+  advanceRound,
+  endTournament,
+  startClock,
+  pauseClock,
+  resetClock,
+  type ScoreMetadata,
+} from '../../../../src/services/tournament-service';
 import { enqueueScore, flushQueue, pendingCount } from '../../../../src/services/offline-queue';
 import { notifyClockExpired } from '../../../../src/services/notification-service';
-import { Colors, Fonts, Radius } from '../../../../src/lib/constants';
+import { Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
+import type { MatchConditions, CourtSide, MatchIntensity } from '../../../../src/lib/types';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
+import { Badge } from '../../../../src/components/ui/Badge';
 import { Input } from '../../../../src/components/ui/Input';
 import { ClockDisplay } from '../../../../src/components/ClockDisplay';
 
@@ -29,6 +40,11 @@ export default function Play() {
   const [refreshing, setRefreshing] = useState(false);
   const clockExpiredRef = useRef(false);
 
+  // Match metadata (captured alongside score)
+  const [conditions, setConditions] = useState<MatchConditions | null>(null);
+  const [courtSide, setCourtSide] = useState<CourtSide | null>(null);
+  const [intensity, setIntensity] = useState<MatchIntensity | null>(null);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -39,6 +55,101 @@ export default function Play() {
   }, [refetch]);
 
   const isOrganiser = tournament?.organizer_id === user?.id;
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Organiser: round scores summary
+  const scoredCount = currentRoundMatches.filter(
+    (m) => m.status === 'reported' || m.status === 'approved',
+  ).length;
+  const allScoresIn = currentRoundMatches.length > 0 && scoredCount === currentRoundMatches.length;
+
+  // Organiser: player name lookup for round scores
+  const playerMap = useMemo(
+    () => new Map(players.map((p) => [p.playerId, p.displayName])),
+    [players],
+  );
+  const pName = (pid: string | null) => (pid ? playerMap.get(pid) ?? '?' : '');
+
+  // ── Organiser Handlers ──
+  const handleClockToggle = async () => {
+    if (!id || !tournament) return;
+    setActionLoading('clock');
+    try {
+      if (tournament.master_clock_running) {
+        await pauseClock(id);
+      } else {
+        await startClock(id);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleResetClock = async () => {
+    if (!id) return;
+    setActionLoading('reset');
+    try {
+      await resetClock(id);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAdvanceRound = () => {
+    if (!id || !tournament) return;
+    const nextRound = (tournament.current_round ?? 1) + 1;
+    Alert.alert('Advance Round', `Move to round ${nextRound}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Advance',
+        onPress: async () => {
+          setActionLoading('advance');
+          try {
+            await advanceRound(id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch (e: any) {
+            if (e.message?.includes('No more rounds')) {
+              Alert.alert('Last Round', 'All rounds are complete. End the tournament?', [
+                { text: 'Not yet', style: 'cancel' },
+                { text: 'End Tournament', style: 'destructive', onPress: () => handleEndTournament(true) },
+              ]);
+            } else {
+              Alert.alert('Error', e.message);
+            }
+          } finally {
+            setActionLoading(null);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEndTournament = async (skipConfirm = false) => {
+    if (!id) return;
+    const doEnd = async () => {
+      setActionLoading('end');
+      try {
+        await endTournament(id);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace(`/(app)/tournament/${id}/results`);
+      } catch (e: any) {
+        Alert.alert('Error', e.message);
+      } finally {
+        setActionLoading(null);
+      }
+    };
+    if (skipConfirm) { await doEnd(); return; }
+    Alert.alert('End Tournament?', 'This will finalise all scores and close the tournament.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'End', style: 'destructive', onPress: doEnd },
+    ]);
+  };
 
   // Flush any queued offline scores on mount
   useEffect(() => {
@@ -138,6 +249,7 @@ export default function Play() {
   const handleSubmitScore = async () => {
     if (!currentMatch || !tournament || !matchInfo) return;
     if (!scoreValidation.isValid) return;
+    if (submitting) return; // debounce — prevent double-tap
 
     const score = scoreValidation.parsed;
     const opponentScore = scoreValidation.opponent;
@@ -148,19 +260,37 @@ export default function Play() {
       // Always store as team_a_score / team_b_score
       const teamAScore = matchInfo.isTeamA ? score : opponentScore;
       const teamBScore = matchInfo.isTeamA ? opponentScore : score;
+      const metadata: ScoreMetadata = {
+        conditions,
+        court_side: courtSide,
+        intensity,
+      };
 
       try {
-        await submitScore(currentMatch.id, teamAScore, teamBScore);
+        await submitScore(currentMatch.id, teamAScore, teamBScore, metadata);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert('Score submitted', `${score} – ${opponentScore}`);
-      } catch {
-        // Network failure — queue for later
-        await enqueueScore(currentMatch.id, teamAScore, teamBScore);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert(
-          'Saved offline',
-          'Score queued and will be submitted when you reconnect.',
-        );
+      } catch (err: unknown) {
+        // Only queue for offline/network errors, not validation/permission errors
+        const message = err instanceof Error ? err.message : String(err);
+        const isNetworkError =
+          message.includes('network') ||
+          message.includes('fetch') ||
+          message.includes('timeout') ||
+          message.includes('Failed to fetch') ||
+          message.includes('Network request failed');
+
+        if (isNetworkError) {
+          await enqueueScore(currentMatch.id, teamAScore, teamBScore, metadata);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          Alert.alert(
+            'Saved offline',
+            'Score queued and will be submitted when you reconnect.',
+          );
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert('Submission failed', message);
+        }
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Something went wrong');
@@ -201,7 +331,7 @@ export default function Play() {
           }
         >
           {/* Clock + Round Header */}
-          <View style={styles.roundHeader}>
+          <Animated.View entering={FadeIn.duration(400)} style={styles.roundHeader}>
             <ClockDisplay
               formattedTime={clock.formattedTime}
               isRunning={clock.isRunning}
@@ -209,10 +339,11 @@ export default function Play() {
               size="md"
             />
             <Text style={styles.tournamentName}>{tournament.name}</Text>
-          </View>
+          </Animated.View>
 
           {/* Current Match */}
           {currentMatch && matchInfo ? (
+            <Animated.View entering={FadeInDown.delay(150).duration(400).springify()}>
             <Card variant="highlighted">
               <View style={styles.matchCard}>
                 <Text style={styles.courtLabel}>
@@ -288,6 +419,74 @@ export default function Play() {
                       </View>
                     )}
 
+                    {/* Match metadata — optional quick-tag chips */}
+                    <View style={styles.metaSection}>
+                      <Text style={styles.metaLabel}>MATCH DETAILS (optional)</Text>
+
+                      {/* Conditions */}
+                      <View style={styles.metaRow}>
+                        {(['indoor', 'outdoor'] as const).map((c) => (
+                          <Pressable
+                            key={c}
+                            style={[styles.metaChip, conditions === c && styles.metaChipActive]}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setConditions(conditions === c ? null : c);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: conditions === c }}
+                            accessibilityLabel={c}
+                          >
+                            <Text style={[styles.metaChipText, conditions === c && styles.metaChipTextActive]}>
+                              {c === 'indoor' ? '🏠 Indoor' : '☀️ Outdoor'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+
+                      {/* Court Side */}
+                      <View style={styles.metaRow}>
+                        {(['left', 'right'] as const).map((s) => (
+                          <Pressable
+                            key={s}
+                            style={[styles.metaChip, courtSide === s && styles.metaChipActive]}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setCourtSide(courtSide === s ? null : s);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: courtSide === s }}
+                            accessibilityLabel={`${s} side`}
+                          >
+                            <Text style={[styles.metaChipText, courtSide === s && styles.metaChipTextActive]}>
+                              {s === 'left' ? '⬅️ Left' : '➡️ Right'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+
+                      {/* Intensity */}
+                      <View style={styles.metaRow}>
+                        {(['casual', 'competitive', 'intense'] as const).map((v) => (
+                          <Pressable
+                            key={v}
+                            style={[styles.metaChip, intensity === v && styles.metaChipActive]}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setIntensity(intensity === v ? null : v);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: intensity === v }}
+                            accessibilityLabel={v}
+                          >
+                            <Text style={[styles.metaChipText, intensity === v && styles.metaChipTextActive]}>
+                              {v === 'casual' ? '😌' : v === 'competitive' ? '💪' : '🔥'} {v.charAt(0).toUpperCase() + v.slice(1)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+
                     <Button
                       title="SUBMIT SCORE"
                       onPress={handleSubmitScore}
@@ -300,7 +499,9 @@ export default function Play() {
                 )}
               </View>
             </Card>
+            </Animated.View>
           ) : (
+            <Animated.View entering={FadeInDown.delay(150).duration(400).springify()}>
             <Card>
               <View style={styles.noMatch}>
                 <Text style={styles.noMatchText}>
@@ -308,19 +509,84 @@ export default function Play() {
                 </Text>
               </View>
             </Card>
+            </Animated.View>
+          )}
+
+          {/* ── Organiser Controls Panel ── */}
+          {isOrganiser && (
+            <Animated.View entering={FadeInDown.delay(250).duration(400).springify()}>
+              {/* Round Scores Tracker */}
+              <Card>
+                <View style={styles.orgSection}>
+                  <View style={styles.orgHeader}>
+                    <Text style={styles.orgTitle}>ROUND SCORES</Text>
+                    <Badge
+                      label={`${scoredCount}/${currentRoundMatches.length} IN`}
+                      variant={allScoresIn ? 'success' : 'warning'}
+                    />
+                  </View>
+                  {currentRoundMatches.map((m) => {
+                    const teamA = [pName(m.player1_id), pName(m.player2_id)].filter(Boolean).join(' & ');
+                    const teamB = [pName(m.player3_id), pName(m.player4_id)].filter(Boolean).join(' & ');
+                    const hasScore = m.team_a_score != null;
+                    return (
+                      <View key={m.id} style={styles.miniMatch}>
+                        <Text style={styles.miniCourt}>C{m.court_number ?? '?'}</Text>
+                        <Text style={styles.miniTeams} numberOfLines={1}>
+                          {teamA} vs {teamB}
+                        </Text>
+                        {hasScore ? (
+                          <Text style={styles.miniScore}>{m.team_a_score}-{m.team_b_score}</Text>
+                        ) : (
+                          <Text style={styles.miniPending}>--</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </Card>
+
+              {/* Clock Controls */}
+              <View style={styles.orgClockRow}>
+                <Button
+                  title={tournament.master_clock_running ? 'PAUSE' : 'START'}
+                  onPress={handleClockToggle}
+                  variant={tournament.master_clock_running ? 'outline' : 'secondary'}
+                  size="md"
+                  loading={actionLoading === 'clock'}
+                />
+                <Button
+                  title="RESET"
+                  onPress={handleResetClock}
+                  variant="outline"
+                  size="md"
+                  loading={actionLoading === 'reset'}
+                />
+              </View>
+
+              {/* Round Actions */}
+              <Button
+                title="ADVANCE ROUND"
+                onPress={handleAdvanceRound}
+                variant="primary"
+                size="lg"
+                loading={actionLoading === 'advance'}
+                disabled={!allScoresIn}
+              />
+              <Pressable
+                style={styles.endButton}
+                onPress={() => handleEndTournament()}
+              >
+                <Text style={styles.endButtonText}>End Tournament</Text>
+              </Pressable>
+            </Animated.View>
           )}
 
           {/* Quick Nav */}
-          <View style={styles.navRow}>
+          <Animated.View entering={FadeInDown.delay(350).duration(400).springify()} style={styles.navRow}>
             <Button
               title="LEADERBOARD"
               onPress={() => router.push(`/(app)/tournament/${id}/leaderboard`)}
-              variant="outline"
-              size="md"
-            />
-            <Button
-              title="FEED"
-              onPress={() => router.push(`/(app)/tournament/${id}/feed`)}
               variant="outline"
               size="md"
             />
@@ -330,11 +596,11 @@ export default function Play() {
                 onPress={() =>
                   router.push(`/(app)/tournament/${id}/organiser`)
                 }
-                variant="secondary"
+                variant="outline"
                 size="md"
               />
             )}
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </>
@@ -458,6 +724,105 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textDim,
     textAlign: 'center',
+  },
+  // Match metadata chips
+  metaSection: {
+    width: '100%',
+    gap: Spacing[2],
+    paddingTop: Spacing[1],
+  },
+  metaLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing[2],
+  },
+  metaChip: {
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1] + 2,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+    backgroundColor: Colors.surface,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  metaChipActive: {
+    borderColor: Colors.opticYellow,
+    backgroundColor: 'rgba(204,255,0,0.12)',
+  },
+  metaChipText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.textDim,
+  },
+  metaChipTextActive: {
+    color: Colors.opticYellow,
+  },
+  // Organiser panel
+  orgSection: { gap: 10 },
+  orgHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  orgTitle: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.textMuted,
+    letterSpacing: 2,
+  },
+  miniMatch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceLight,
+  },
+  miniCourt: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.textMuted,
+    width: 24,
+  },
+  miniTeams: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  miniScore: {
+    fontFamily: Fonts.mono,
+    fontSize: 14,
+    color: Colors.opticYellow,
+  },
+  miniPending: {
+    fontFamily: Fonts.mono,
+    fontSize: 14,
+    color: Colors.textMuted,
+  },
+  orgClockRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  endButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  endButtonText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.error,
   },
   navRow: {
     flexDirection: 'row',

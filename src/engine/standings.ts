@@ -79,38 +79,71 @@ export function computeStandings(
   });
 
   // ── Bye round average scoring ──
-  // Players who sit out a round receive the average score from that round
+  // Players who sit out a round receive the average *individual* score
+  // from that round. Each match contributes 2 individual scores per team
+  // (teamAScore for each player on team A, teamBScore for each on team B).
+  // ── Bye round average scoring (supports multiple byes per round) ──
+  // Collect per-round scoring data and ALL bye players (not just one)
   const roundMap = new Map<
     number,
-    { totalPoints: number; playerCount: number; byePlayerId?: string }
+    { playerScoreSum: number; individualCount: number; byePlayerIds: string[] }
   >();
 
+  // First pass: compute per-round averages
   matches.forEach((m) => {
     const res = resultsByMatch.get(m.id);
     if (!res) return;
     const round = m.roundNumber;
-    const entry = roundMap.get(round) ?? { totalPoints: 0, playerCount: 0 };
-    const playersInMatch = [...m.teamA, ...m.teamB].length;
-    entry.totalPoints += res.teamAScore + res.teamBScore;
-    entry.playerCount += playersInMatch;
-    if (m.byePlayerId) entry.byePlayerId = m.byePlayerId;
+    const entry = roundMap.get(round) ?? { playerScoreSum: 0, individualCount: 0, byePlayerIds: [] };
+    const teamACount = m.teamA.length;
+    const teamBCount = m.teamB.length;
+    entry.playerScoreSum += res.teamAScore * teamACount + res.teamBScore * teamBCount;
+    entry.individualCount += teamACount + teamBCount;
+    if (m.byePlayerId && !entry.byePlayerIds.includes(m.byePlayerId)) {
+      entry.byePlayerIds.push(m.byePlayerId);
+    }
     roundMap.set(round, entry);
   });
 
+  // Second pass: find all players who sat out each round (not in any match)
+  const roundNumbers = [...new Set(matches.map((m) => m.roundNumber))];
+  for (const round of roundNumbers) {
+    const entry = roundMap.get(round);
+    if (!entry) continue;
+    const playersInRound = new Set<string>();
+    matches
+      .filter((m) => m.roundNumber === round)
+      .forEach((m) => {
+        m.teamA.forEach((id) => playersInRound.add(id));
+        m.teamB.forEach((id) => playersInRound.add(id));
+      });
+    // Any player not in any match this round is a bye player
+    for (const p of players) {
+      if (!playersInRound.has(p.id) && !entry.byePlayerIds.includes(p.id)) {
+        entry.byePlayerIds.push(p.id);
+      }
+    }
+  }
+
   roundMap.forEach((roundData) => {
-    if (!roundData.byePlayerId || roundData.playerCount === 0) return;
-    const avgScore = Math.round(roundData.totalPoints / roundData.playerCount);
-    const s = stats.get(roundData.byePlayerId);
-    if (!s) return;
-    s.pointsFor += avgScore;
-    // Bye counts as a draw for fairness
-    s.matchesPlayed += 1;
-    s.draws += 1;
+    if (roundData.byePlayerIds.length === 0 || roundData.individualCount === 0) return;
+    const avgScore = Math.round(roundData.playerScoreSum / roundData.individualCount);
+    for (const byeId of roundData.byePlayerIds) {
+      const s = stats.get(byeId);
+      if (!s) continue;
+      s.pointsFor += avgScore;
+      s.pointsAgainst += avgScore; // Balanced: bye player also receives avg against
+      s.matchesPlayed += 1;
+      s.draws += 1;
+    }
   });
 
   // Build final standings array
   const standings: AmericanoStanding[] = players.map((p) => {
-    const s = stats.get(p.id)!;
+    const s = stats.get(p.id) ?? {
+      pointsFor: 0, pointsAgainst: 0, matchesPlayed: 0,
+      wins: 0, losses: 0, draws: 0,
+    };
     const total = s.wins + s.losses + s.draws;
     return {
       playerId: p.id,

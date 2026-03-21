@@ -6,15 +6,20 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { submitScore } from './tournament-service';
+import { submitScore, type ScoreMetadata } from './tournament-service';
 
 const QUEUE_KEY = 'smashd_offline_score_queue';
+
+const MAX_RETRIES = 5;
+const MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 type QueuedScore = {
   matchId: string;
   teamAScore: number;
   teamBScore: number;
+  metadata?: ScoreMetadata;
   queuedAt: string;
+  retries?: number;
 };
 
 async function getQueue(): Promise<QueuedScore[]> {
@@ -35,12 +40,14 @@ export async function enqueueScore(
   matchId: string,
   teamAScore: number,
   teamBScore: number,
+  metadata?: ScoreMetadata,
 ): Promise<void> {
   const queue = await getQueue();
   queue.push({
     matchId,
     teamAScore,
     teamBScore,
+    metadata,
     queuedAt: new Date().toISOString(),
   });
   await saveQueue(queue);
@@ -60,16 +67,31 @@ export async function flushQueue(): Promise<number> {
   const queue = await getQueue();
   if (queue.length === 0) return 0;
 
+  const now = Date.now();
   const remaining: QueuedScore[] = [];
   let submitted = 0;
 
   for (const item of queue) {
+    // Drop items that are too old — scores from days ago are stale
+    const age = now - new Date(item.queuedAt).getTime();
+    if (age > MAX_AGE_MS) {
+      console.warn(`[offline-queue] Dropping stale score for match ${item.matchId} (age: ${Math.round(age / 3600000)}h)`);
+      continue;
+    }
+
+    // Drop items that have exceeded max retries
+    const retries = item.retries ?? 0;
+    if (retries >= MAX_RETRIES) {
+      console.warn(`[offline-queue] Dropping score for match ${item.matchId} after ${retries} retries`);
+      continue;
+    }
+
     try {
-      await submitScore(item.matchId, item.teamAScore, item.teamBScore);
+      await submitScore(item.matchId, item.teamAScore, item.teamBScore, item.metadata);
       submitted++;
     } catch {
-      // Keep failed items in the queue for the next flush
-      remaining.push(item);
+      // Keep failed items with incremented retry count
+      remaining.push({ ...item, retries: retries + 1 });
     }
   }
 

@@ -63,6 +63,9 @@ export function Button({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         styles.base,
         styles[variant],
@@ -121,8 +124,8 @@ const styles = StyleSheet.create({
   },
   size_sm: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 36,
+    paddingVertical: 10,
+    minHeight: 44,
   },
   size_md: {
     paddingHorizontal: 24,
@@ -145,6 +148,7 @@ const styles = StyleSheet.create({
   },
   text_primary: {
     color: Colors.darkBg,
+    fontFamily: Fonts.display,
   },
   text_secondary: {
     color: Colors.text,

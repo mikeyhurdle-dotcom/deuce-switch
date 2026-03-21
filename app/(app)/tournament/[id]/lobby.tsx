@@ -1,17 +1,90 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+  FadeIn,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentNotifications } from '../../../../src/hooks/useNotifications';
-import { startTournament } from '../../../../src/services/tournament-service';
-import { Colors, Fonts } from '../../../../src/lib/constants';
+import { startTournament, addGuestPlayer } from '../../../../src/services/tournament-service';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts, Spacing, Radius } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
 import { TournamentQR } from '../../../../src/components/TournamentQR';
+import { AnimatedPressable, useSpringPress } from '../../../../src/hooks/useSpringPress';
+
+const ROW_STAGGER = 60; // ms between each player row animation
+
+// ── Animated Player Row ──────────────────────────────────────────────────────
+function PlayerRow({
+  displayName,
+  index,
+  isHost,
+}: {
+  displayName: string;
+  index: number;
+  isHost: boolean;
+}) {
+  const translateY = useSharedValue(20);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const delay = 150 + index * ROW_STAGGER;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[styles.playerRow, animStyle]}
+      accessible
+      accessibilityLabel={`Player ${index + 1}: ${displayName}${isHost ? ', host' : ''}`}
+    >
+      <View style={styles.playerNumber}>
+        <Text style={styles.playerNumText}>{index + 1}</Text>
+      </View>
+      <Text style={styles.playerName}>{displayName}</Text>
+      {isHost && <Badge label="Host" variant="info" />}
+    </Animated.View>
+  );
+}
+
+// ── Import Players Button (spring press) ─────────────────────────────────────
+function ImportPlayersButton({ onPress }: { onPress: () => void }) {
+  const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
+  return (
+    <AnimatedPressable
+      style={[styles.importButton, animatedStyle]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Import players from screenshot"
+    >
+      <Ionicons name="camera-outline" size={20} color={Colors.aquaGreen} />
+      <Text style={styles.importButtonText}>Import Players from Screenshot</Text>
+      <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+    </AnimatedPressable>
+  );
+}
 
 export default function Lobby() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,6 +93,9 @@ export default function Lobby() {
   useTournamentNotifications({ tournament });
   const [starting, setStarting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [addingPlayer, setAddingPlayer] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -39,6 +115,24 @@ export default function Lobby() {
     }
   }, [tournament?.status]);
 
+  const handleAddPlayer = async () => {
+    const name = guestName.trim();
+    if (!name || !id) return;
+    setAddingPlayer(true);
+    try {
+      await addGuestPlayer(id, name);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setGuestName('');
+      setShowAddPlayer(false);
+      await refetch();
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', e.message ?? 'Failed to add player');
+    } finally {
+      setAddingPlayer(false);
+    }
+  };
+
   const handleStart = async () => {
     if (!id) return;
     if (players.length < 4) {
@@ -46,16 +140,29 @@ export default function Lobby() {
       return;
     }
 
-    setStarting(true);
-    try {
-      await startTournament(id);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', e.message ?? 'Failed to start tournament');
-    } finally {
-      setStarting(false);
-    }
+    Alert.alert(
+      'Start Tournament?',
+      `${players.length} players are in the lobby. Once started, new players won't be able to join.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start',
+          style: 'default',
+          onPress: async () => {
+            setStarting(true);
+            try {
+              await startTournament(id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (e: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', e.message ?? 'Failed to start tournament');
+            } finally {
+              setStarting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (loading || !tournament) {
@@ -114,15 +221,12 @@ export default function Lobby() {
             </View>
 
             {players.map((p, i) => (
-              <View key={p.playerId} style={styles.playerRow}>
-                <View style={styles.playerNumber}>
-                  <Text style={styles.playerNumText}>{i + 1}</Text>
-                </View>
-                <Text style={styles.playerName}>{p.displayName}</Text>
-                {p.playerId === tournament.organizer_id && (
-                  <Badge label="Host" variant="info" />
-                )}
-              </View>
+              <PlayerRow
+                key={p.playerId}
+                displayName={p.displayName}
+                index={i}
+                isHost={p.playerId === tournament.organizer_id}
+              />
             ))}
 
             {players.length < 4 && (
@@ -132,6 +236,73 @@ export default function Lobby() {
               </Text>
             )}
           </View>
+
+          {/* Add Player — Organiser Only */}
+          {isOrganiser && !showAddPlayer && (
+            <Pressable
+              style={styles.addPlayerButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowAddPlayer(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Add player manually"
+            >
+              <Ionicons name="person-add-outline" size={20} color={Colors.opticYellow} />
+              <Text style={styles.addPlayerButtonText}>Add Player</Text>
+            </Pressable>
+          )}
+
+          {/* Add Player Inline Form */}
+          {isOrganiser && showAddPlayer && (
+            <View style={styles.addPlayerForm}>
+              <TextInput
+                style={styles.addPlayerInput}
+                placeholder="Player name"
+                placeholderTextColor={Colors.textMuted}
+                value={guestName}
+                onChangeText={setGuestName}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAddPlayer}
+              />
+              <View style={styles.addPlayerActions}>
+                <Pressable
+                  style={styles.addPlayerCancel}
+                  onPress={() => {
+                    setShowAddPlayer(false);
+                    setGuestName('');
+                  }}
+                >
+                  <Text style={styles.addPlayerCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.addPlayerConfirm, !guestName.trim() && { opacity: 0.4 }]}
+                  onPress={handleAddPlayer}
+                  disabled={!guestName.trim() || addingPlayer}
+                >
+                  {addingPlayer ? (
+                    <ActivityIndicator size="small" color={Colors.darkBg} />
+                  ) : (
+                    <Text style={styles.addPlayerConfirmText}>Add</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {/* Import Players — Organiser Only */}
+          {isOrganiser && (
+            <ImportPlayersButton
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: '/(app)/import-matches',
+                  params: { tournamentId: id },
+                });
+              }}
+            />
+          )}
 
           {/* Organiser Controls */}
           {isOrganiser && (
@@ -247,5 +418,84 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textDim,
+  },
+  importButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    paddingVertical: Spacing[4],
+    paddingHorizontal: Spacing[4],
+  },
+  importButtonText: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.aquaGreen,
+  },
+  addPlayerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[2],
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.opticYellow,
+    borderStyle: 'dashed',
+    paddingVertical: Spacing[4],
+    paddingHorizontal: Spacing[4],
+  },
+  addPlayerButtonText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.opticYellow,
+  },
+  addPlayerForm: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    padding: Spacing[4],
+    gap: Spacing[3],
+  },
+  addPlayerInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.sm,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing[4],
+    fontFamily: Fonts.body,
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
+  addPlayerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing[3],
+  },
+  addPlayerCancel: {
+    paddingVertical: 10,
+    paddingHorizontal: Spacing[4],
+  },
+  addPlayerCancelText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.textDim,
+  },
+  addPlayerConfirm: {
+    backgroundColor: Colors.opticYellow,
+    borderRadius: Radius.sm,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing[6],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  addPlayerConfirmText: {
+    fontFamily: Fonts.heading,
+    fontSize: 14,
+    color: Colors.darkBg,
   },
 });

@@ -195,7 +195,14 @@ export default function CreateTournament() {
   // ── Create Tournament ────────────────────────────────────────────────────
 
   const handleCreate = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert(
+        'Not Signed In',
+        'You need to be signed in to create a tournament. Please sign out and sign back in.',
+      );
+      console.error('handleCreate: user is null — auth session missing');
+      return;
+    }
     if (!name.trim()) {
       setCurrentStep(1);
       setNameError('Tournament name is required');
@@ -230,6 +237,8 @@ export default function CreateTournament() {
       const format = FORMATS[selectedFormat];
       const joinCode = generateJoinCode();
 
+      console.log('Creating tournament:', { name: name.trim(), format: format.id, joinCode, userId: user.id });
+
       const { data: tournament, error } = await supabase
         .from('tournaments')
         .insert({
@@ -244,26 +253,55 @@ export default function CreateTournament() {
           venue_name: selectedVenue?.name ?? null,
           venue_address: selectedVenue?.address ?? null,
           venue_city: selectedVenue?.city ?? null,
-          status: 'lobby',
+          status: 'draft',
           current_round: 0,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        Alert.alert(
+          'Tournament Creation Failed',
+          `${error.message || 'Unknown error'}\n\nCode: ${error.code ?? 'none'}\nDetails: ${error.details ?? 'none'}`,
+        );
+        console.error('Tournament insert error:', JSON.stringify(error, null, 2));
+        return;
+      }
 
-      // Add organiser as first player
-      await supabase.from('tournament_players').insert({
-        tournament_id: data.id,
-        player_id: user?.id,
-        tournament_status: 'active',
-      });
+      console.log('Tournament created:', tournament.id);
+
+      // Add organiser as first player — retry once on failure
+      let playerInserted = false;
+      for (let attempt = 0; attempt < 2 && !playerInserted; attempt++) {
+        const { error: playerError } = await supabase
+          .from('tournament_players')
+          .insert({
+            tournament_id: tournament.id,
+            player_id: user.id,
+            tournament_status: 'active',
+          });
+
+        if (!playerError) {
+          playerInserted = true;
+        } else if (attempt === 1) {
+          Alert.alert(
+            'Warning',
+            `Tournament created but failed to add you as a player. Join manually with code: ${joinCode}`,
+          );
+          console.error('tournament_players insert error:', playerError);
+        }
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/tournament/${data.id}/lobby`);
-    } catch (err) {
-      Alert.alert('Error', 'Failed to create tournament. Please try again.');
-      console.error(err);
+      router.replace(`/tournament/${tournament.id}/lobby`);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : JSON.stringify(err);
+      Alert.alert(
+        'Unexpected Error',
+        `Failed to create tournament: ${message}`,
+      );
+      console.error('Tournament creation error:', err);
     } finally {
       setLoading(false);
     }

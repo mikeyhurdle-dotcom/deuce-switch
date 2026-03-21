@@ -64,7 +64,7 @@ export default function ConnectionsScreen() {
       setConnections(conns);
       setPendingRequests(pending);
     } catch (err) {
-      console.error('[Connections] fetch error:', err);
+      // Fetch error — empty state handles it
     }
   }, [user]);
 
@@ -131,7 +131,6 @@ export default function ConnectionsScreen() {
             headerTitleStyle: {
               fontFamily: Fonts.mono,
               fontSize: 14,
-              letterSpacing: 2,
             },
           }}
         />
@@ -153,7 +152,6 @@ export default function ConnectionsScreen() {
           headerTitleStyle: {
             fontFamily: Fonts.mono,
             fontSize: 14,
-            letterSpacing: 2,
           },
         }}
       />
@@ -192,6 +190,7 @@ export default function ConnectionsScreen() {
                   onChangeText={setSearchQuery}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  accessibilityLabel="Search connections"
                 />
                 {searchQuery.length > 0 && (
                   <Pressable
@@ -265,7 +264,7 @@ export default function ConnectionsScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>🏓</Text>
+              <Ionicons name="tennisball-outline" size={48} color={Colors.textMuted} />
               <Text style={styles.emptyTitle}>
                 {searchQuery.trim()
                   ? 'No matches found'
@@ -400,10 +399,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[12],
     paddingHorizontal: Spacing[8],
     gap: Spacing[2],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: Spacing[2],
   },
   emptyTitle: {
     fontFamily: Fonts.heading,

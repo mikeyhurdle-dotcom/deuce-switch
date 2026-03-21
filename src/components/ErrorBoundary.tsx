@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '../lib/constants';
 import { Button } from './ui/Button';
 
@@ -30,8 +31,8 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.icon}>⚠️</Text>
+        <View style={styles.container} accessibilityRole="alert">
+          <Ionicons name="warning-outline" size={48} color={Colors.warning} />
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.message}>
             {this.props.fallbackMessage ??
@@ -60,9 +61,7 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 16,
   },
-  icon: {
-    fontSize: 48,
-  },
+  // icon style removed — using Ionicons directly
   title: {
     fontFamily: Fonts.heading,
     fontSize: 20,

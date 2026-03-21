@@ -1,25 +1,27 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Logo from '../../../assets/images/smashd-logo.svg';
 
 type SmashdLogoProps = {
   size?: number;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const logoSource = require('../../../assets/images/smashd-logo.svg');
-
 export function SmashdLogo({ size = 48 }: SmashdLogoProps) {
   return (
-    <Image
-      source={logoSource}
-      style={[styles.logo, { width: size, height: size }]}
-      resizeMode="contain"
-    />
+    <View
+      style={[styles.container, { width: size, height: size }]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel="Smashd logo"
+    >
+      <Logo width={size} height={size} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: {
+  container: {
     borderRadius: 8,
+    overflow: 'hidden',
   },
 });
