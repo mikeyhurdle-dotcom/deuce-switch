@@ -95,6 +95,7 @@ export const FORMATS: TournamentFormat[] = [
 
 // ── Toggle Config ───────────────────────────────────────────────────────────
 export const TOGGLES = [
+  { key: 'hostOnly', label: 'Host Only (Don\'t Play)', hint: 'Organise without being added as a player', defaultOn: false },
   { key: 'public', label: 'Public Event', hint: 'Listed in local event discovery', defaultOn: false },
   { key: 'lateJoiners', label: 'Allow Late Joiners', hint: 'Players can join after round 1', defaultOn: true },
   { key: 'tvDisplay', label: 'TV Display Mode', hint: 'Show courts & scores on a big screen', defaultOn: false },

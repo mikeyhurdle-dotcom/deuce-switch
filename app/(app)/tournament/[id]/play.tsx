@@ -505,7 +505,9 @@ export default function Play() {
             <Card>
               <View style={styles.noMatch}>
                 <Text style={styles.noMatchText}>
-                  No match assigned this round. You have a bye.
+                  {isOrganiser && !players.some((p) => p.playerId === user?.id)
+                    ? 'You are hosting this tournament. Use the controls below to manage rounds.'
+                    : 'No match assigned this round. You have a bye.'}
                 </Text>
               </View>
             </Card>

@@ -269,6 +269,14 @@ export default function Lobby() {
             </View>
           )}
 
+          {/* Host-only indicator — organiser not playing */}
+          {isOrganiser && !players.some((p) => p.playerId === user?.id) && (
+            <View style={styles.hostOnlyBanner}>
+              <Ionicons name="shield-outline" size={18} color={Colors.aquaGreen} />
+              <Text style={styles.hostOnlyText}>You are hosting this tournament (not playing)</Text>
+            </View>
+          )}
+
           {/* Player List */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -409,6 +417,23 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
     gap: 24,
+  },
+  hostOnlyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[2],
+    backgroundColor: 'rgba(0,207,193,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,207,193,0.25)',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[4],
+  },
+  hostOnlyText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 13,
+    color: Colors.aquaGreen,
+    flex: 1,
   },
   codeSection: {
     alignItems: 'center',

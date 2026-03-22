@@ -275,25 +275,27 @@ export default function CreateTournament() {
 
       console.log('Tournament created:', tournament.id);
 
-      // Add organiser as first player — retry once on failure
-      let playerInserted = false;
-      for (let attempt = 0; attempt < 2 && !playerInserted; attempt++) {
-        const { error: playerError } = await supabase
-          .from('tournament_players')
-          .insert({
-            tournament_id: tournament.id,
-            player_id: user.id,
-            tournament_status: 'active',
-          });
+      // Add organiser as a player UNLESS they chose "Host Only"
+      if (!toggles.hostOnly) {
+        let playerInserted = false;
+        for (let attempt = 0; attempt < 2 && !playerInserted; attempt++) {
+          const { error: playerError } = await supabase
+            .from('tournament_players')
+            .insert({
+              tournament_id: tournament.id,
+              player_id: user.id,
+              tournament_status: 'active',
+            });
 
-        if (!playerError) {
-          playerInserted = true;
-        } else if (attempt === 1) {
-          Alert.alert(
-            'Warning',
-            `Tournament created but failed to add you as a player. Join manually with code: ${joinCode}`,
-          );
-          console.error('tournament_players insert error:', playerError);
+          if (!playerError) {
+            playerInserted = true;
+          } else if (attempt === 1) {
+            Alert.alert(
+              'Warning',
+              `Tournament created but failed to add you as a player. Join manually with code: ${joinCode}`,
+            );
+            console.error('tournament_players insert error:', playerError);
+          }
         }
       }
 
