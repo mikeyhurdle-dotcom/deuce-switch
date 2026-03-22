@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Pressable,
   RefreshControl,
@@ -33,6 +34,7 @@ import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
 import { ShareCard } from '../../../../src/components/ShareCard';
 import { shareResultsCard } from '../../../../src/services/share-service';
+import { createTournamentPost } from '../../../../src/services/feed-service';
 import LeaderboardFilterRow, {
   type LeaderboardFilter,
 } from '../../../../src/components/tournament/LeaderboardFilterRow';
@@ -545,6 +547,8 @@ export default function Results() {
   const [refreshing, setRefreshing] = useState(false);
   const [leaderboardFilter, setLeaderboardFilter] = useState<LeaderboardFilter>('game');
   const [shareTheme, setShareTheme] = useState<ShareTheme>('dark');
+  const [postingToFeed, setPostingToFeed] = useState(false);
+  const [postedToFeed, setPostedToFeed] = useState(false);
 
   // Find current player's standing for the personal share card
   const myStanding = useMemo(() => {
@@ -678,13 +682,35 @@ export default function Results() {
           {/* Primary CTA — Add to Feed */}
           <Animated.View entering={FadeInUp.duration(400).delay(800)} style={styles.actions}>
             <Pressable
-              onPress={() => {
+              onPress={async () => {
+                if (postedToFeed || postingToFeed || !id || !tournament) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push(`/(app)/tournament/${id}/post` as any);
+                setPostingToFeed(true);
+                try {
+                  const rank = myStanding ? `#${myStanding.rank}` : '';
+                  const content = rank
+                    ? `Finished ${rank} in ${tournament.name}! 🏆`
+                    : `Just played in ${tournament.name}! 🎾`;
+                  await createTournamentPost(id, content);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  setPostedToFeed(true);
+                } catch (e: any) {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                  Alert.alert('Error', e.message ?? 'Failed to post to feed');
+                } finally {
+                  setPostingToFeed(false);
+                }
               }}
-              style={styles.primaryCta}
+              style={[styles.primaryCta, postedToFeed && { opacity: 0.5 }]}
+              disabled={postedToFeed || postingToFeed}
             >
-              <Text style={styles.primaryCtaText}>ADD TO FEED</Text>
+              {postingToFeed ? (
+                <ActivityIndicator size="small" color={Colors.darkBg} />
+              ) : (
+                <Text style={styles.primaryCtaText}>
+                  {postedToFeed ? 'POSTED TO FEED ✓' : 'ADD TO FEED'}
+                </Text>
+              )}
             </Pressable>
 
             {/* Secondary row */}

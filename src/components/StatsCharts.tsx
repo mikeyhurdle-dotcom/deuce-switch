@@ -3,8 +3,8 @@
  * Uses react-native-svg for charts (no native Skia dependency), Electric Court design system.
  */
 
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState, useCallback } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Svg, {
@@ -314,6 +314,7 @@ export function WinRateTrendChart({ data }: WinRateTrendProps) {
 type MatchHistoryProps = {
   matches: MatchHistoryItem[];
   onLoadMore?: () => void;
+  onUpdateMatch?: (matchId: string, updates: { intensity?: string | null; conditions?: string | null; court_side?: string | null }) => void;
 };
 
 const SOURCE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -327,13 +328,32 @@ const SOURCE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   open_game: 'tennisball-outline',
 };
 
-export function MatchHistoryFeed({ matches, onLoadMore }: MatchHistoryProps) {
+export function MatchHistoryFeed({ matches, onLoadMore, onUpdateMatch }: MatchHistoryProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   if (matches.length === 0) return null;
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString('en', { weekday: 'short', day: 'numeric', month: 'short' });
   };
+
+  const INTENSITY_ORDER: Array<string | null> = [null, 'casual', 'competitive', 'intense'];
+  const CONDITIONS_ORDER: Array<string | null> = [null, 'indoor', 'outdoor'];
+  const COURT_SIDE_ORDER: Array<string | null> = [null, 'left', 'right', 'both'];
+
+  const cycleField = (match: MatchHistoryItem, field: 'intensity' | 'conditions' | 'courtSide') => {
+    if (!onUpdateMatch) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const order = field === 'intensity' ? INTENSITY_ORDER : field === 'conditions' ? CONDITIONS_ORDER : COURT_SIDE_ORDER;
+    const current = match[field];
+    const idx = order.indexOf(current);
+    const next = order[(idx + 1) % order.length];
+    const dbField = field === 'courtSide' ? 'court_side' : field;
+    onUpdateMatch(match.id, { [dbField]: next });
+  };
+
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   return (
     <View>
@@ -342,58 +362,135 @@ export function MatchHistoryFeed({ matches, onLoadMore }: MatchHistoryProps) {
         <Text style={styles.sectionSubtitle}>{matches.length} matches</Text>
       </View>
 
-      {matches.map((match, index) => (
-        <View
-          key={match.id}
-          style={[styles.historyRow, index === matches.length - 1 && { marginBottom: 0 }]}
-        >
-          <View style={[styles.historyIndicator, match.won ? styles.historyWin : styles.historyLoss]} />
-          <View style={styles.historyContent}>
-            <View style={styles.historyTopRow}>
-              <Text style={styles.historyDate}>{formatDate(match.date)}</Text>
-              <View style={styles.historyScoreBadge}>
-                <Text style={[styles.historyScore, match.won ? { color: Colors.success } : { color: Colors.error }]}>
-                  {match.teamScore} - {match.opponentScore}
-                </Text>
+      {matches.map((match, index) => {
+        const isExpanded = expandedId === match.id;
+        return (
+          <Pressable
+            key={match.id}
+            style={[styles.historyRow, index === matches.length - 1 && { marginBottom: 0 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setExpandedId(isExpanded ? null : match.id);
+            }}
+          >
+            <View style={[styles.historyIndicator, match.won ? styles.historyWin : styles.historyLoss]} />
+            <View style={styles.historyContent}>
+              <View style={styles.historyTopRow}>
+                <Text style={styles.historyDate}>{formatDate(match.date)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={styles.historyScoreBadge}>
+                    <Text style={[styles.historyScore, match.won ? { color: Colors.success } : { color: Colors.error }]}>
+                      {match.teamScore} - {match.opponentScore}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={14}
+                    color={Colors.textMuted}
+                  />
+                </View>
               </View>
-            </View>
 
-            {match.setScores && match.setScores.length > 0 && (
-              <View style={styles.historySets}>
-                {match.setScores.map((set, si) => (
-                  <Text key={si} style={styles.historySetText}>{set.team_a}-{set.team_b}</Text>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.historyPlayers}>
-              {match.partnerName && (
-                <Text style={styles.historyPlayerText}>w/ {match.partnerName}</Text>
-              )}
-              {match.opponent1Name && (
-                <Text style={styles.historyOpponentText}>
-                  vs {match.opponent1Name}{match.opponent2Name ? ` & ${match.opponent2Name}` : ''}
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.historyMeta}>
-              {match.venue && (
-                <View style={styles.historyMetaItem}>
-                  <Ionicons name="location-outline" size={11} color={Colors.textMuted} />
-                  <Text style={styles.historyMetaText}>{match.venue}</Text>
+              {match.setScores && match.setScores.length > 0 && (
+                <View style={styles.historySets}>
+                  {match.setScores.map((set, si) => (
+                    <Text key={si} style={styles.historySetText}>{set.team_a}-{set.team_b}</Text>
+                  ))}
                 </View>
               )}
-              <View style={styles.historyMetaItem}>
-                <Ionicons name={SOURCE_ICONS[match.source] ?? 'ellipse-outline'} size={11} color={Colors.textMuted} />
-                <Text style={styles.historyMetaText}>
-                  {match.matchType === 'friendly' ? 'Friendly' : match.matchType === 'tournament' ? 'Tournament' : 'Competitive'}
-                </Text>
+
+              <View style={styles.historyPlayers}>
+                {match.partnerName && (
+                  <Text style={styles.historyPlayerText}>w/ {match.partnerName}</Text>
+                )}
+                {match.opponent1Name && (
+                  <Text style={styles.historyOpponentText}>
+                    vs {match.opponent1Name}{match.opponent2Name ? ` & ${match.opponent2Name}` : ''}
+                  </Text>
+                )}
               </View>
+
+              <View style={styles.historyMeta}>
+                {match.venue && (
+                  <View style={styles.historyMetaItem}>
+                    <Ionicons name="location-outline" size={11} color={Colors.textMuted} />
+                    <Text style={styles.historyMetaText}>{match.venue}</Text>
+                  </View>
+                )}
+                <View style={styles.historyMetaItem}>
+                  <Ionicons name={SOURCE_ICONS[match.source] ?? 'ellipse-outline'} size={11} color={Colors.textMuted} />
+                  <Text style={styles.historyMetaText}>
+                    {match.matchType === 'friendly' ? 'Friendly' : match.matchType === 'tournament' ? 'Tournament' : 'Competitive'}
+                  </Text>
+                </View>
+                {/* Show existing detail chips inline */}
+                {match.intensity && (
+                  <View style={styles.historyMetaItem}>
+                    <Ionicons name="flame-outline" size={11} color={Colors.opticYellow} />
+                    <Text style={[styles.historyMetaText, { color: Colors.textDim }]}>{capitalize(match.intensity)}</Text>
+                  </View>
+                )}
+                {match.conditions && (
+                  <View style={styles.historyMetaItem}>
+                    <Ionicons name={match.conditions === 'outdoor' ? 'sunny-outline' : 'business-outline'} size={11} color={Colors.aquaGreen} />
+                    <Text style={[styles.historyMetaText, { color: Colors.textDim }]}>{capitalize(match.conditions)}</Text>
+                  </View>
+                )}
+                {match.courtSide && (
+                  <View style={styles.historyMetaItem}>
+                    <Ionicons name="swap-horizontal-outline" size={11} color={Colors.violet} />
+                    <Text style={[styles.historyMetaText, { color: Colors.textDim }]}>
+                      {match.courtSide === 'both' ? 'Both Sides' : capitalize(match.courtSide)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Expanded detail editor */}
+              {isExpanded && (
+                <View style={styles.historyExpanded}>
+                  <Text style={styles.historyExpandedLabel}>Tap to set details:</Text>
+                  <View style={styles.historyDetailChips}>
+                    <Pressable
+                      style={[styles.historyDetailChip, match.intensity && { borderColor: Colors.opticYellow }]}
+                      onPress={() => cycleField(match, 'intensity')}
+                    >
+                      <Ionicons name="flame-outline" size={13} color={match.intensity ? Colors.opticYellow : Colors.textMuted} />
+                      <Text style={[styles.historyDetailChipText, match.intensity && { color: Colors.textSecondary }]}>
+                        {match.intensity ? capitalize(match.intensity) : 'Intensity'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[styles.historyDetailChip, match.conditions && { borderColor: Colors.aquaGreen }]}
+                      onPress={() => cycleField(match, 'conditions')}
+                    >
+                      <Ionicons
+                        name={match.conditions === 'outdoor' ? 'sunny-outline' : 'business-outline'}
+                        size={13}
+                        color={match.conditions ? Colors.aquaGreen : Colors.textMuted}
+                      />
+                      <Text style={[styles.historyDetailChipText, match.conditions && { color: Colors.textSecondary }]}>
+                        {match.conditions ? capitalize(match.conditions) : 'Conditions'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[styles.historyDetailChip, match.courtSide && { borderColor: Colors.violet }]}
+                      onPress={() => cycleField(match, 'courtSide')}
+                    >
+                      <Ionicons name="swap-horizontal-outline" size={13} color={match.courtSide ? Colors.violet : Colors.textMuted} />
+                      <Text style={[styles.historyDetailChipText, match.courtSide && { color: Colors.textSecondary }]}>
+                        {match.courtSide ? (match.courtSide === 'both' ? 'Both Sides' : capitalize(match.courtSide)) : 'Court Side'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
             </View>
-          </View>
-        </View>
-      ))}
+          </Pressable>
+        );
+      })}
 
       {onLoadMore && matches.length >= 20 && (
         <Pressable
@@ -581,6 +678,39 @@ const styles = StyleSheet.create({
   historyMetaText: {
     fontFamily: Fonts.body,
     fontSize: 10,
+    color: Colors.textMuted,
+  },
+  historyExpanded: {
+    marginTop: Spacing[2],
+    paddingTop: Spacing[2],
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceLight,
+    gap: Spacing[2],
+  },
+  historyExpandedLabel: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  historyDetailChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing[2],
+  },
+  historyDetailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+    backgroundColor: Colors.surface,
+  },
+  historyDetailChipText: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
     color: Colors.textMuted,
   },
   loadMoreBtn: {

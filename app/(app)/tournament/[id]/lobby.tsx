@@ -87,15 +87,20 @@ function ImportPlayersButton({ onPress }: { onPress: () => void }) {
 }
 
 export default function Lobby() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, importedPlayers } = useLocalSearchParams<{
+    id: string;
+    importedPlayers?: string;
+  }>();
   const { user } = useAuth();
   const { tournament, players, loading, refetch } = useTournament(id ?? null);
   useTournamentNotifications({ tournament });
   const [starting, setStarting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
-  const [guestName, setGuestName] = useState('');
+  const [guestFirstName, setGuestFirstName] = useState('');
+  const [guestLastName, setGuestLastName] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -115,14 +120,60 @@ export default function Lobby() {
     }
   }, [tournament?.status]);
 
+  // Process imported players from the OCR import screen
+  useEffect(() => {
+    if (!importedPlayers || !id || importing) return;
+    let cancelled = false;
+
+    const addImportedPlayers = async () => {
+      setImporting(true);
+      try {
+        const names: string[] = JSON.parse(importedPlayers);
+        if (!Array.isArray(names) || names.length === 0) return;
+
+        let added = 0;
+        let failed = 0;
+        for (const name of names) {
+          if (cancelled) break;
+          const trimmed = name.trim();
+          if (!trimmed) continue;
+          try {
+            await addGuestPlayer(id, trimmed);
+            added++;
+          } catch {
+            failed++;
+          }
+        }
+
+        await refetch();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Players Imported',
+          `${added} player${added !== 1 ? 's' : ''} added to the lobby.${failed > 0 ? ` ${failed} failed.` : ''}`,
+        );
+      } catch {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Import Failed', 'Could not add imported players.');
+      } finally {
+        if (!cancelled) setImporting(false);
+      }
+    };
+
+    addImportedPlayers();
+    return () => { cancelled = true; };
+  }, [importedPlayers, id]);
+
   const handleAddPlayer = async () => {
-    const name = guestName.trim();
-    if (!name || !id) return;
+    const first = guestFirstName.trim();
+    const last = guestLastName.trim();
+    if (!first || !id) return;
+    const fullName = last ? `${first} ${last}` : first;
     setAddingPlayer(true);
     try {
-      await addGuestPlayer(id, name);
+      await addGuestPlayer(id, fullName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setGuestName('');
+      setGuestFirstName('');
+      setGuestLastName('');
       setShowAddPlayer(false);
       await refetch();
     } catch (e: any) {
@@ -210,6 +261,14 @@ export default function Lobby() {
             />
           )}
 
+          {/* Importing indicator */}
+          {importing && (
+            <View style={styles.importingBanner}>
+              <ActivityIndicator size="small" color={Colors.aquaGreen} />
+              <Text style={styles.importingText}>Adding imported players…</Text>
+            </View>
+          )}
+
           {/* Player List */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -256,30 +315,41 @@ export default function Lobby() {
           {/* Add Player Inline Form */}
           {isOrganiser && showAddPlayer && (
             <View style={styles.addPlayerForm}>
-              <TextInput
-                style={styles.addPlayerInput}
-                placeholder="Player name"
-                placeholderTextColor={Colors.textMuted}
-                value={guestName}
-                onChangeText={setGuestName}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={handleAddPlayer}
-              />
+              <View style={styles.addPlayerNameRow}>
+                <TextInput
+                  style={[styles.addPlayerInput, { flex: 1 }]}
+                  placeholder="First name"
+                  placeholderTextColor={Colors.textMuted}
+                  value={guestFirstName}
+                  onChangeText={setGuestFirstName}
+                  autoFocus
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={[styles.addPlayerInput, { flex: 1 }]}
+                  placeholder="Last name"
+                  placeholderTextColor={Colors.textMuted}
+                  value={guestLastName}
+                  onChangeText={setGuestLastName}
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddPlayer}
+                />
+              </View>
               <View style={styles.addPlayerActions}>
                 <Pressable
                   style={styles.addPlayerCancel}
                   onPress={() => {
                     setShowAddPlayer(false);
-                    setGuestName('');
+                    setGuestFirstName('');
+                    setGuestLastName('');
                   }}
                 >
                   <Text style={styles.addPlayerCancelText}>Cancel</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.addPlayerConfirm, !guestName.trim() && { opacity: 0.4 }]}
+                  style={[styles.addPlayerConfirm, !guestFirstName.trim() && { opacity: 0.4 }]}
                   onPress={handleAddPlayer}
-                  disabled={!guestName.trim() || addingPlayer}
+                  disabled={!guestFirstName.trim() || addingPlayer}
                 >
                   {addingPlayer ? (
                     <ActivityIndicator size="small" color={Colors.darkBg} />
@@ -297,7 +367,7 @@ export default function Lobby() {
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push({
-                  pathname: '/(app)/import-matches',
+                  pathname: '/(app)/tournament/import-players',
                   params: { tournamentId: id },
                 });
               }}
@@ -461,6 +531,10 @@ const styles = StyleSheet.create({
     padding: Spacing[4],
     gap: Spacing[3],
   },
+  addPlayerNameRow: {
+    flexDirection: 'row' as const,
+    gap: Spacing[2],
+  },
   addPlayerInput: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.sm,
@@ -497,5 +571,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.heading,
     fontSize: 14,
     color: Colors.darkBg,
+  },
+  importingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing[3],
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing[4],
+    paddingHorizontal: Spacing[4],
+    borderWidth: 1,
+    borderColor: Colors.aquaGreen,
+  },
+  importingText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.aquaGreen,
   },
 });

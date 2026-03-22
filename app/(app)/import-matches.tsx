@@ -44,6 +44,9 @@ type ReviewMatch = OCRMatch & {
   selected: boolean;
   matchType: MatchType;
   scoreEdited: boolean;
+  intensity: 'casual' | 'competitive' | 'intense' | null;
+  conditions: 'indoor' | 'outdoor' | null;
+  courtSide: 'left' | 'right' | 'both' | null;
 };
 
 type ProcessingStep = {
@@ -197,6 +200,9 @@ export default function ImportMatchesScreen() {
       const matches: ReviewMatch[] = (result.matches ?? []).map((m) => ({
         ...m,
         selected: true,
+        intensity: null,
+        conditions: null,
+        courtSide: null,
         matchType: m.match_type_hint ?? 'competitive',
         scoreEdited: false,
       }));
@@ -244,6 +250,42 @@ export default function ImportMatchesScreen() {
           ? { ...m, matchType: m.matchType === 'competitive' ? 'friendly' : 'competitive' }
           : m,
       ),
+    );
+  };
+
+  const cycleIntensity = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const order: Array<'casual' | 'competitive' | 'intense' | null> = [null, 'casual', 'competitive', 'intense'];
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        const curr = order.indexOf(m.intensity);
+        return { ...m, intensity: order[(curr + 1) % order.length] };
+      }),
+    );
+  };
+
+  const cycleConditions = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const order: Array<'indoor' | 'outdoor' | null> = [null, 'indoor', 'outdoor'];
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        const curr = order.indexOf(m.conditions);
+        return { ...m, conditions: order[(curr + 1) % order.length] };
+      }),
+    );
+  };
+
+  const cycleCourtSide = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const order: Array<'left' | 'right' | 'both' | null> = [null, 'left', 'right', 'both'];
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        const curr = order.indexOf(m.courtSide);
+        return { ...m, courtSide: order[(curr + 1) % order.length] };
+      }),
     );
   };
 
@@ -309,9 +351,9 @@ export default function ImportMatchesScreen() {
         user_team: m.user_team ?? 'a',
         won: m.won ?? false,
         match_type: m.matchType,
-        court_side: null,
-        intensity: null,
-        conditions: null,
+        court_side: m.courtSide ?? null,
+        intensity: m.intensity ?? null,
+        conditions: m.conditions ?? null,
         score_edited: m.scoreEdited,
         ratings: m.ratings ?? {},
       }));
@@ -680,6 +722,48 @@ export default function ImportMatchesScreen() {
                     </Text>
                   </Pressable>
                 </View>
+
+                {/* Match details — intensity, conditions, court side */}
+                <View style={styles.detailChipsRow}>
+                  <Pressable style={styles.detailChip} onPress={() => cycleIntensity(index)}>
+                    <Ionicons
+                      name="flame-outline"
+                      size={14}
+                      color={match.intensity ? Colors.opticYellow : Colors.textMuted}
+                    />
+                    <Text style={[styles.detailChipText, match.intensity && { color: Colors.textSecondary }]}>
+                      {match.intensity
+                        ? match.intensity.charAt(0).toUpperCase() + match.intensity.slice(1)
+                        : 'Intensity'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable style={styles.detailChip} onPress={() => cycleConditions(index)}>
+                    <Ionicons
+                      name={match.conditions === 'outdoor' ? 'sunny-outline' : 'business-outline'}
+                      size={14}
+                      color={match.conditions ? Colors.aquaGreen : Colors.textMuted}
+                    />
+                    <Text style={[styles.detailChipText, match.conditions && { color: Colors.textSecondary }]}>
+                      {match.conditions
+                        ? match.conditions.charAt(0).toUpperCase() + match.conditions.slice(1)
+                        : 'Conditions'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable style={styles.detailChip} onPress={() => cycleCourtSide(index)}>
+                    <Ionicons
+                      name="swap-horizontal-outline"
+                      size={14}
+                      color={match.courtSide ? Colors.violet : Colors.textMuted}
+                    />
+                    <Text style={[styles.detailChipText, match.courtSide && { color: Colors.textSecondary }]}>
+                      {match.courtSide
+                        ? match.courtSide === 'both' ? 'Both Sides' : match.courtSide.charAt(0).toUpperCase() + match.courtSide.slice(1)
+                        : 'Court Side'}
+                    </Text>
+                  </Pressable>
+                </View>
               </Animated.View>
             ))}
 
@@ -687,7 +771,7 @@ export default function ImportMatchesScreen() {
             <View style={styles.proTip}>
               <Ionicons name="bulb-outline" size={18} color={Colors.opticYellow} />
               <Text style={styles.proTipText}>
-                Tap a score to increase it, long-press to decrease. Toggle competitive/friendly per match.
+                Tap a score to increase it, long-press to decrease. Tap chips to set intensity, conditions, and court side.
               </Text>
             </View>
           </Animated.View>
@@ -1120,6 +1204,30 @@ const styles = StyleSheet.create({
   matchTypeToggleText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
+  },
+
+  // Detail chips (intensity, conditions, court side)
+  detailChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing[2],
+    marginTop: Spacing[2],
+  },
+  detailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+    backgroundColor: Colors.surface,
+  },
+  detailChipText: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
   },
 
   // Error / Retry

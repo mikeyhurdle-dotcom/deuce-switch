@@ -9,7 +9,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-import type { PlayerMatchResult, MatchSource, MatchType, TournamentFormat } from '../lib/types';
+import type { PlayerMatchResult, MatchSource, MatchType, MatchConditions, CourtSide, MatchIntensity, TournamentFormat } from '../lib/types';
 
 // ─── Public Types ───────────────────────────────────────────────────────────
 
@@ -328,12 +328,52 @@ const MATCH_TYPE_LABELS: Record<string, string> = {
   tournament: 'Tournament',
 };
 
+/**
+ * Resolve missing display names for partners/opponents by looking up profiles.
+ * Mutates rows in-place for efficiency.
+ */
+async function resolveNames(rows: PlayerMatchResult[]): Promise<void> {
+  // Collect IDs that have no name
+  const missingIds = new Set<string>();
+  for (const r of rows) {
+    if (r.partner_id && !r.partner_name) missingIds.add(r.partner_id);
+    if (r.opponent1_id && !r.opponent1_name) missingIds.add(r.opponent1_id);
+    if (r.opponent2_id && !r.opponent2_name) missingIds.add(r.opponent2_id);
+  }
+  if (missingIds.size === 0) return;
+
+  const ids = Array.from(missingIds);
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', ids);
+
+  if (!data || data.length === 0) return;
+
+  const nameMap = new Map(data.map((p: { id: string; display_name: string }) => [p.id, p.display_name]));
+
+  for (const r of rows) {
+    if (r.partner_id && !r.partner_name) {
+      (r as any).partner_name = nameMap.get(r.partner_id) ?? null;
+    }
+    if (r.opponent1_id && !r.opponent1_name) {
+      (r as any).opponent1_name = nameMap.get(r.opponent1_id) ?? null;
+    }
+    if (r.opponent2_id && !r.opponent2_name) {
+      (r as any).opponent2_name = nameMap.get(r.opponent2_id) ?? null;
+    }
+  }
+}
+
 export async function fetchPlayerStats(
   userId: string,
   period: Period,
   matchType: MatchTypeFilter = 'all',
 ): Promise<PlayerStats> {
   const rows = await fetchResults(userId, period, matchType);
+
+  // Resolve missing partner/opponent names from profiles
+  await resolveNames(rows);
 
   const matchesPlayed = rows.length;
   const matchesWon = rows.filter((r) => r.won).length;
@@ -433,6 +473,9 @@ export type MatchHistoryItem = {
   source: string;
   platformSource: string | null;
   setScores: Array<{ team_a: number; team_b: number }> | null;
+  intensity: string | null;
+  conditions: string | null;
+  courtSide: string | null;
 };
 
 export async function fetchMatchHistory(
@@ -469,5 +512,26 @@ export async function fetchMatchHistory(
     source: r.source,
     platformSource: r.platform_source ?? null,
     setScores: r.set_scores ?? null,
+    intensity: r.intensity ?? null,
+    conditions: r.conditions ?? null,
+    courtSide: r.court_side ?? null,
   }));
+}
+
+/**
+ * Update additional details on a match result (intensity, conditions, court side).
+ */
+export async function updateMatchDetails(
+  matchId: string,
+  updates: {
+    intensity?: MatchIntensity | null;
+    conditions?: MatchConditions | null;
+    court_side?: CourtSide | null;
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from('player_match_results')
+    .update(updates)
+    .eq('id', matchId);
+  if (error) throw error;
 }

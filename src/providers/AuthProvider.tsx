@@ -136,15 +136,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clean up push token before signing out
+      // Clean up push token before signing out (non-blocking)
       if (session?.user?.id) {
-        await removePushToken(session.user.id);
+        removePushToken(session.user.id).catch(() => {});
       }
       await supabase.auth.signOut();
+    } catch {
+      // Sign out from Supabase failed — clear local state anyway
+    } finally {
       setSession(null);
       setProfile(null);
-    } catch {
-      // Ignore sign-out errors
     }
   };
 

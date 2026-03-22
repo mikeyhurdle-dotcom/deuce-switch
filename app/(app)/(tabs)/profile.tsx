@@ -389,6 +389,10 @@ export default function Profile() {
   const [preferredPosition, setPreferredPosition] = useState<
     'left' | 'right' | 'both' | null
   >(profile?.preferred_position ?? null);
+  const [racketBrand, setRacketBrand] = useState(profile?.racket_brand ?? '');
+  const [racketModel, setRacketModel] = useState(profile?.racket_model ?? '');
+  const [shoeBrand, setShoeBrand] = useState(profile?.shoe_brand ?? '');
+  const [shoeModel, setShoeModel] = useState(profile?.shoe_model ?? '');
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -439,25 +443,56 @@ export default function Profile() {
       setSuggestions(suggestionsResult);
 
       if (!historyResult.error && historyResult.data) {
-        const items: RecentTournament[] = await Promise.all(
-          (historyResult.data as any[])
-            .filter((r) => r.tournaments)
-            .map(async (r) => {
-              const { count } = await supabase
-                .from('tournament_players')
-                .select('id', { count: 'exact', head: true })
-                .eq('tournament_id', r.tournament_id)
-                .eq('tournament_status', 'active');
+        const filtered = (historyResult.data as any[]).filter((r) => r.tournaments);
+        const tournamentIds = filtered.map((r) => r.tournament_id);
 
-              return {
-                tournament_id: r.tournament_id,
-                name: r.tournaments.name,
-                format: r.tournaments.tournament_format,
-                status: r.tournaments.status,
-                date: r.tournaments.created_at,
-                playerCount: count ?? 0,
-              };
-            }),
+        // Batch-fetch player match results for points & rank calculation
+        const { data: allResults } = tournamentIds.length > 0
+          ? await supabase
+              .from('player_match_results')
+              .select('tournament_id, player_id, team_score')
+              .in('tournament_id', tournamentIds)
+          : { data: [] };
+
+        // Build per-tournament leaderboard: { tournamentId -> { playerId -> totalPoints } }
+        const tournamentScores = new Map<string, Map<string, number>>();
+        for (const row of (allResults ?? []) as { tournament_id: string; player_id: string; team_score: number }[]) {
+          if (!tournamentScores.has(row.tournament_id)) {
+            tournamentScores.set(row.tournament_id, new Map());
+          }
+          const playerMap = tournamentScores.get(row.tournament_id)!;
+          playerMap.set(row.player_id, (playerMap.get(row.player_id) ?? 0) + (row.team_score ?? 0));
+        }
+
+        const items: RecentTournament[] = await Promise.all(
+          filtered.map(async (r) => {
+            const { count } = await supabase
+              .from('tournament_players')
+              .select('id', { count: 'exact', head: true })
+              .eq('tournament_id', r.tournament_id)
+              .eq('tournament_status', 'active');
+
+            // Calculate points and rank for this user in this tournament
+            const playerMap = tournamentScores.get(r.tournament_id);
+            const myPoints = playerMap?.get(user!.id) ?? 0;
+            let rank: number | undefined;
+            if (playerMap && playerMap.size > 0) {
+              const sorted = Array.from(playerMap.entries()).sort((a, b) => b[1] - a[1]);
+              const idx = sorted.findIndex(([pid]) => pid === user!.id);
+              if (idx !== -1) rank = idx + 1;
+            }
+
+            return {
+              tournament_id: r.tournament_id,
+              name: r.tournaments.name,
+              format: r.tournaments.tournament_format,
+              status: r.tournaments.status,
+              date: r.tournaments.created_at,
+              playerCount: count ?? 0,
+              totalPoints: myPoints,
+              rank,
+            };
+          }),
         );
         setRecentTournaments(items);
       }
@@ -491,6 +526,10 @@ export default function Profile() {
     setDisplayName(profile?.display_name ?? '');
     setBio(profile?.bio ?? '');
     setPreferredPosition(profile?.preferred_position ?? null);
+    setRacketBrand(profile?.racket_brand ?? '');
+    setRacketModel(profile?.racket_model ?? '');
+    setShoeBrand(profile?.shoe_brand ?? '');
+    setShoeModel(profile?.shoe_model ?? '');
     setEditing(true);
   };
 
@@ -511,6 +550,10 @@ export default function Profile() {
           display_name: displayName.trim(),
           bio: bio.trim() || null,
           preferred_position: preferredPosition,
+          racket_brand: racketBrand.trim() || null,
+          racket_model: racketModel.trim() || null,
+          shoe_brand: shoeBrand.trim() || null,
+          shoe_model: shoeModel.trim() || null,
         })
         .eq('id', user.id);
 
@@ -791,6 +834,52 @@ export default function Profile() {
                     ))}
                   </View>
                 </View>
+
+                {/* Equipment */}
+                <View style={styles.posSection}>
+                  <Text style={styles.posLabel}>MY EQUIPMENT</Text>
+                  <View style={styles.equipRow}>
+                    <View style={styles.equipField}>
+                      <Input
+                        label="RACKET BRAND"
+                        placeholder="e.g. Bullpadel"
+                        value={racketBrand}
+                        onChangeText={setRacketBrand}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                    <View style={styles.equipField}>
+                      <Input
+                        label="RACKET MODEL"
+                        placeholder="e.g. Vertex 03"
+                        value={racketModel}
+                        onChangeText={setRacketModel}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.equipRow}>
+                    <View style={styles.equipField}>
+                      <Input
+                        label="SHOE BRAND"
+                        placeholder="e.g. Asics"
+                        value={shoeBrand}
+                        onChangeText={setShoeBrand}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                    <View style={styles.equipField}>
+                      <Input
+                        label="SHOE MODEL"
+                        placeholder="e.g. Gel-Padel Pro 5"
+                        value={shoeModel}
+                        onChangeText={setShoeModel}
+                        autoCapitalize="words"
+                      />
+                    </View>
+                  </View>
+                </View>
+
                 <View style={styles.editActions}>
                   <Button
                     title="CANCEL"
@@ -871,6 +960,37 @@ export default function Profile() {
                   )}
                 />
               </View>
+              )}
+
+              {/* Equipment */}
+              {!editing && (profile?.racket_brand || profile?.shoe_brand) && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitlePadded}>MY EQUIPMENT</Text>
+                  <View style={styles.equipDisplayRow}>
+                    {profile?.racket_brand && (
+                      <View style={styles.equipDisplayCard}>
+                        <Ionicons name="tennisball-outline" size={20} color={Colors.opticYellow} />
+                        <View style={styles.equipDisplayInfo}>
+                          <Text style={styles.equipDisplayBrand}>{profile.racket_brand}</Text>
+                          {profile.racket_model && (
+                            <Text style={styles.equipDisplayModel}>{profile.racket_model}</Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                    {profile?.shoe_brand && (
+                      <View style={styles.equipDisplayCard}>
+                        <Ionicons name="footsteps-outline" size={20} color={Colors.aquaGreen} />
+                        <View style={styles.equipDisplayInfo}>
+                          <Text style={styles.equipDisplayBrand}>{profile.shoe_brand}</Text>
+                          {profile.shoe_model && (
+                            <Text style={styles.equipDisplayModel}>{profile.shoe_model}</Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                </View>
               )}
 
               {/* Partners */}
@@ -1510,6 +1630,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'center',
+  },
+
+  // ── Equipment (edit form) ──
+  equipRow: {
+    flexDirection: 'row',
+    gap: Spacing[2],
+  },
+  equipField: {
+    flex: 1,
+  },
+
+  // ── Equipment (display) ──
+  equipDisplayRow: {
+    flexDirection: 'row',
+    gap: Spacing[3],
+    paddingHorizontal: Spacing[5],
+  },
+  equipDisplayCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    padding: Spacing[4],
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  equipDisplayInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  equipDisplayBrand: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  equipDisplayModel: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textDim,
   },
 
   // ── Empty Tab ──

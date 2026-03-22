@@ -266,10 +266,10 @@ export default function ImportPlayersScreen() {
       .filter(p => p.matchedProfile)
       .map(p => p.matchedProfile!.id);
 
-    // Navigate back to create screen or lobby with player data
+    // Navigate back to lobby with player data
     if (params.tournamentId) {
-      router.push({
-        pathname: '/tournament/[id]/lobby',
+      router.replace({
+        pathname: '/(app)/tournament/[id]/lobby',
         params: {
           id: params.tournamentId,
           importedPlayers: JSON.stringify(playerNames),

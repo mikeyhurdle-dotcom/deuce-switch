@@ -49,6 +49,11 @@ export type Profile = {
   padelmates_name: string | null;
   nettla_name: string | null;
   matchii_name: string | null;
+  // Equipment
+  racket_brand: string | null;
+  racket_model: string | null;
+  shoe_brand: string | null;
+  shoe_model: string | null;
   created_at: string;
 };
 

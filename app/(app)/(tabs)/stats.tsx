@@ -38,6 +38,7 @@ import {
   type FormatBreakdown,
   type RatingPoint,
   type MatchHistoryItem,
+  updateMatchDetails,
 } from '../../../src/services/stats-service';
 import { RatingProgressionChart, WinRateTrendChart, MatchHistoryFeed } from '../../../src/components/StatsCharts';
 
@@ -713,7 +714,29 @@ export default function StatsScreen() {
             <DerivedAchievements stats={stats} totalMatchesPlayed={totalMatchesPlayed} />
 
             {/* Match History */}
-            <MatchHistoryFeed matches={matchHistory} onLoadMore={loadMoreHistory} />
+            <MatchHistoryFeed
+              matches={matchHistory}
+              onLoadMore={loadMoreHistory}
+              onUpdateMatch={async (matchId, updates) => {
+                try {
+                  await updateMatchDetails(matchId, updates as Parameters<typeof updateMatchDetails>[1]);
+                  // Optimistically update local state
+                  setMatchHistory((prev) =>
+                    prev.map((m) => {
+                      if (m.id !== matchId) return m;
+                      return {
+                        ...m,
+                        intensity: 'intensity' in updates ? (updates.intensity ?? null) : m.intensity,
+                        conditions: 'conditions' in updates ? (updates.conditions ?? null) : m.conditions,
+                        courtSide: 'court_side' in updates ? (updates.court_side ?? null) : m.courtSide,
+                      };
+                    }),
+                  );
+                } catch {
+                  // Silently fail — user can retry
+                }
+              }}
+            />
 
             {/* Bottom spacing */}
             <View style={{ height: Spacing[10] }} />
