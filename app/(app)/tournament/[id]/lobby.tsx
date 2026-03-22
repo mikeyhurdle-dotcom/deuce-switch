@@ -139,8 +139,13 @@ export default function Lobby() {
           if (cancelled) break;
           const trimmed = name.trim();
           if (!trimmed) continue;
+          // Privacy: truncate surname to initial for imported guest players
+          const parts = trimmed.split(/\s+/);
+          const safeName = parts.length > 1
+            ? `${parts.slice(0, -1).join(' ')} ${parts[parts.length - 1].charAt(0)}.`
+            : trimmed;
           try {
-            await addGuestPlayer(id, trimmed);
+            await addGuestPlayer(id, safeName);
             added++;
           } catch {
             failed++;
@@ -169,7 +174,8 @@ export default function Lobby() {
     const first = guestFirstName.trim();
     const last = guestLastName.trim();
     if (!first || !id) return;
-    const fullName = last ? `${first} ${last}` : first;
+    // Privacy: store surname initial only for non-Smashd users
+    const fullName = last ? `${first} ${last.charAt(0)}.` : first;
     setAddingPlayer(true);
     try {
       await addGuestPlayer(id, fullName);

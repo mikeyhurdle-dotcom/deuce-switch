@@ -98,6 +98,23 @@ export async function matchPlayerProfiles(
   return results;
 }
 
+// ─── Privacy Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Pseudonymise a player name for GDPR compliance.
+ * Non-Smashd users (no profileId) get their surname truncated to an initial.
+ * e.g. "Miguel Garcia" → "Miguel G."
+ */
+function pseudonymiseName(name: string | null, hasProfile: boolean): string | null {
+  if (!name) return null;
+  if (hasProfile) return name; // Smashd users consented — keep full name
+  const parts = name.trim().split(/\s+/);
+  if (parts.length <= 1) return name.trim();
+  const first = parts.slice(0, -1).join(' ');
+  const lastInitial = parts[parts.length - 1].charAt(0);
+  return `${first} ${lastInitial}.`;
+}
+
 // ─── Batch Save ─────────────────────────────────────────────────────────────
 
 /**
@@ -154,9 +171,9 @@ export async function saveImportedMatches(
         partner_id: partner?.profileId ?? null,
         opponent1_id: opp1?.profileId ?? null,
         opponent2_id: opp2?.profileId ?? null,
-        partner_name: partner?.name ?? null,
-        opponent1_name: opp1?.name ?? null,
-        opponent2_name: opp2?.name ?? null,
+        partner_name: pseudonymiseName(partner?.name ?? null, !!partner?.profileId),
+        opponent1_name: pseudonymiseName(opp1?.name ?? null, !!opp1?.profileId),
+        opponent2_name: pseudonymiseName(opp2?.name ?? null, !!opp2?.profileId),
         team_score: teamScore,
         opponent_score: opponentScore,
         won: match.won,
