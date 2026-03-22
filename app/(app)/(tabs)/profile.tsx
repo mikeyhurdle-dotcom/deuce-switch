@@ -720,23 +720,6 @@ export default function Profile() {
               </Text>
             )}
 
-            {/* Level Badge */}
-            <View style={styles.levelBadge}>
-              <Ionicons
-                name="shield-checkmark"
-                size={12}
-                color={Colors.aquaGreen}
-              />
-              <Text style={styles.levelText}>
-                {(profile?.smashd_level ?? 1) >= 20
-                  ? 'ELITE'
-                  : (profile?.smashd_level ?? 1) >= 10
-                    ? 'COMPETITOR'
-                    : 'ROOKIE'}{' '}
-                — Level {profile?.smashd_level ?? 1}
-              </Text>
-            </View>
-
             {/* Profile Meta */}
             <View style={styles.profileMeta}>
               <View style={styles.metaChip}>

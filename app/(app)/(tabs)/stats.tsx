@@ -12,15 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import Svg, {
-  Circle,
-  Polyline,
-  Defs,
-  LinearGradient as SvgGradient,
-  Stop,
-  Line,
-  Text as SvgText,
-} from 'react-native-svg';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { ListSkeleton } from '../../../src/components/ui/Skeleton';
@@ -111,53 +102,9 @@ function MatchTypeTabs({ active, onChange }: { active: MatchTypeFilter; onChange
   );
 }
 
-/** SVG Level Ring with progress arc */
-function LevelRing({ level, progress }: { level: string; progress: number }) {
-  const size = 72;
-  const strokeWidth = 5;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const filledArc = circumference * progress;
-
-  return (
-    <View style={styles.levelRingContainer}>
-      <Svg width={size} height={size} style={styles.levelRingSvg}>
-        {/* Track */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={Colors.surfaceLight}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {/* Progress arc */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={Colors.opticYellow}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={`${filledArc} ${circumference - filledArc}`}
-          strokeDashoffset={circumference * 0.25}
-          strokeLinecap="round"
-          rotation={-90}
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <View style={styles.levelInner}>
-        <Text style={styles.levelValue}>{level}</Text>
-        <Text style={styles.levelLabel}>LEVEL</Text>
-      </View>
-    </View>
-  );
-}
-
-/** Hero card with gradient background, level ring and key stats */
+/** Hero card with gradient background and key stats */
 function HeroCard({
   name,
-  level,
   matchesPlayed,
   winRate,
   tournamentCount,
@@ -165,19 +112,22 @@ function HeroCard({
   playingSince,
 }: {
   name: string;
-  level: number;
   matchesPlayed: number;
   winRate: number;
   tournamentCount: number;
   streak: { type: string; count: number };
   playingSince: string;
 }) {
-  const levelStr = level.toFixed(1);
-  const levelProgress = level > 0 ? (level % 1) || 1.0 : 0;
   const createdDate = new Date(playingSince);
   const monthsDiff = Math.max(1, Math.round((Date.now() - createdDate.getTime()) / (30 * 86_400_000)));
   const sinceMonth = createdDate.toLocaleString('en', { month: 'short', year: 'numeric' });
   const streakLabel = streak.count > 0 ? `${streak.type}${streak.count}` : '-';
+  const initials = name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <View style={styles.heroCardOuter}>
@@ -191,9 +141,11 @@ function HeroCard({
         {/* Glow overlay (top-right) */}
         <View style={styles.heroGlow} />
 
-        {/* Top row: level ring + info */}
+        {/* Top row: avatar + info */}
         <View style={styles.heroTop}>
-          <LevelRing level={levelStr} progress={levelProgress} />
+          <View style={styles.heroAvatar}>
+            <Text style={styles.heroAvatarText}>{initials}</Text>
+          </View>
           <View style={styles.heroInfo}>
             <Text style={styles.heroName}>{name}</Text>
             <Text style={styles.heroSub}>
@@ -285,7 +237,7 @@ function StatsInsight({ stats }: { stats: PlayerStats }) {
     return (
       <InsightCard icon="flash-outline">
         You've won <Hl>{stats.currentStreak.count} in a row</Hl> — your best form yet.
-        Keep this up and the level will keep climbing.
+        Keep it up!
       </InsightCard>
     );
   }
@@ -575,7 +527,6 @@ export default function StatsScreen() {
   };
 
   const displayName = profile?.display_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Player';
-  const level = profile?.smashd_level ?? 0;
   const totalMatchesPlayed = profile?.matches_played ?? 0;
   const playingSince = profile?.created_at ?? new Date().toISOString();
   const hasMatches = stats !== null && stats.matchesPlayed > 0;
@@ -636,7 +587,7 @@ export default function StatsScreen() {
             {/* Empty hero with real profile data (level 0, 0 matches) */}
             <HeroCard
               name={displayName}
-              level={level}
+
               matchesPlayed={0}
               winRate={0}
               tournamentCount={0}
@@ -656,7 +607,7 @@ export default function StatsScreen() {
             {/* Hero Card — real data */}
             <HeroCard
               name={displayName}
-              level={level}
+
               matchesPlayed={stats.matchesPlayed}
               winRate={stats.winRate}
               tournamentCount={stats.tournamentCount}
@@ -854,31 +805,21 @@ const styles = StyleSheet.create({
     gap: Spacing[4],
     marginBottom: Spacing[4],
   },
-  // Level ring (SVG)
-  levelRingContainer: {
-    width: 72,
-    height: 72,
+  // Hero avatar
+  heroAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: Colors.opticYellow,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelRingSvg: {
-    position: 'absolute',
-  },
-  levelInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  levelValue: {
-    fontFamily: Fonts.mono,
-    fontSize: 22,
+  heroAvatarText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 18,
     color: Colors.opticYellow,
-    lineHeight: 26,
-  },
-  levelLabel: {
-    fontFamily: Fonts.mono,
-    fontSize: 8,
-    color: Colors.textMuted,
-    letterSpacing: 1,
   },
   heroInfo: {
     flex: 1,

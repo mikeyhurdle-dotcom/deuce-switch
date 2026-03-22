@@ -1,22 +1,20 @@
 import { useState } from 'react';
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { supabase } from '../../src/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../src/hooks/useSpringPress';
 
@@ -61,44 +59,6 @@ function ProfileCard() {
 // ── Section Label ────────────────────────────────────────────────────────────
 function SectionLabel({ title }: { title: string }) {
   return <Text style={styles.sectionLabel}>{title}</Text>;
-}
-
-// ── Toggle Row ───────────────────────────────────────────────────────────────
-function ToggleRow({
-  icon,
-  iconColor,
-  iconBg,
-  label,
-  sub,
-  value,
-  onValueChange,
-}: {
-  icon: IconName;
-  iconColor: string;
-  iconBg: string;
-  label: string;
-  sub: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-}) {
-  return (
-    <View style={styles.settingRow} accessible accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={sub} accessibilityState={{ checked: value }}>
-      <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={16} color={iconColor} />
-      </View>
-      <View style={styles.settingContent}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Text style={styles.settingSub}>{sub}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: Colors.surfaceLight, true: Colors.opticYellow }}
-        thumbColor="#FFFFFF"
-        accessibilityLabel={label}
-      />
-    </View>
-  );
 }
 
 // ── Chevron Row ──────────────────────────────────────────────────────────────
@@ -152,6 +112,33 @@ function ChevronRow({
   );
 }
 
+// ── Info Row (non-tappable, just displays a value) ──────────────────────────
+function InfoRow({
+  icon,
+  iconColor,
+  iconBg,
+  label,
+  value,
+}: {
+  icon: IconName;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.settingRow}>
+      <View style={[styles.settingIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={16} color={iconColor} />
+      </View>
+      <View style={styles.settingContent}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingSub}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
 // ── Linked Account Row ───────────────────────────────────────────────────────
 function LinkedRow({
   logo,
@@ -160,7 +147,6 @@ function LinkedRow({
   status,
   statusColor,
   btnLabel,
-  btnStyle,
 }: {
   logo: string;
   logoBg: string;
@@ -168,24 +154,7 @@ function LinkedRow({
   status: string;
   statusColor: string;
   btnLabel: string;
-  btnStyle: 'connected' | 'coming' | 'link';
 }) {
-  const btnColors = {
-    connected: {
-      bg: 'rgba(34,197,94,0.1)',
-      text: Colors.success,
-    },
-    coming: {
-      bg: Colors.surface,
-      text: Colors.textMuted,
-    },
-    link: {
-      bg: 'rgba(204,255,0,0.08)',
-      text: Colors.opticYellow,
-    },
-  };
-  const { bg, text } = btnColors[btnStyle];
-
   return (
     <View style={styles.linkedRow}>
       <View style={[styles.linkedLogo, { backgroundColor: logoBg }]}>
@@ -197,8 +166,8 @@ function LinkedRow({
           {status}
         </Text>
       </View>
-      <View style={[styles.linkBtn, { backgroundColor: bg }]}>
-        <Text style={[styles.linkBtnText, { color: text }]}>{btnLabel}</Text>
+      <View style={[styles.linkBtn, { backgroundColor: Colors.surface }]}>
+        <Text style={[styles.linkBtnText, { color: Colors.textMuted }]}>{btnLabel}</Text>
       </View>
     </View>
   );
@@ -228,13 +197,8 @@ function LogoutButton({ onPress }: { onPress: () => void }) {
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
-  const { signOut } = useAuth();
-
-  // Toggle states
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [remindersEnabled, setRemindersEnabled] = useState(true);
-  const [tournamentAlerts, setTournamentAlerts] = useState(true);
-  const [socialNotifs, setSocialNotifs] = useState(true);
+  const { signOut, user } = useAuth();
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -243,8 +207,43 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const noop = () =>
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleChangePassword = async () => {
+    if (!user?.email) {
+      Alert.alert('Error', 'No email found for your account.');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+      if (error) {
+        Alert.alert('Error', error.message);
+      } else {
+        Alert.alert(
+          'Check Your Email',
+          `We've sent a password reset link to ${user.email}. Follow the link to set a new password.`,
+        );
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This action cannot be undone.\n\nTo proceed, please email us at support@playsmashd.com and we will process your request.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Email Support',
+          style: 'destructive',
+          onPress: () => Linking.openURL('mailto:support@playsmashd.com?subject=Delete%20My%20Account'),
+        },
+      ],
+    );
+  };
 
   return (
     <>
@@ -269,56 +268,6 @@ export default function SettingsScreen() {
           {/* Profile Card */}
           <ProfileCard />
 
-          {/* ── Notifications ─────────────────── */}
-          <SectionLabel title="Notifications" />
-
-          <ToggleRow
-            icon="notifications"
-            iconColor={Colors.success}
-            iconBg="rgba(34,197,94,0.1)"
-            label="Push Notifications"
-            sub="Tournament updates, results, invites"
-            value={pushEnabled}
-            onValueChange={setPushEnabled}
-          />
-          <ToggleRow
-            icon="calendar"
-            iconColor="#3B82F6"
-            iconBg="rgba(59,130,246,0.1)"
-            label="Game Reminders"
-            sub="30 min before your booked games"
-            value={remindersEnabled}
-            onValueChange={setRemindersEnabled}
-          />
-          <ToggleRow
-            icon="location"
-            iconColor={Colors.aquaGreen}
-            iconBg="rgba(0,207,193,0.08)"
-            label="New Tournament Alerts"
-            sub="Events near you or at your clubs"
-            value={tournamentAlerts}
-            onValueChange={setTournamentAlerts}
-          />
-          <ToggleRow
-            icon="people"
-            iconColor={Colors.violet}
-            iconBg="rgba(123,47,190,0.08)"
-            label="Social Notifications"
-            sub="Likes, comments, friend activity"
-            value={socialNotifs}
-            onValueChange={setSocialNotifs}
-          />
-          <ChevronRow
-            icon="mail"
-            iconColor={Colors.warning}
-            iconBg="rgba(245,158,11,0.1)"
-            label="Email Digest"
-            sub="Weekly summary · Wednesdays"
-            onPress={noop}
-          />
-
-          <Divider />
-
           {/* ── Linked Accounts ────────────────── */}
           <SectionLabel title="Linked Accounts" />
 
@@ -329,76 +278,27 @@ export default function SettingsScreen() {
             status="Coming Soon"
             statusColor={Colors.textMuted}
             btnLabel="Coming Soon"
-            btnStyle="coming"
-          />
-          <LinkedRow
-            logo="FIP"
-            logoBg="#1A237E"
-            name="PadelFIP"
-            status="Coming Soon"
-            statusColor={Colors.textMuted}
-            btnLabel="Coming Soon"
-            btnStyle="coming"
-          />
-          <LinkedRow
-            logo="G"
-            logoBg="#4285F4"
-            name="Google"
-            status="Connected"
-            statusColor={Colors.success}
-            btnLabel="Linked"
-            btnStyle="connected"
           />
 
           <Divider />
 
-          {/* ── Gameplay ───────────────────────── */}
-          <SectionLabel title="Gameplay" />
+          {/* ── Privacy & Account ─────────────── */}
+          <SectionLabel title="Account" />
 
-          <ChevronRow
-            icon="location"
-            iconColor={Colors.aquaGreen}
-            iconBg="rgba(0,207,193,0.08)"
-            label="Location & Clubs"
-            sub="Dublin 4 · 3 favourite clubs"
-            onPress={noop}
-          />
-          <ChevronRow
-            icon="tennisball"
-            iconColor={Colors.opticYellow}
-            iconBg="rgba(204,255,0,0.08)"
-            label="Player Preferences"
-            sub="Right-hand · All-rounder"
-            onPress={noop}
-          />
-          <ChevronRow
-            icon="bar-chart"
-            iconColor={Colors.violet}
-            iconBg="rgba(123,47,190,0.08)"
-            label="Stats Visibility"
-            sub="Public — anyone can see your stats"
-            onPress={noop}
-          />
-
-          <Divider />
-
-          {/* ── Privacy & Security ─────────────── */}
-          <SectionLabel title="Privacy & Security" />
-
-          <ChevronRow
+          <InfoRow
             icon="eye"
             iconColor={Colors.violet}
             iconBg="rgba(123,47,190,0.08)"
             label="Profile Visibility"
-            sub="Public — anyone can find you"
-            onPress={noop}
+            value="Public — other players can find you"
           />
           <ChevronRow
             icon="lock-closed"
             iconColor={Colors.warning}
             iconBg="rgba(245,158,11,0.1)"
             label="Change Password"
-            onPress={noop}
+            sub={changingPassword ? 'Sending reset email...' : 'Send a password reset email'}
+            onPress={handleChangePassword}
           />
           <ChevronRow
             icon="trash"
@@ -406,7 +306,7 @@ export default function SettingsScreen() {
             iconBg="rgba(239,68,68,0.08)"
             label="Delete Account"
             sub="Permanently delete your data"
-            onPress={noop}
+            onPress={handleDeleteAccount}
             destructive
           />
 
@@ -416,25 +316,19 @@ export default function SettingsScreen() {
           <SectionLabel title="About" />
 
           <ChevronRow
-            icon="document-text"
-            iconColor="#3B82F6"
-            iconBg="rgba(59,130,246,0.1)"
-            label="Terms of Service"
-            onPress={noop}
-          />
-          <ChevronRow
             icon="shield-checkmark"
             iconColor="#3B82F6"
             iconBg="rgba(59,130,246,0.1)"
             label="Privacy Policy"
-            onPress={noop}
+            onPress={() => Linking.openURL('https://playsmashd.com/privacy')}
           />
           <ChevronRow
             icon="chatbubble-ellipses"
             iconColor={Colors.success}
             iconBg="rgba(34,197,94,0.1)"
             label="Help & Support"
-            onPress={noop}
+            sub="support@playsmashd.com"
+            onPress={() => Linking.openURL('mailto:support@playsmashd.com')}
           />
 
           {/* ── Logout ─────────────────────────── */}
@@ -442,7 +336,7 @@ export default function SettingsScreen() {
 
           {/* ── App Info ────────────────────────── */}
           <Text style={styles.appInfo}>
-            Smashd v1.0.0 (Build 42){'\n'}Made with ⚡ in Dublin
+            Smashd v1.0.0{'\n'}Every point counts.
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -535,7 +429,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[4],
     paddingHorizontal: Spacing[5],
   },
-  // settingRowPressed removed — spring press replaces opacity feedback
   settingIcon: {
     width: 36,
     height: 36,
@@ -611,7 +504,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     alignItems: 'center',
   },
-  // logoutBtnPressed removed — spring press replaces opacity feedback
   logoutBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 14,
