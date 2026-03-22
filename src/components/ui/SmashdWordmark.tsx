@@ -14,7 +14,7 @@ type SmashdWordmarkProps = {
 /**
  * SmashdWordmark
  *
- * Renders the "smashd" logotype in Permanent Marker — the Electric Court
+ * Renders the "SMASHD" logotype in Permanent Marker — the Electric Court
  * display font. Use wherever the brand name appears as decorative text:
  * home header, leaderboard rank badges, TV mode, share cards.
  *
@@ -35,7 +35,7 @@ export function SmashdWordmark({
       ]}
       allowFontScaling={false}
     >
-      smashd
+      SMASHD
     </Text>
   );
 }
