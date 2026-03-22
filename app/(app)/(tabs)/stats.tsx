@@ -528,9 +528,11 @@ export default function StatsScreen() {
   const [matchHistory, setMatchHistory] = useState<MatchHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
     if (!user) { setLoading(false); return; }
+    setFetchError(null);
     try {
       const [statsResult, ratingsResult, historyResult] = await Promise.allSettled([
         fetchPlayerStats(user.id, period, matchTypeFilter),
@@ -540,8 +542,12 @@ export default function StatsScreen() {
       if (statsResult.status === 'fulfilled') setStats(statsResult.value);
       if (ratingsResult.status === 'fulfilled') setRatings(ratingsResult.value);
       if (historyResult.status === 'fulfilled') setMatchHistory(historyResult.value);
+
+      // If all three failed, show error
+      const allFailed = statsResult.status === 'rejected' && ratingsResult.status === 'rejected' && historyResult.status === 'rejected';
+      if (allFailed) setFetchError('Could not load stats. Pull down to retry.');
     } catch {
-      // Silently fail — keep showing last known state or empty
+      setFetchError('Something went wrong. Pull down to retry.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -616,6 +622,11 @@ export default function StatsScreen() {
       >
         {loading ? (
           <ListSkeleton count={6} />
+        ) : fetchError ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+            <Ionicons name="cloud-offline-outline" size={48} color={Colors.surfaceLight} />
+            <Text style={{ color: Colors.textDim, fontSize: 14, marginTop: 12, textAlign: 'center' }}>{fetchError}</Text>
+          </View>
         ) : !hasMatches ? (
           <>
             {/* Period Tabs — show but disabled feel */}

@@ -588,20 +588,10 @@ export default function Play() {
           <Animated.View entering={FadeInDown.delay(350).duration(400).springify()} style={styles.navRow}>
             <Button
               title="LEADERBOARD"
-              onPress={() => router.push(`/(app)/tournament/${id}/leaderboard`)}
+              onPress={() => router.push(`/(app)/tournament/${id}/results`)}
               variant="outline"
               size="md"
             />
-            {isOrganiser && (
-              <Button
-                title="DASHBOARD"
-                onPress={() =>
-                  router.push(`/(app)/tournament/${id}/organiser`)
-                }
-                variant="outline"
-                size="md"
-              />
-            )}
           </Animated.View>
         </ScrollView>
       </SafeAreaView>

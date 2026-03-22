@@ -676,7 +676,7 @@ export default function Home() {
     fetchActive();
     fetchUnreadCount();
     refreshProfile();
-  }, [fetchActive, fetchUnreadCount]);
+  }, [fetchActive, fetchUnreadCount, refreshProfile]);
 
   // Fetch upcoming + feed after active tournament is resolved
   useEffect(() => {

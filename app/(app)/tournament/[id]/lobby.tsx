@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -120,9 +120,11 @@ export default function Lobby() {
     }
   }, [tournament?.status]);
 
-  // Process imported players from the OCR import screen
+  // Process imported players from the OCR import screen (only once)
+  const importProcessedRef = useRef(false);
   useEffect(() => {
-    if (!importedPlayers || !id || importing) return;
+    if (!importedPlayers || !id || importing || importProcessedRef.current) return;
+    importProcessedRef.current = true;
     let cancelled = false;
 
     const addImportedPlayers = async () => {

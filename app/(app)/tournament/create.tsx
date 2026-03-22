@@ -211,9 +211,12 @@ export default function CreateTournament() {
 
     setLoading(true);
     // Global timeout — if the whole flow takes >15s something is wrong
+    let completed = false;
     const creationTimeout = setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Timeout', 'Tournament creation took too long. Please check your connection and try again.');
+      if (!completed) {
+        setLoading(false);
+        Alert.alert('Timeout', 'Tournament creation took too long. Please check your connection and try again.');
+      }
     }, 15000);
     try {
       let bannerUrl: string | null = null;
@@ -241,8 +244,6 @@ export default function CreateTournament() {
 
       const format = FORMATS[selectedFormat];
       const joinCode = generateJoinCode();
-
-      console.log('Creating tournament:', { name: name.trim(), format: format.id, joinCode, userId: user.id });
 
       const { data: tournament, error } = await supabase
         .from('tournaments')
@@ -273,8 +274,6 @@ export default function CreateTournament() {
         return;
       }
 
-      console.log('Tournament created:', tournament.id);
-
       // Add organiser as a player UNLESS they chose "Host Only"
       if (!toggles.hostOnly) {
         let playerInserted = false;
@@ -299,9 +298,11 @@ export default function CreateTournament() {
         }
       }
 
+      completed = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace(`/tournament/${tournament.id}/lobby`);
     } catch (err: unknown) {
+      completed = true;
       const message =
         err instanceof Error ? err.message : JSON.stringify(err);
       Alert.alert(
