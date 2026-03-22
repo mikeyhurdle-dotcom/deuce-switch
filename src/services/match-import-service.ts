@@ -105,14 +105,25 @@ export async function matchPlayerProfiles(
  * Non-Smashd users (no profileId) get their surname truncated to an initial.
  * e.g. "Miguel Garcia" → "Miguel G."
  */
-function pseudonymiseName(name: string | null, hasProfile: boolean): string | null {
+function pseudonymiseName(
+  name: string | null,
+  hasProfile: boolean,
+  usedNames?: Set<string>,
+): string | null {
   if (!name) return null;
   if (hasProfile) return name; // Smashd users consented — keep full name
   const parts = name.trim().split(/\s+/);
   if (parts.length <= 1) return name.trim();
   const first = parts.slice(0, -1).join(' ');
-  const lastInitial = parts[parts.length - 1].charAt(0);
-  return `${first} ${lastInitial}.`;
+  const surname = parts[parts.length - 1];
+  let candidate = `${first} ${surname.charAt(0).toUpperCase()}.`;
+
+  // If collision detected, use first 2 chars of surname
+  if (usedNames?.has(candidate) && surname.length > 1) {
+    candidate = `${first} ${surname.substring(0, 2)}.`;
+  }
+  usedNames?.add(candidate);
+  return candidate;
 }
 
 // ─── Batch Save ─────────────────────────────────────────────────────────────
@@ -126,6 +137,7 @@ export async function saveImportedMatches(
   matches: ConfirmedMatch[],
 ): Promise<ImportResult> {
   const batchId = randomUUID();
+  const usedNames = new Set<string>();
   let saved = 0;
   let ratingsRecorded = 0;
 
@@ -171,9 +183,9 @@ export async function saveImportedMatches(
         partner_id: partner?.profileId ?? null,
         opponent1_id: opp1?.profileId ?? null,
         opponent2_id: opp2?.profileId ?? null,
-        partner_name: pseudonymiseName(partner?.name ?? null, !!partner?.profileId),
-        opponent1_name: pseudonymiseName(opp1?.name ?? null, !!opp1?.profileId),
-        opponent2_name: pseudonymiseName(opp2?.name ?? null, !!opp2?.profileId),
+        partner_name: pseudonymiseName(partner?.name ?? null, !!partner?.profileId, usedNames),
+        opponent1_name: pseudonymiseName(opp1?.name ?? null, !!opp1?.profileId, usedNames),
+        opponent2_name: pseudonymiseName(opp2?.name ?? null, !!opp2?.profileId, usedNames),
         team_score: teamScore,
         opponent_score: opponentScore,
         won: match.won,

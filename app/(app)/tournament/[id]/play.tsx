@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentClock } from '../../../../src/hooks/useTournamentClock';
@@ -56,6 +57,10 @@ export default function Play() {
 
   const isOrganiser = tournament?.organizer_id === user?.id;
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [hostScoreMatchId, setHostScoreMatchId] = useState<string | null>(null);
+  const [hostScoreA, setHostScoreA] = useState('');
+  const [hostScoreB, setHostScoreB] = useState('');
+  const [hostSubmitting, setHostSubmitting] = useState(false);
 
   // Organiser: round scores summary
   const scoredCount = currentRoundMatches.filter(
@@ -149,6 +154,39 @@ export default function Play() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'End', style: 'destructive', onPress: doEnd },
     ]);
+  };
+
+  // Host: open score input for a specific match
+  const handleHostScoreTap = (matchId: string, existingA: number | null, existingB: number | null) => {
+    setHostScoreMatchId(matchId);
+    setHostScoreA(existingA != null ? String(existingA) : '');
+    setHostScoreB(existingB != null ? String(existingB) : '');
+  };
+
+  // Host: submit/override score for any match
+  const handleHostScoreSubmit = async () => {
+    if (!hostScoreMatchId || !tournament) return;
+    const a = parseInt(hostScoreA, 10);
+    const b = parseInt(hostScoreB, 10);
+    if (isNaN(a) || isNaN(b) || a < 0 || b < 0) {
+      Alert.alert('Invalid score', 'Enter valid scores for both teams.');
+      return;
+    }
+    if (a + b !== tournament.points_per_match) {
+      Alert.alert('Invalid total', `Scores must add up to ${tournament.points_per_match}.`);
+      return;
+    }
+    setHostSubmitting(true);
+    try {
+      await submitScore(hostScoreMatchId, a, b, {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setHostScoreMatchId(null);
+      await refetch();
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Failed to submit score');
+    } finally {
+      setHostSubmitting(false);
+    }
   };
 
   // Flush any queued offline scores on mount
@@ -531,16 +569,39 @@ export default function Play() {
                     const teamA = [pName(m.player1_id), pName(m.player2_id)].filter(Boolean).join(' & ');
                     const teamB = [pName(m.player3_id), pName(m.player4_id)].filter(Boolean).join(' & ');
                     const hasScore = m.team_a_score != null;
+                    const isEditing = hostScoreMatchId === m.id;
                     return (
-                      <View key={m.id} style={styles.miniMatch}>
-                        <Text style={styles.miniCourt}>C{m.court_number ?? '?'}</Text>
-                        <Text style={styles.miniTeams} numberOfLines={1}>
-                          {teamA} vs {teamB}
-                        </Text>
-                        {hasScore ? (
-                          <Text style={styles.miniScore}>{m.team_a_score}-{m.team_b_score}</Text>
-                        ) : (
-                          <Text style={styles.miniPending}>--</Text>
+                      <View key={m.id}>
+                        <Pressable
+                          style={[styles.miniMatch, isEditing && { backgroundColor: Colors.surface }]}
+                          onPress={() => handleHostScoreTap(m.id, m.team_a_score, m.team_b_score)}
+                        >
+                          <Text style={styles.miniCourt}>C{m.court_number ?? '?'}</Text>
+                          <Text style={styles.miniTeams} numberOfLines={1}>
+                            {teamA} vs {teamB}
+                          </Text>
+                          {hasScore ? (
+                            <Text style={styles.miniScore}>{m.team_a_score}-{m.team_b_score}</Text>
+                          ) : (
+                            <Text style={styles.miniPending}>tap to score</Text>
+                          )}
+                        </Pressable>
+                        {isEditing && (
+                          <View style={styles.hostScoreRow}>
+                            <View style={styles.hostScoreInputWrap}>
+                              <Text style={styles.hostScoreLabel}>A</Text>
+                              <Input label="" placeholder="0" value={hostScoreA} onChangeText={setHostScoreA} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} />
+                            </View>
+                            <Text style={styles.hostScoreDash}>–</Text>
+                            <View style={styles.hostScoreInputWrap}>
+                              <Text style={styles.hostScoreLabel}>B</Text>
+                              <Input label="" placeholder="0" value={hostScoreB} onChangeText={setHostScoreB} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} />
+                            </View>
+                            <Button title="SET" onPress={handleHostScoreSubmit} loading={hostSubmitting} variant="primary" size="sm" />
+                            <Pressable onPress={() => setHostScoreMatchId(null)} style={styles.hostScoreCancel}>
+                              <Ionicons name="close" size={18} color={Colors.textMuted} />
+                            </Pressable>
+                          </View>
                         )}
                       </View>
                     );
@@ -799,8 +860,39 @@ const styles = StyleSheet.create({
   },
   miniPending: {
     fontFamily: Fonts.mono,
-    fontSize: 14,
+    fontSize: 11,
+    color: Colors.opticYellow,
+  },
+  // Host score input row
+  hostScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  hostScoreInputWrap: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  hostScoreLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
     color: Colors.textMuted,
+  },
+  hostScoreInput: {
+    width: 48,
+    textAlign: 'center',
+    fontSize: 18,
+    fontFamily: Fonts.mono,
+  },
+  hostScoreDash: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 18,
+    color: Colors.textDim,
+  },
+  hostScoreCancel: {
+    padding: 8,
   },
   orgClockRow: {
     flexDirection: 'row',

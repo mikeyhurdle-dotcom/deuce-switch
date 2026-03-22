@@ -174,8 +174,17 @@ export default function Lobby() {
     const first = guestFirstName.trim();
     const last = guestLastName.trim();
     if (!first || !id) return;
-    // Privacy: store surname initial only for non-Smashd users
-    const fullName = last ? `${first} ${last.charAt(0)}.` : first;
+    // Privacy: store first name + surname initial for non-Smashd users
+    // If collision detected, use first 2 chars of surname to differentiate
+    const initial = last.charAt(0).toUpperCase();
+    const candidateName = `${first} ${initial}.`;
+    const existingNames = players.map((p) => p.displayName);
+    const hasCollision = existingNames.some((n) => n === candidateName);
+    const fullName = last
+      ? hasCollision && last.length > 1
+        ? `${first} ${last.substring(0, 2).charAt(0).toUpperCase() + last.substring(1, 2)}.`
+        : candidateName
+      : first;
     setAddingPlayer(true);
     try {
       await addGuestPlayer(id, fullName);
