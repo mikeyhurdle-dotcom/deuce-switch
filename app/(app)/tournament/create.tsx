@@ -210,6 +210,11 @@ export default function CreateTournament() {
     }
 
     setLoading(true);
+    // Global timeout — if the whole flow takes >15s something is wrong
+    const creationTimeout = setTimeout(() => {
+      setLoading(false);
+      Alert.alert('Timeout', 'Tournament creation took too long. Please check your connection and try again.');
+    }, 15000);
     try {
       let bannerUrl: string | null = null;
 
@@ -303,6 +308,7 @@ export default function CreateTournament() {
       );
       console.error('Tournament creation error:', err);
     } finally {
+      clearTimeout(creationTimeout);
       setLoading(false);
     }
   }, [

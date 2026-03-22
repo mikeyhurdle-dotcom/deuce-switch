@@ -434,7 +434,7 @@ function FeedPostItem({ post }: { post: FeedPost }) {
 export default function Home() {
   const { profile, user, refreshProfile } = useAuth();
   const [activeTournament, setActiveTournament] = useState<ActiveTournament | null>(null);
-  const [loadingActive, setLoadingActive] = useState(true);
+  const [loadingActive, setLoadingActive] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
 
@@ -756,13 +756,7 @@ export default function Home() {
         </View>
 
         {/* ─── Live Tournament ─── */}
-        {loadingActive && (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={Colors.opticYellow} />
-            <Text style={styles.loadingText}>Checking active tournaments...</Text>
-          </View>
-        )}
-        {!loadingActive && activeTournament && (
+        {activeTournament && (
           <LiveBanner tournament={activeTournament} onPress={handleBannerPress} />
         )}
 
