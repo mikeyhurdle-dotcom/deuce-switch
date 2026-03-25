@@ -47,6 +47,7 @@ type ReviewMatch = OCRMatch & {
   intensity: 'casual' | 'competitive' | 'intense' | null;
   conditions: 'indoor' | 'outdoor' | null;
   courtSide: 'left' | 'right' | 'both' | null;
+  editableRatings: Record<string, string>;
 };
 
 type ProcessingStep = {
@@ -197,15 +198,24 @@ export default function ImportMatchesScreen() {
       setDetectedPlatform(result.platform ?? 'unknown');
 
       // Convert OCR matches to review matches
-      const matches: ReviewMatch[] = (result.matches ?? []).map((m) => ({
-        ...m,
-        selected: true,
-        intensity: null,
-        conditions: null,
-        courtSide: null,
-        matchType: m.match_type_hint ?? 'competitive',
-        scoreEdited: false,
-      }));
+      const matches: ReviewMatch[] = (result.matches ?? []).map((m) => {
+        // Build editable ratings from OCR-detected ratings or empty for each player
+        const allPlayers = [...(m.team_a ?? []), ...(m.team_b ?? [])];
+        const editableRatings: Record<string, string> = {};
+        for (const name of allPlayers) {
+          editableRatings[name] = m.ratings?.[name] != null ? String(m.ratings[name]) : '';
+        }
+        return {
+          ...m,
+          selected: true,
+          intensity: null,
+          conditions: null,
+          courtSide: null,
+          matchType: m.match_type_hint ?? 'competitive',
+          scoreEdited: false,
+          editableRatings,
+        };
+      });
 
       setReviewMatches(matches);
       setHasResults(true);
@@ -312,6 +322,15 @@ export default function ImportMatchesScreen() {
     );
   };
 
+  const updatePlayerRating = (matchIndex: number, playerName: string, value: string) => {
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== matchIndex) return m;
+        return { ...m, editableRatings: { ...m.editableRatings, [playerName]: value } };
+      }),
+    );
+  };
+
   // ── Save ──────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -355,7 +374,12 @@ export default function ImportMatchesScreen() {
         intensity: m.intensity ?? null,
         conditions: m.conditions ?? null,
         score_edited: m.scoreEdited,
-        ratings: m.ratings ?? {},
+        ratings: Object.fromEntries(
+          Object.entries(m.editableRatings)
+            .filter(([_, v]) => v.trim() !== '')
+            .map(([k, v]) => [k, parseFloat(v)])
+            .filter(([_, v]) => !isNaN(v as number))
+        ),
       }));
 
       const result = await saveImportedMatches(user.id, confirmed);
@@ -763,6 +787,28 @@ export default function ImportMatchesScreen() {
                         : 'Court Side'}
                     </Text>
                   </Pressable>
+                </View>
+
+                {/* Player Ratings */}
+                <View style={styles.ratingsSection}>
+                  <Text style={styles.ratingsSectionTitle}>
+                    <Ionicons name="star-outline" size={14} color={Colors.opticYellow} />
+                    {' '}Player Ratings
+                  </Text>
+                  {[...match.team_a, ...match.team_b].map((name) => (
+                    <View key={name} style={styles.ratingRow}>
+                      <Text style={styles.ratingPlayerName} numberOfLines={1}>{name}</Text>
+                      <TextInput
+                        style={styles.ratingInput}
+                        value={match.editableRatings[name] ?? ''}
+                        onChangeText={(v) => updatePlayerRating(index, name, v)}
+                        placeholder="—"
+                        placeholderTextColor={Colors.textMuted}
+                        keyboardType="decimal-pad"
+                        maxLength={6}
+                      />
+                    </View>
+                  ))}
                 </View>
               </Animated.View>
             ))}
@@ -1228,6 +1274,48 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textMuted,
+  },
+
+  // Ratings
+  ratingsSection: {
+    marginTop: Spacing[3],
+    paddingTop: Spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceLight,
+    gap: Spacing[2],
+  },
+  ratingsSectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing[1],
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing[2],
+  },
+  ratingPlayerName: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  ratingInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1],
+    width: 70,
+    textAlign: 'center',
+    fontFamily: Fonts.mono,
+    fontSize: 14,
+    color: Colors.opticYellow,
   },
 
   // Error / Retry

@@ -21,8 +21,11 @@
         "applinks:playsmashd.com",
         "applinks:www.playsmashd.com"
       ],
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "SMASHD uses your camera to take photos of match scoreboards and Playtomic screenshots for automatic score import via OCR.",
+        "NSPhotoLibraryUsageDescription": "SMASHD needs access to your photo library to import match screenshots for automatic score recognition."
       }
     },
     "android": {
@@ -70,6 +73,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

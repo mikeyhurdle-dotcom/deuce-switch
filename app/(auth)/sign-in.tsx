@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../../src/lib/supabase';
 import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
@@ -30,6 +31,47 @@ export default function SignIn() {
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Something went wrong');
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (credential.identityToken) {
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+        });
+        if (error) {
+          Alert.alert('Sign in failed', error.message);
+        }
+      }
+    } catch (e: any) {
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Error', e.message ?? 'Apple sign-in failed');
+      }
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'smashd://auth/callback',
+        },
+      });
+      if (error) {
+        Alert.alert('Sign in failed', error.message);
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Google sign-in failed');
     }
   };
 
@@ -97,18 +139,27 @@ export default function SignIn() {
           />
         </Animated.View>
 
-        {/* Divider + Google Sign In */}
-        <Animated.View entering={FadeInDown.delay(200).springify()} style={{ gap: 32 }}>
+        {/* Divider + Social Sign In */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={{ gap: 16 }}>
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>or</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Google Sign In — placeholder, wired up in Step 2 */}
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+            />
+          )}
+
           <Button
             title="Continue with Google"
-            onPress={() => Alert.alert('Coming soon', 'Google sign-in is being configured.')}
+            onPress={handleGoogleSignIn}
             variant="outline"
             size="lg"
           />
@@ -173,6 +224,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textMuted,
+  },
+  appleButton: {
+    height: 52,
+    width: '100%' as any,
   },
   forgotRow: {
     alignItems: 'center',
