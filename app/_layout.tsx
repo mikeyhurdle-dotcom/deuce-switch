@@ -15,6 +15,7 @@ import 'react-native-reanimated';
 
 import { AuthProvider } from '../src/providers/AuthProvider';
 import { ConsentGate } from '../src/providers/ConsentGate';
+import { PostHogProvider } from '../src/providers/PostHogProvider';
 import {
   addNotificationResponseListener,
   type NotificationData,
@@ -75,7 +76,9 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <ConsentGate>
         <AuthProvider>
-          <Slot />
+          <PostHogProvider>
+            <Slot />
+          </PostHogProvider>
         </AuthProvider>
       </ConsentGate>
     </View>

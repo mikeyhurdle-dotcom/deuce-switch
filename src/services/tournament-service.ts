@@ -14,6 +14,13 @@ import type {
   TournamentPlayer,
   AmericanoPlayer,
 } from '../lib/types';
+import {
+  trackTournamentStarted,
+  trackTournamentCompleted,
+  trackScoreSubmitted,
+  trackRoundAdvanced,
+  trackGuestPlayerAdded,
+} from './analytics';
 
 // ─── Tournament Lifecycle ────────────────────────────────────────────────────
 
@@ -88,6 +95,7 @@ export async function addGuestPlayer(
     });
   if (tpError) throw tpError;
 
+  trackGuestPlayerAdded({ tournamentId, method: 'manual' });
   return profile.id;
 }
 
@@ -117,9 +125,103 @@ export async function removePlayerFromTournament(
   }
 }
 
+// ─── Claim Ghost Player ─────────────────────────────────────────────────────
+
+/**
+ * Allows an authenticated user to claim a ghost (imported) player slot.
+ * Swaps the ghost's player_id in tournament_players and all existing matches,
+ * then marks the ghost profile as claimed.
+ */
+export async function claimGhostPlayer(
+  tournamentId: string,
+  ghostId: string,
+  realUserId: string,
+): Promise<void> {
+  // 1. Verify ghost exists and is unclaimed
+  const { data: ghost, error: ghostErr } = await supabase
+    .from('profiles')
+    .select('id, is_ghost, claimed_by')
+    .eq('id', ghostId)
+    .single();
+  if (ghostErr || !ghost) throw new Error('Player not found');
+  if (!ghost.is_ghost) throw new Error('Player is not a guest');
+  if (ghost.claimed_by) throw new Error('Player already claimed');
+
+  // 2. Verify the real user isn't already in the tournament
+  const { data: existing } = await supabase
+    .from('tournament_players')
+    .select('id')
+    .eq('tournament_id', tournamentId)
+    .eq('player_id', realUserId)
+    .maybeSingle();
+  if (existing) throw new Error('You are already in this tournament');
+
+  // 3. Swap player_id in tournament_players
+  const { error: tpErr } = await supabase
+    .from('tournament_players')
+    .update({ player_id: realUserId })
+    .eq('tournament_id', tournamentId)
+    .eq('player_id', ghostId);
+  if (tpErr) throw tpErr;
+
+  // 4. Swap player references in all matches for this tournament
+  const { data: matches } = await supabase
+    .from('matches')
+    .select('id, player1_id, player2_id, player3_id, player4_id')
+    .eq('tournament_id', tournamentId);
+
+  if (matches) {
+    for (const m of matches) {
+      const updates: Record<string, string> = {};
+      if (m.player1_id === ghostId) updates.player1_id = realUserId;
+      if (m.player2_id === ghostId) updates.player2_id = realUserId;
+      if (m.player3_id === ghostId) updates.player3_id = realUserId;
+      if (m.player4_id === ghostId) updates.player4_id = realUserId;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('matches').update(updates).eq('id', m.id);
+      }
+    }
+  }
+
+  // 5. Mark ghost profile as claimed
+  await supabase
+    .from('profiles')
+    .update({
+      claimed_by: realUserId,
+      claimed_at: new Date().toISOString(),
+    })
+    .eq('id', ghostId);
+}
+
+/**
+ * Fetches unclaimed ghost players in a tournament (for the claim picker).
+ */
+export async function getUnclaimedGhosts(
+  tournamentId: string,
+): Promise<{ id: string; displayName: string }[]> {
+  const { data, error } = await supabase
+    .from('tournament_players')
+    .select('player_id, profiles(id, display_name, is_ghost, claimed_by)')
+    .eq('tournament_id', tournamentId)
+    .eq('tournament_status', 'active');
+  if (error) throw error;
+
+  return (data ?? [])
+    .filter((p: any) => p.profiles?.is_ghost && !p.profiles?.claimed_by)
+    .map((p: any) => ({
+      id: p.player_id,
+      displayName: p.profiles?.display_name ?? 'Player',
+    }));
+}
+
 // ─── Start Tournament (generate all rounds + matches) ────────────────────────
 
 export async function startTournament(tournamentId: string): Promise<void> {
+  // Guard: prevent double-start (fast double-tap or race condition)
+  const existing = await getTournament(tournamentId);
+  if (!existing) throw new Error('Tournament not found');
+  if (existing.status !== 'draft') return; // Already started — silently no-op
+
   // 1. Get active players
   const players = await getPlayerProfiles(tournamentId);
   if (players.length < 4) {
@@ -164,6 +266,8 @@ export async function startTournament(tournamentId: string): Promise<void> {
     })
     .eq('id', tournamentId);
   if (updateError) throw updateError;
+
+  trackTournamentStarted({ tournamentId, playerCount: players.length });
 }
 
 // ─── Round Management ────────────────────────────────────────────────────────
@@ -196,6 +300,8 @@ export async function advanceRound(tournamentId: string): Promise<void> {
     .eq('id', tournamentId);
   if (error) throw error;
 
+  trackRoundAdvanced({ tournamentId, roundNumber: nextRound });
+
   // Fire server-side push (non-blocking)
   triggerPushNotification(tournamentId, tournament.name, 'round_started', nextRound);
 }
@@ -223,6 +329,11 @@ export async function endTournament(tournamentId: string): Promise<void> {
     })
     .eq('id', tournamentId);
   if (error) throw error;
+
+  trackTournamentCompleted({
+    tournamentId,
+    totalRounds: tournament?.current_round ?? 0,
+  });
 
   // 3. Fire server-side push (non-blocking)
   if (tournament) {

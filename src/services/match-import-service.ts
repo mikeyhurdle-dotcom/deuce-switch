@@ -142,13 +142,13 @@ export async function saveImportedMatches(
   let ratingsRecorded = 0;
 
   for (const match of matches) {
-    // Determine scores from sets
-    const teamATotal = match.sets.reduce((sum, s) => sum + s.team_a, 0);
-    const teamBTotal = match.sets.reduce((sum, s) => sum + s.team_b, 0);
+    // Determine scores from sets — count sets won, not total games
+    const teamASetsWon = match.sets.filter((s) => s.team_a > s.team_b).length;
+    const teamBSetsWon = match.sets.filter((s) => s.team_b > s.team_a).length;
 
     const isUserTeamA = match.user_team === 'a';
-    const teamScore = isUserTeamA ? teamATotal : teamBTotal;
-    const opponentScore = isUserTeamA ? teamBTotal : teamATotal;
+    const teamScore = isUserTeamA ? teamASetsWon : teamBSetsWon;
+    const opponentScore = isUserTeamA ? teamBSetsWon : teamASetsWon;
 
     // Resolve partner and opponents
     const userTeam = isUserTeamA ? match.team_a_players : match.team_b_players;

@@ -380,7 +380,9 @@ export function MatchHistoryFeed({ matches, onLoadMore, onUpdateMatch }: MatchHi
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={styles.historyScoreBadge}>
                     <Text style={[styles.historyScore, match.won ? { color: Colors.success } : { color: Colors.error }]}>
-                      {match.teamScore} - {match.opponentScore}
+                      {match.setScores && match.setScores.length > 1
+                        ? `${match.setScores.filter((s) => s.team_a > s.team_b).length} - ${match.setScores.filter((s) => s.team_b > s.team_a).length}`
+                        : `${match.teamScore} - ${match.opponentScore}`}
                     </Text>
                   </View>
                   <Ionicons

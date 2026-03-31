@@ -1,0 +1,101 @@
+appId: com.playsmashd.app
+name: "Bug Fix - No Duplicate Matches in Round 1"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Create tournament with 4 players (1 court = 1 match per round)
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Dedup Test"
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 20000
+
+# Add 3 guest players (host = 4th)
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Alpha"
+- tapOn:
+    id: "input-last-name"
+- inputText: "One"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Bravo"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Two"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Charlie"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Three"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# Start the tournament
+- tapOn:
+    id: "btn-start-tournament"
+- tapOn: "Start"
+- extendedWaitUntil:
+    visible: "Round 1"
+    timeout: 15000
+
+# With 4 players there should be exactly 1 match → badge shows "0/1 IN"
+- assertVisible: "0/1 IN"
+
+# There should be exactly one "tap to score" entry (not 4 duplicates)
+- assertVisible: "tap to score"
+
+# Score the single match
+- tapOn: "tap to score"
+- tapOn:
+    id: "input-score-a"
+- inputText: "13"
+- tapOn:
+    id: "input-score-b"
+- inputText: "8"
+- tapOn:
+    id: "btn-set-score"
+- waitForAnimationToEnd
+
+# Badge should now show "1/1 IN"
+- assertVisible: "1/1 IN"
+
+# ADVANCE ROUND button should be enabled and tappable
+- tapOn:
+    id: "btn-advance-round"
+- tapOn: "Advance"
+- extendedWaitUntil:
+    visible: "Round 2"
+    timeout: 10000
+
+- takeScreenshot: screenshots/no_duplicate_round2

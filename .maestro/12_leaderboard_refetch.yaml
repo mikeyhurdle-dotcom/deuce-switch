@@ -1,0 +1,109 @@
+appId: com.playsmashd.app
+name: "Bug Fix - Advance Round Works After Viewing Leaderboard"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Create tournament
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Leaderboard Test"
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 20000
+
+# Add 3 guest players
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Delta"
+- tapOn:
+    id: "input-last-name"
+- inputText: "One"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Echo"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Two"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Foxtrot"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Three"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# Start tournament
+- tapOn:
+    id: "btn-start-tournament"
+- tapOn: "Start"
+- extendedWaitUntil:
+    visible: "Round 1"
+    timeout: 15000
+
+# Score the match
+- tapOn: "tap to score"
+- tapOn:
+    id: "input-score-a"
+- inputText: "11"
+- tapOn:
+    id: "input-score-b"
+- inputText: "10"
+- tapOn:
+    id: "btn-set-score"
+- waitForAnimationToEnd
+- assertVisible: "1/1 IN"
+
+# Navigate to leaderboard
+- tapOn: "LEADERBOARD"
+- extendedWaitUntil:
+    visible: "STANDINGS"
+    timeout: 10000
+- takeScreenshot: screenshots/leaderboard_mid_tournament
+
+# Go back to play screen
+- back
+- extendedWaitUntil:
+    visible: "Round 1"
+    timeout: 10000
+
+# Verify score state is preserved after returning — badge still shows 1/1
+- assertVisible: "1/1 IN"
+
+# ADVANCE ROUND should still be tappable (not stuck/disabled)
+- tapOn:
+    id: "btn-advance-round"
+- tapOn: "Advance"
+- extendedWaitUntil:
+    visible: "Round 2"
+    timeout: 10000
+
+- takeScreenshot: screenshots/leaderboard_refetch_round2

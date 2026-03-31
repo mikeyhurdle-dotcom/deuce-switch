@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, AlertButton, StyleSheet, Text, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,6 +7,8 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { requestNotificationPermissionOnJoin } from '../../src/services/notification-service';
+import { getUnclaimedGhosts, claimGhostPlayer } from '../../src/services/tournament-service';
+import { trackPlayerJoined } from '../../src/services/analytics';
 import { Colors, Fonts } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
@@ -62,16 +64,48 @@ export default function JoinTournament() {
         return;
       }
 
-      // Check player count + join atomically
-      // First get count, then insert — if a duplicate unique constraint
-      // exists on (tournament_id, player_id), we're protected from races.
+      // Check player count
       const { count } = await supabase
         .from('tournament_players')
         .select('id', { count: 'exact', head: true })
         .eq('tournament_id', tournament.id);
 
-      if (count !== null && tournament.max_players && count >= tournament.max_players) {
-        Alert.alert('Full', 'This tournament is full.');
+      const isFull = count !== null && tournament.max_players != null && count >= tournament.max_players;
+
+      if (isFull) {
+        // Tournament full — check for claimable ghost (imported) players
+        const ghosts = await getUnclaimedGhosts(tournament.id);
+        if (ghosts.length === 0) {
+          Alert.alert('Full', 'This tournament is full.');
+          return;
+        }
+
+        // Show picker so user can claim their imported slot
+        const buttons: AlertButton[] = ghosts.map((g) => ({
+          text: g.displayName,
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await claimGhostPlayer(tournament.id, g.id, user.id);
+              trackPlayerJoined({ tournamentId: tournament.id, method: 'claim_ghost' });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              requestNotificationPermissionOnJoin(user.id).catch(() => {});
+              router.replace(`/(app)/tournament/${tournament.id}/lobby`);
+            } catch (e: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Claim failed', e.message ?? 'Could not claim player');
+            } finally {
+              setLoading(false);
+            }
+          },
+        }));
+        buttons.push({ text: 'Cancel', style: 'cancel' as const });
+
+        Alert.alert(
+          'Claim Your Spot',
+          'This tournament is full, but there are imported players you can claim. Which one are you?',
+          buttons,
+        );
         return;
       }
 
@@ -89,6 +123,7 @@ export default function JoinTournament() {
         return;
       }
 
+      trackPlayerJoined({ tournamentId: tournament.id, method: 'join_code' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Request notification permission on first tournament join

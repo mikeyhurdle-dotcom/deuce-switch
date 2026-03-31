@@ -161,7 +161,11 @@ export function useTournament(tournamentId: string | null): UseTournamentReturn 
         (payload) => {
           if (!mountedRef.current) return;
           if (payload.eventType === 'INSERT') {
-            setMatches((prev) => [...prev, payload.new as Match]);
+            setMatches((prev) => {
+              const incoming = payload.new as Match;
+              if (prev.some((m) => m.id === incoming.id)) return prev;
+              return [...prev, incoming];
+            });
           } else if (payload.eventType === 'UPDATE') {
             setMatches((prev) =>
               prev.map((m) =>

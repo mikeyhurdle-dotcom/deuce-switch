@@ -15,7 +15,9 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://wcbpkwxrubditgzdrqof.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_IreZTvMI4flIN0KvklancSk9hllud4b3f9Aftro7JqW",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
       },
       "ios": {
         "buildConfiguration": "Release"
@@ -29,7 +31,9 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://wcbpkwxrubditgzdrqof.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_IreZTvMI4flIN0KvklancSk9hllud4b3f9Aftro7JqW",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
       },
       "ios": {
         "buildConfiguration": "Release"
@@ -44,7 +48,9 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://wcbpkwxrubditgzdrqof.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYnBrd3hydWJkaXRnemRycW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDkzMTMsImV4cCI6MjA4NTkyNTMxM30.HEtN7tv-xk2NmSnPB3TCS5lh7rXJ8jsTRofGa1_3Zrw",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_IreZTvMI4flIN0KvklancSk9hllud4b3f9Aftro7JqW",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
       },
       "ios": {
         "buildConfiguration": "Release"
