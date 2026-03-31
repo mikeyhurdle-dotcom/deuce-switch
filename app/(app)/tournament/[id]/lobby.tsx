@@ -275,7 +275,7 @@ export default function Lobby() {
   if (loading || !tournament) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
+        <View testID="state-lobby-loading" style={styles.center}>
           <ActivityIndicator size="large" color={Colors.opticYellow} />
           <Text style={styles.loadingText}>Loading lobby…</Text>
         </View>
@@ -286,7 +286,7 @@ export default function Lobby() {
   return (
     <>
       <Stack.Screen options={{ headerTitle: tournament.name }} />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-tournament-lobby" style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -336,7 +336,7 @@ export default function Lobby() {
           )}
 
           {/* Player List */}
-          <View style={styles.section}>
+          <View testID="list-players" style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>PLAYERS</Text>
               <Badge

@@ -92,7 +92,7 @@ export default function StepPreview({
 
       {/* Format Badge */}
       <Animated.View entering={FadeIn.duration(200).delay(100)} style={styles.section}>
-        <SectionHeader title="Format" onEdit={() => onEditStep(1)} />
+        <SectionHeader title="Format" onEdit={() => onEditStep(1)} testID="btn-edit-basics" />
         <View style={styles.formatRow}>
           <View style={[styles.formatIconWrap, { backgroundColor: format.tagBg }]}>
             <Ionicons name={format.icon} size={20} color={format.iconColor} />
@@ -111,7 +111,7 @@ export default function StepPreview({
 
       {/* Settings Grid */}
       <Animated.View entering={FadeIn.duration(200).delay(150)} style={styles.section}>
-        <SectionHeader title="Settings" onEdit={() => onEditStep(2)} />
+        <SectionHeader title="Settings" onEdit={() => onEditStep(2)} testID="btn-edit-settings" />
         <View style={styles.statsGrid}>
           <StatCell icon="people" label="Players" value={String(players)} />
           <StatCell icon="grid" label="Courts" value={String(courts)} />
@@ -187,14 +187,16 @@ export default function StepPreview({
 function SectionHeader({
   title,
   onEdit,
+  testID,
 }: {
   title: string;
   onEdit: () => void;
+  testID?: string;
 }) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <Pressable style={styles.editBtn} onPress={onEdit} hitSlop={8}>
+      <Pressable testID={testID} style={styles.editBtn} onPress={onEdit} hitSlop={8}>
         <Ionicons name="pencil" size={12} color={Colors.opticYellow} />
         <Text style={styles.editBtnText}>Edit</Text>
       </Pressable>

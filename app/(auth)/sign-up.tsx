@@ -75,6 +75,7 @@ export default function SignUp() {
             onChangeText={setDisplayName}
             autoCapitalize="words"
             autoComplete="name"
+            testID="input-display-name"
           />
           <Input
             label="Email"
@@ -84,6 +85,7 @@ export default function SignUp() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            testID="input-email"
           />
           <Input
             label="Password"
@@ -92,6 +94,7 @@ export default function SignUp() {
             onChangeText={setPassword}
             secureTextEntry
             autoComplete="new-password"
+            testID="input-password"
           />
           <Button
             title="CREATE ACCOUNT"
@@ -99,12 +102,13 @@ export default function SignUp() {
             loading={loading}
             variant="primary"
             size="lg"
+            testID="btn-create-account"
           />
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>
-          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
+          <Pressable testID="btn-sign-in-link" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}>
             <Text style={styles.footerLink}>Sign in</Text>
           </Pressable>
         </View>

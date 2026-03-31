@@ -96,6 +96,8 @@ export default function StepSettings({
             unit="max"
             onDecrement={() => onPlayersChange(clamp(players - 1, 4, 16))}
             onIncrement={() => onPlayersChange(clamp(players + 1, 4, 16))}
+            testIDMinus="btn-players-minus"
+            testIDPlus="btn-players-plus"
           />
           <SettingCard
             label="COURTS"
@@ -103,6 +105,8 @@ export default function StepSettings({
             unit="available"
             onDecrement={() => onCourtsChange(clamp(courts - 1, 1, 6))}
             onIncrement={() => onCourtsChange(clamp(courts + 1, 1, 6))}
+            testIDMinus="btn-courts-minus"
+            testIDPlus="btn-courts-plus"
           />
         </View>
         <View style={styles.settingsRow}>
@@ -112,6 +116,8 @@ export default function StepSettings({
             unit="per match"
             onDecrement={() => onPointsChange(clamp(points - 3, 11, 32))}
             onIncrement={() => onPointsChange(clamp(points + 3, 11, 32))}
+            testIDMinus="btn-points-minus"
+            testIDPlus="btn-points-plus"
           />
           <SettingCard
             label="TIME"
@@ -119,6 +125,8 @@ export default function StepSettings({
             unit="min / round"
             onDecrement={() => onTimeChange(clamp(time - 1, 5, 25))}
             onIncrement={() => onTimeChange(clamp(time + 1, 5, 25))}
+            testIDMinus="btn-time-minus"
+            testIDPlus="btn-time-plus"
           />
         </View>
       </View>
@@ -198,12 +206,16 @@ function SettingCard({
   unit,
   onDecrement,
   onIncrement,
+  testIDMinus,
+  testIDPlus,
 }: {
   label: string;
   value: number;
   unit: string;
   onDecrement: () => void;
   onIncrement: () => void;
+  testIDMinus?: string;
+  testIDPlus?: string;
 }) {
   return (
     <View style={styles.settingCard}>
@@ -212,6 +224,7 @@ function SettingCard({
       <Text style={styles.settingUnit}>{unit}</Text>
       <View style={styles.settingControls}>
         <Pressable
+          testID={testIDMinus}
           style={styles.stepperBtn}
           onPress={() => {
             Haptics.selectionAsync();
@@ -221,6 +234,7 @@ function SettingCard({
           <Ionicons name="remove" size={18} color={Colors.textSecondary} />
         </Pressable>
         <Pressable
+          testID={testIDPlus}
           style={styles.stepperBtn}
           onPress={() => {
             Haptics.selectionAsync();
@@ -278,6 +292,7 @@ function VenueCard({
 }) {
   return (
     <Pressable
+      testID="btn-add-venue"
       style={styles.venueCard}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -358,6 +373,7 @@ function VenueSearchModal({
             </Pressable>
           </View>
           <TextInput
+            testID="input-venue-search"
             style={styles.venueSearchInput}
             placeholder="Search clubs..."
             placeholderTextColor={Colors.textMuted}

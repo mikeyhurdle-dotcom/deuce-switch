@@ -340,7 +340,7 @@ export default function Play() {
   if (loading || !tournament) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
+        <View testID="state-play-loading" style={styles.center}>
           <ActivityIndicator size="large" color={Colors.opticYellow} />
           <Text style={styles.loadingText}>Loading match…</Text>
         </View>
@@ -357,7 +357,7 @@ export default function Play() {
       <Stack.Screen
         options={{ headerTitle: `Round ${tournament.current_round ?? 1}` }}
       />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-tournament-play" style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
           refreshControl={
@@ -532,6 +532,7 @@ export default function Play() {
                       disabled={!scoreValidation.isValid}
                       variant="primary"
                       size="lg"
+                      testID="btn-submit-score"
                     />
                   </View>
                 )}
@@ -635,8 +636,10 @@ export default function Play() {
                 size="lg"
                 loading={actionLoading === 'advance'}
                 disabled={!allScoresIn}
+                testID="btn-advance-round"
               />
               <Pressable
+                testID="btn-end-tournament"
                 style={styles.endButton}
                 onPress={() => handleEndTournament()}
               >

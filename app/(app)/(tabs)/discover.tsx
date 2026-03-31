@@ -410,24 +410,27 @@ function gradeBadgeBg(grade: string): string {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const DATE_FILTER_CHIPS: { key: DateFilterKey; label: string }[] = [
-  { key: 'all', label: 'All Dates' },
-  { key: 'this_week', label: 'This Week' },
-  { key: 'this_weekend', label: 'This Weekend' },
-  { key: 'next_week', label: 'Next Week' },
+const DATE_FILTER_CHIPS: { key: DateFilterKey; label: string; testID: string }[] = [
+  { key: 'all', label: 'All Dates', testID: 'filter-all-dates' },
+  { key: 'this_week', label: 'This Week', testID: 'filter-this-week' },
+  { key: 'this_weekend', label: 'This Weekend', testID: 'filter-this-weekend' },
+  { key: 'next_week', label: 'Next Week', testID: 'filter-next-week' },
 ];
 
 function TabButton({
   label,
   active,
   onPress,
+  testID,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
+  testID?: string;
 }) {
   return (
     <Pressable
+      testID={testID}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress();
@@ -447,14 +450,17 @@ function FilterChip({
   label,
   active,
   onPress,
+  testID,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
+  testID?: string;
 }) {
   const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
   return (
     <AnimatedPressable
+      testID={testID}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress();
@@ -940,11 +946,13 @@ export default function DiscoverScreen() {
             label="Play"
             active={activeTab === 'play'}
             onPress={() => setActiveTab('play')}
+            testID="tab-play"
           />
           <TabButton
             label="Compete"
             active={activeTab === 'compete'}
             onPress={() => setActiveTab('compete')}
+            testID="tab-compete"
           />
         </View>
 
@@ -953,6 +961,7 @@ export default function DiscoverScreen() {
           <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={18} color={Colors.textDim} />
             <TextInput
+              testID="input-search"
               style={styles.searchInput}
               placeholder="Search events, venues, cities..."
               placeholderTextColor={Colors.textMuted}
@@ -1069,6 +1078,7 @@ export default function DiscoverScreen() {
               label={chip.label}
               active={dateFilter === chip.key}
               onPress={() => setDateFilter(chip.key)}
+              testID={chip.testID}
             />
           ))}
         </ScrollView>
@@ -1084,16 +1094,20 @@ export default function DiscoverScreen() {
         )}
 
         {/* Loading state */}
-        {isLoading && <LoadingSkeleton />}
+        {isLoading && <View testID="state-discover-loading"><LoadingSkeleton /></View>}
 
         {/* Error state */}
         {!isLoading && errorMsg !== null && (
-          <ErrorState message={errorMsg} onRetry={handleRetry} />
+          <View testID="state-discover-error">
+            <ErrorState message={errorMsg} onRetry={handleRetry} />
+          </View>
         )}
 
         {/* Empty state */}
         {!isLoading && errorMsg === null && totalEvents === 0 && (
-          <EmptyState city={selectedCity} />
+          <View testID="state-discover-empty">
+            <EmptyState city={selectedCity} />
+          </View>
         )}
 
         {/* Event list grouped by date */}

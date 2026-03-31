@@ -10,7 +10,11 @@ name: "Discover Screen - Data Loads"
 - assertVisible:
     id: "screen-discover"
 
-# Wait for data to load — should show event count within 15 seconds
+# Wait for data to load — text shows "[N] events found"
 - extendedWaitUntil:
-    visible: "events found"
+    visible:
+      text: ".*events found"
     timeout: 15000
+
+# Capture marketing screenshot of Discover screen with events
+- takeScreenshot: screenshots/discover_events

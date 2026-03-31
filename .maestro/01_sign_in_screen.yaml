@@ -33,3 +33,6 @@ name: "Sign In Screen - UI Elements"
     id: "input-password"
 - assertVisible:
     id: "btn-forgot-password"
+
+# Capture marketing screenshot of sign-in screen
+- takeScreenshot: screenshots/sign_in_screen

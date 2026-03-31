@@ -802,8 +802,10 @@ export default function Home() {
                 <Text style={styles.seeAll}>See All</Text>
               </Pressable>
             </View>
-            {feedPosts.map((p) => (
-              <FeedPostItem key={p.id} post={p} />
+            {feedPosts.map((p, index) => (
+              <View key={p.id} testID={`card-tournament-${index}`}>
+                <FeedPostItem post={p} />
+              </View>
             ))}
           </View>
         ) : (
@@ -820,7 +822,7 @@ export default function Home() {
                 <Text style={styles.seeAll}>See All</Text>
               </Pressable>
             </View>
-            <View style={styles.emptyActivity}>
+            <View testID="state-home-empty" style={styles.emptyActivity}>
               <Text style={styles.emptyActivityText}>
                 No recent activity yet.{'\n'}Play a match or join a tournament to get started!
               </Text>

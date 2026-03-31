@@ -141,6 +141,13 @@ function XPBar({
   );
 }
 
+const PROFILE_TAB_TEST_IDS: Record<ProfileTab, string> = {
+  Overview: 'tab-profile-overview',
+  Stats: 'tab-profile-stats',
+  Feed: 'tab-profile-feed',
+  History: 'tab-profile-history',
+};
+
 function TabSwitcher({
   active,
   onSelect,
@@ -153,6 +160,7 @@ function TabSwitcher({
       {PROFILE_TABS.map((tab) => (
         <Pressable
           key={tab}
+          testID={PROFILE_TAB_TEST_IDS[tab]}
           style={[styles.tab, tab === active && styles.tabActive]}
           onPress={() => {
             Haptics.selectionAsync();
@@ -183,7 +191,7 @@ function InsightCard({ insight }: { insight: Insight }) {
 
 function EmptyTab({ title }: { title: string }) {
   return (
-    <View style={styles.emptyTab}>
+    <View testID="state-profile-empty" style={styles.emptyTab}>
       <Ionicons name="construct-outline" size={36} color={Colors.textMuted} />
       <Text style={styles.emptyTabTitle}>{title} coming soon</Text>
       <Text style={styles.emptyTabDesc}>We're working on this feature.</Text>

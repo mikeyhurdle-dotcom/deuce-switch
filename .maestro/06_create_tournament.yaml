@@ -4,30 +4,44 @@ name: "Tournament Creation - Full Wizard Flow"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# Navigate to Play tab and create tournament
+# Navigate to Play tab
 - tapOn:
     text: "Play, tab, 3 of 6"
+- takeScreenshot: screenshots/play_hub
+
+# Create tournament
 - tapOn:
     id: "btn-create-tournament"
 
-# Step 1: Basics — enter name
+# Step 1: Basics — enter name and dismiss keyboard
 - tapOn:
     id: "input-tournament-name"
 - inputText: "Maestro Test Tournament"
+- pressKey: Enter
+- takeScreenshot: screenshots/wizard_step1_basics
 
-# Go to Step 2
+# Step 1 → Step 2
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "SETTINGS"
+    timeout: 5000
+- takeScreenshot: screenshots/wizard_step2_settings
 
-# Go to Step 3
+# Step 2 → Step 3
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Create Tournament"
+    timeout: 5000
+- takeScreenshot: screenshots/wizard_step3_preview
 
 # Create the tournament
 - tapOn:
     id: "btn-wizard-create"
+
+# Wait for lobby
 - extendedWaitUntil:
     visible: "JOIN CODE"
     timeout: 20000
+- takeScreenshot: screenshots/tournament_lobby

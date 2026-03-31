@@ -42,6 +42,13 @@ const PARTNER_COLORS = [Colors.aquaGreen, Colors.violet, Colors.coral, Colors.op
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 /** Period selector tabs */
+const PERIOD_TEST_IDS: Record<string, string> = {
+  Week: 'tab-stats-week',
+  Month: 'tab-stats-month',
+  Season: 'tab-stats-season',
+  'All Time': 'tab-stats-all',
+};
+
 function PeriodTabs({ active, onChange }: { active: Period; onChange: (p: Period) => void }) {
   const periods: Period[] = ['Week', 'Month', 'Season', 'All Time'];
   return (
@@ -49,6 +56,7 @@ function PeriodTabs({ active, onChange }: { active: Period; onChange: (p: Period
       {periods.map((p) => (
         <Pressable
           key={p}
+          testID={PERIOD_TEST_IDS[p]}
           style={[styles.periodTab, active === p && styles.periodTabActive]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -532,7 +540,7 @@ export default function StatsScreen() {
   const hasMatches = stats !== null && stats.matchesPlayed > 0;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView testID="screen-stats" style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Stats</Text>
@@ -572,7 +580,7 @@ export default function StatsScreen() {
         }
       >
         {loading ? (
-          <ListSkeleton count={6} />
+          <View testID="state-stats-loading"><ListSkeleton count={6} /></View>
         ) : fetchError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
             <Ionicons name="cloud-offline-outline" size={48} color={Colors.surfaceLight} />
@@ -596,7 +604,7 @@ export default function StatsScreen() {
             />
 
             {/* Empty state CTA */}
-            <EmptyStats name={displayName} />
+            <View testID="state-stats-empty"><EmptyStats name={displayName} /></View>
           </>
         ) : (
           <>

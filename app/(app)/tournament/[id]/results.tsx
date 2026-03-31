@@ -577,7 +577,7 @@ export default function Results() {
   if (loading || !tournament) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
+        <View testID="state-results-loading" style={styles.center}>
           <ActivityIndicator size="large" color={Colors.opticYellow} />
           <Text style={styles.loadingText}>Loading results…</Text>
         </View>
@@ -598,7 +598,7 @@ export default function Results() {
           headerShadowVisible: false,
         }}
       />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-tournament-results" style={styles.safe} edges={['bottom']}>
         {/* Confetti — overlays the entire screen */}
         <ConfettiOverlay />
 
@@ -682,6 +682,7 @@ export default function Results() {
           {/* Primary CTA — Add to Feed */}
           <Animated.View entering={FadeInUp.duration(400).delay(800)} style={styles.actions}>
             <Pressable
+              testID="btn-add-to-feed"
               onPress={async () => {
                 if (postedToFeed || postingToFeed || !id || !tournament) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -716,6 +717,7 @@ export default function Results() {
             {/* Secondary row */}
             <View style={styles.secondaryRow}>
               <Pressable
+                testID="btn-share-results"
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   shareResultsCard(shareRef);
@@ -727,6 +729,7 @@ export default function Results() {
               </Pressable>
               <View style={styles.secondaryDivider} />
               <Pressable
+                testID="btn-back-to-home"
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.replace('/(app)/(tabs)/home');

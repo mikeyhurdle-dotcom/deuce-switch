@@ -7,29 +7,34 @@ name: "Tab Navigation - All Tabs Accessible"
 # Home screen visible
 - assertVisible:
     id: "screen-home"
+- takeScreenshot: screenshots/home_screen
 
 # Navigate to Discover
 - tapOn:
     text: "Discover, tab, 2 of 6"
 - assertVisible:
     id: "screen-discover"
+- takeScreenshot: screenshots/discover_screen
 
 # Navigate to Play
 - tapOn:
     text: "Play, tab, 3 of 6"
 - assertVisible:
     id: "screen-play"
+- takeScreenshot: screenshots/play_screen
 
 # Navigate to Stats
 - tapOn:
     text: "Stats, tab, 4 of 6"
 - waitForAnimationToEnd
+- takeScreenshot: screenshots/stats_screen
 
 # Navigate to Profile
 - tapOn:
     text: "Profile, tab, 5 of 6"
 - assertVisible:
     id: "screen-profile"
+- takeScreenshot: screenshots/profile_screen
 
 # Back to Home
 - tapOn:

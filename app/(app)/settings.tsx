@@ -44,6 +44,7 @@ function ProfileCard() {
         <Text style={styles.profileName}>{displayName}</Text>
         <Text style={styles.profileEmail}>{email}</Text>
         <Pressable
+          testID="btn-edit-profile"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/(app)/(tabs)/profile');
@@ -70,6 +71,7 @@ function ChevronRow({
   sub,
   onPress,
   destructive,
+  testID,
 }: {
   icon: IconName;
   iconColor: string;
@@ -78,11 +80,13 @@ function ChevronRow({
   sub?: string;
   onPress: () => void;
   destructive?: boolean;
+  testID?: string;
 }) {
   const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
 
   return (
     <AnimatedPressable
+      testID={testID}
       style={[styles.settingRow, animatedStyle]}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
@@ -300,6 +304,7 @@ export default function SettingsScreen() {
             label="Change Password"
             sub={changingPassword ? 'Sending reset email...' : 'Send a password reset email'}
             onPress={handleChangePassword}
+            testID="btn-change-password"
           />
           <ChevronRow
             icon="trash"
@@ -309,6 +314,7 @@ export default function SettingsScreen() {
             sub="Permanently delete your data"
             onPress={handleDeleteAccount}
             destructive
+            testID="btn-delete-account"
           />
 
           <Divider />
@@ -322,6 +328,7 @@ export default function SettingsScreen() {
             iconBg="rgba(59,130,246,0.1)"
             label="Privacy Policy"
             onPress={() => Linking.openURL('https://playsmashd.com/privacy')}
+            testID="btn-privacy-policy"
           />
           <ChevronRow
             icon="chatbubble-ellipses"
@@ -330,6 +337,7 @@ export default function SettingsScreen() {
             label="Help & Support"
             sub="support@playsmashd.com"
             onPress={() => Linking.openURL('mailto:support@playsmashd.com')}
+            testID="btn-help-support"
           />
 
           {/* ── Logout ─────────────────────────── */}
