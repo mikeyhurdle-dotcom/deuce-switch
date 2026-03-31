@@ -5,9 +5,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
-import * as ExpoLinking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
-import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { supabase } from '../../src/lib/supabase';
 import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
@@ -19,19 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 WebBrowser.maybeCompleteAuthSession();
 
 const redirectTo = makeRedirectUri({ scheme: 'smashd' });
-
-/** Extract tokens from a Supabase OAuth redirect URL and set the session. */
-async function createSessionFromUrl(url: string) {
-  const { params, errorCode } = QueryParams.getQueryParams(url);
-  if (errorCode) return;
-  const { access_token, refresh_token } = params;
-  if (!access_token) return;
-  const { error } = await supabase.auth.setSession({
-    access_token,
-    refresh_token: refresh_token ?? '',
-  });
-  if (error) throw error;
-}
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -81,19 +66,6 @@ export default function SignIn() {
     }
   };
 
-  // Catch the OAuth redirect URL via expo-linking — this is the reliable path
-  // in production builds where openAuthSessionAsync may not resolve.
-  const url = ExpoLinking.useURL();
-  useEffect(() => {
-    if (url && url.includes('access_token')) {
-      createSessionFromUrl(url).catch(() => {
-        Alert.alert('Sign in failed', 'Could not complete sign-in. Please try again.');
-      });
-      setGoogleLoading(false);
-      WebBrowser.dismissAuthSession();
-    }
-  }, [url]);
-
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
@@ -109,13 +81,34 @@ export default function SignIn() {
         return;
       }
       if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, {
+          preferEphemeralSession: true,
+        });
         if (result.type === 'success') {
-          // openAuthSessionAsync resolved (happy path) — extract tokens
-          await createSessionFromUrl(result.url);
+          const resultUrl = (result as any).url as string;
+          const fragment = resultUrl?.split('#')[1];
+          if (fragment) {
+            const params = new URLSearchParams(fragment);
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+            if (access_token && refresh_token) {
+              // setSession hangs due to an internal Supabase auth lock.
+              // Use refreshSession instead — it takes the refresh_token
+              // and establishes a fresh session without the lock contention.
+              const { error: refreshError } = await supabase.auth.refreshSession({
+                refresh_token,
+              });
+              if (refreshError) {
+                // Fallback: try setSession after a delay to let the lock clear
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await supabase.auth.setSession({
+                  access_token,
+                  refresh_token,
+                });
+              }
+            }
+          }
         }
-        // If type is 'cancel'/'dismiss', user backed out — finally clears loading
-        // If type is something else, the useURL hook above will catch the redirect
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Google sign-in failed');
