@@ -64,7 +64,7 @@ export default function Play() {
 
   // Organiser: round scores summary
   const scoredCount = currentRoundMatches.filter(
-    (m) => m.status === 'reported' || m.status === 'approved',
+    (m) => m.status === 'reported' || m.status === 'approved' || m.team_a_score != null,
   ).length;
   const allScoresIn = currentRoundMatches.length > 0 && scoredCount === currentRoundMatches.length;
 
@@ -190,9 +190,17 @@ export default function Play() {
   };
 
   // Refetch data when screen regains focus (e.g. returning from leaderboard)
+  const focusCount = useRef(0);
   useFocusEffect(
     useCallback(() => {
-      refetch();
+      // Skip the initial mount (already fetched by useTournament)
+      if (focusCount.current === 0) {
+        focusCount.current = 1;
+        return;
+      }
+      // Force a re-render cycle via refreshing state, same as pull-to-refresh
+      setRefreshing(true);
+      refetch().finally(() => setRefreshing(false));
     }, [refetch]),
   );
 
@@ -314,6 +322,7 @@ export default function Play() {
       try {
         await submitScore(currentMatch.id, teamAScore, teamBScore, metadata);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await refetch();
         Alert.alert('Score submitted', `${score} – ${opponentScore}`);
       } catch (err: unknown) {
         // Only queue for offline/network errors, not validation/permission errors
@@ -357,7 +366,8 @@ export default function Play() {
 
   const scoreLocked =
     currentMatch?.status === 'reported' ||
-    currentMatch?.status === 'approved';
+    currentMatch?.status === 'approved' ||
+    currentMatch?.team_a_score != null;
 
   return (
     <>
