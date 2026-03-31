@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
+import * as ExpoLinking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { supabase } from '../../src/lib/supabase';
 import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
@@ -15,6 +17,21 @@ import { SmashdWordmark } from '../../src/components/ui/SmashdWordmark';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const redirectTo = makeRedirectUri({ scheme: 'smashd' });
+
+/** Extract tokens from a Supabase OAuth redirect URL and set the session. */
+async function createSessionFromUrl(url: string) {
+  const { params, errorCode } = QueryParams.getQueryParams(url);
+  if (errorCode) return;
+  const { access_token, refresh_token } = params;
+  if (!access_token) return;
+  const { error } = await supabase.auth.setSession({
+    access_token,
+    refresh_token: refresh_token ?? '',
+  });
+  if (error) throw error;
+}
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -64,40 +81,22 @@ export default function SignIn() {
     }
   };
 
-  // Track whether Google auth is in progress so the deep link handler knows to act
-  const googleAuthInProgress = useRef(false);
-
-  // Fallback: in production builds, openAuthSessionAsync can hang because the
-  // deep link is caught by the app before ASWebAuthenticationSession recognises it.
-  // This listener catches the redirect URL, sets the session, and dismisses the browser.
+  // Catch the OAuth redirect URL via expo-linking — this is the reliable path
+  // in production builds where openAuthSessionAsync may not resolve.
+  const url = ExpoLinking.useURL();
   useEffect(() => {
-    const subscription = Linking.addEventListener('url', async ({ url }) => {
-      if (!googleAuthInProgress.current) return;
-      if (!url.startsWith('smashd://')) return;
-
-      const fragment = url.split('#')[1];
-      const query = url.split('?')[1]?.split('#')[0];
-      const params = new URLSearchParams(fragment || query || '');
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-
-      if (access_token && refresh_token) {
-        await supabase.auth.setSession({ access_token, refresh_token });
-      }
-
-      googleAuthInProgress.current = false;
+    if (url && url.includes('access_token')) {
+      createSessionFromUrl(url).catch(() => {
+        Alert.alert('Sign in failed', 'Could not complete sign-in. Please try again.');
+      });
       setGoogleLoading(false);
       WebBrowser.dismissAuthSession();
-    });
-
-    return () => subscription.remove();
-  }, []);
+    }
+  }, [url]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    googleAuthInProgress.current = true;
     try {
-      const redirectTo = makeRedirectUri({ scheme: 'smashd' });
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -111,25 +110,16 @@ export default function SignIn() {
       }
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        // If openAuthSessionAsync resolved (works in dev), handle tokens here
-        if (result.type === 'success' && googleAuthInProgress.current) {
-          const url = result.url;
-          const fragment = url.split('#')[1];
-          const query = url.split('?')[1]?.split('#')[0];
-          const params = new URLSearchParams(fragment || query || '');
-          const access_token = params.get('access_token');
-          const refresh_token = params.get('refresh_token');
-          if (access_token && refresh_token) {
-            await supabase.auth.setSession({ access_token, refresh_token });
-          } else {
-            Alert.alert('Sign in failed', 'Could not complete Google sign-in. Please try again.');
-          }
+        if (result.type === 'success') {
+          // openAuthSessionAsync resolved (happy path) — extract tokens
+          await createSessionFromUrl(result.url);
         }
+        // If type is 'cancel'/'dismiss', user backed out — finally clears loading
+        // If type is something else, the useURL hook above will catch the redirect
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Google sign-in failed');
     } finally {
-      googleAuthInProgress.current = false;
       setGoogleLoading(false);
     }
   };
