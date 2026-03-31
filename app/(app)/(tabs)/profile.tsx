@@ -629,7 +629,7 @@ export default function Profile() {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView testID="screen-profile" style={styles.safe} edges={['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -656,6 +656,7 @@ export default function Profile() {
             {/* Action Buttons */}
             <View style={styles.headerActions}>
               <Pressable
+                testID="btn-settings"
                 style={styles.actionCircle}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

@@ -1,0 +1,23 @@
+appId: com.playsmashd.app
+name: "Shared - Email Sign In"
+---
+# Handle consent screen if it appears
+- runFlow:
+    when:
+      visible:
+        id: "btn-consent-continue"
+    file: accept_consent.yaml
+
+# If already logged in, skip
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: noop.yaml
+
+# If on sign-in screen, perform login
+- runFlow:
+    when:
+      visible:
+        id: "btn-sign-in"
+    file: do_email_login.yaml

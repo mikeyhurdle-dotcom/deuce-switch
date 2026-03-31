@@ -149,7 +149,7 @@ export default function PlayScreen() {
   const createPress = useSpringPress();
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView testID="screen-play" style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -162,6 +162,7 @@ export default function PlayScreen() {
 
         {/* Hero CTA — Create Tournament */}
         <AnimatedPressable
+          testID="btn-create-tournament"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push('/tournament/create');

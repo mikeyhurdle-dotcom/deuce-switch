@@ -1,0 +1,9 @@
+appId: com.playsmashd.app
+name: "Shared - Accept Consent"
+---
+- tapOn:
+    id: "btn-consent-continue"
+- extendedWaitUntil:
+    visible:
+      id: "btn-sign-in"
+    timeout: 10000

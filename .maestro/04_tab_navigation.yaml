@@ -1,0 +1,38 @@
+appId: com.playsmashd.app
+name: "Tab Navigation - All Tabs Accessible"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Home screen visible
+- assertVisible:
+    id: "screen-home"
+
+# Navigate to Discover
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+
+# Navigate to Play
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- assertVisible:
+    id: "screen-play"
+
+# Navigate to Stats
+- tapOn:
+    text: "Stats, tab, 4 of 6"
+- waitForAnimationToEnd
+
+# Navigate to Profile
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+
+# Back to Home
+- tapOn:
+    text: "Home, tab, 1 of 6"
+- assertVisible:
+    id: "screen-home"

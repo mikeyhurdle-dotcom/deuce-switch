@@ -1,0 +1,35 @@
+appId: com.playsmashd.app
+name: "Sign In Screen - UI Elements"
+---
+- launchApp
+
+# Wait for app to load
+- waitForAnimationToEnd
+
+# Handle consent
+- runFlow:
+    when:
+      visible:
+        id: "btn-consent-continue"
+    file: flows/accept_consent.yaml
+
+# Handle already signed in
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: flows/sign_out.yaml
+
+# Verify sign-in screen elements
+- assertVisible:
+    id: "btn-sign-in"
+- assertVisible:
+    id: "btn-google"
+- assertVisible:
+    id: "btn-apple"
+- assertVisible:
+    id: "input-email"
+- assertVisible:
+    id: "input-password"
+- assertVisible:
+    id: "btn-forgot-password"

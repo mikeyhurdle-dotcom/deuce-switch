@@ -4,6 +4,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../../src/lib/supabase';
 import { Colors, Fonts, AppConfig } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
@@ -12,10 +14,13 @@ import { SmashdLogo } from '../../src/components/ui/SmashdLogo';
 import { SmashdWordmark } from '../../src/components/ui/SmashdWordmark';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -60,18 +65,42 @@ export default function SignIn() {
   };
 
   const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectTo = makeRedirectUri({ scheme: 'smashd' });
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'smashd://auth/callback',
+          redirectTo,
+          skipBrowserRedirect: true,
         },
       });
       if (error) {
         Alert.alert('Sign in failed', error.message);
+        return;
+      }
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        if (result.type === 'success') {
+          const url = result.url;
+          // Tokens may be in the fragment (#) or query string (?)
+          const fragment = url.split('#')[1];
+          const query = url.split('?')[1]?.split('#')[0];
+          const params = new URLSearchParams(fragment || query || '');
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+          if (access_token && refresh_token) {
+            await supabase.auth.setSession({ access_token, refresh_token });
+          } else {
+            Alert.alert('Sign in failed', 'Could not complete Google sign-in. Please try again.');
+          }
+        }
+        // If result.type is 'cancel' or 'dismiss', loading is cleared in finally
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -121,6 +150,7 @@ export default function SignIn() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            testID="input-email"
           />
           <Input
             label="Password"
@@ -129,6 +159,7 @@ export default function SignIn() {
             onChangeText={setPassword}
             secureTextEntry
             autoComplete="password"
+            testID="input-password"
           />
           <Button
             title="SIGN IN"
@@ -136,6 +167,7 @@ export default function SignIn() {
             loading={loading}
             variant="primary"
             size="lg"
+            testID="btn-sign-in"
           />
         </Animated.View>
 
@@ -148,27 +180,31 @@ export default function SignIn() {
           </View>
 
           {Platform.OS === 'ios' && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-              cornerRadius={12}
-              style={styles.appleButton}
-              onPress={handleAppleSignIn}
-            />
+            <View testID="btn-apple">
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={12}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
+            </View>
           )}
 
           <Button
             title="Continue with Google"
             onPress={handleGoogleSignIn}
+            loading={googleLoading}
             variant="outline"
             size="lg"
+            testID="btn-google"
           />
         </Animated.View>
 
         {/* Forgot Password + Sign Up Link */}
         <Animated.View entering={FadeInDown.delay(300).springify()}>
           <View style={styles.forgotRow}>
-            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleForgotPassword(); }} accessibilityRole="button" accessibilityLabel="Forgot password">
+            <Pressable testID="btn-forgot-password" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleForgotPassword(); }} accessibilityRole="button" accessibilityLabel="Forgot password">
               <Text style={styles.forgotLink}>Forgot password?</Text>
             </Pressable>
           </View>
@@ -176,7 +212,7 @@ export default function SignIn() {
           {/* Sign Up Link */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
-            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/sign-up'); }} accessibilityRole="button" accessibilityLabel="Sign up for a new account">
+            <Pressable testID="btn-sign-up" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(auth)/sign-up'); }} accessibilityRole="button" accessibilityLabel="Sign up for a new account">
               <Text style={styles.footerLink}>Sign up</Text>
             </Pressable>
           </View>

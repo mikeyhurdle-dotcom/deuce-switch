@@ -54,6 +54,7 @@ export default function StepBasics({
       <View style={styles.nameWrap}>
         <Text style={styles.inputLabel}>TOURNAMENT NAME</Text>
         <TextInput
+          testID="input-tournament-name"
           style={[styles.textInput, nameError ? styles.textInputError : null]}
           placeholder="e.g. Sunday Smash"
           placeholderTextColor={Colors.textMuted}

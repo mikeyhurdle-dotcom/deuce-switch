@@ -1,0 +1,88 @@
+appId: com.playsmashd.app
+name: "Score Entry - Double Digit Scores"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Create tournament
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Score Test"
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 20000
+
+# Add 3 players (need 4 total including host)
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Player"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Two"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Player"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Three"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Player"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Four"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# Start the tournament
+- tapOn:
+    id: "btn-start-tournament"
+- tapOn: "Start"
+- extendedWaitUntil:
+    visible: "Round 1"
+    timeout: 15000
+
+# Tap a match to score
+- tapOn: "tap to score"
+
+# Enter double-digit score in A
+- tapOn:
+    id: "input-score-a"
+- inputText: "15"
+
+# Enter score in B
+- tapOn:
+    id: "input-score-b"
+- inputText: "6"
+
+# Submit
+- tapOn:
+    id: "btn-set-score"
+- waitForAnimationToEnd

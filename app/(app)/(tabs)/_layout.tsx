@@ -51,44 +51,50 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
+      {/* tabBarTestID is a valid React Navigation bottom tab option but missing from Expo Router types */}
       <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
-        }}
+          tabBarTestID: 'tab-home',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="home" focused={focused} />,
+        } as any}
         listeners={makeListeners()}
       />
       <Tabs.Screen
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ focused }) => <TabIcon name="discover" focused={focused} />,
-        }}
+          tabBarTestID: 'tab-discover',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="discover" focused={focused} />,
+        } as any}
         listeners={makeListeners()}
       />
       <Tabs.Screen
         name="play"
         options={{
           title: 'Play',
-          tabBarIcon: ({ focused }) => <TabIcon name="play" focused={focused} />,
-        }}
+          tabBarTestID: 'tab-play',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="play" focused={focused} />,
+        } as any}
         listeners={makeListeners()}
       />
       <Tabs.Screen
         name="stats"
         options={{
           title: 'Stats',
-          tabBarIcon: ({ focused }) => <TabIcon name="stats" focused={focused} />,
-        }}
+          tabBarTestID: 'tab-stats',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="stats" focused={focused} />,
+        } as any}
         listeners={makeListeners()}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon name="profile" focused={focused} />,
-        }}
+          tabBarTestID: 'tab-profile',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="profile" focused={focused} />,
+        } as any}
         listeners={makeListeners()}
       />
       {/* Hidden — content absorbed into Stats tab */}

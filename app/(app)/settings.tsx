@@ -183,6 +183,7 @@ function LogoutButton({ onPress }: { onPress: () => void }) {
   const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
   return (
     <AnimatedPressable
+      testID="btn-logout"
       style={[styles.logoutBtn, animatedStyle]}
       onPressIn={onPressIn}
       onPressOut={onPressOut}

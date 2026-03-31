@@ -1,0 +1,31 @@
+appId: com.playsmashd.app
+name: "Email Sign In - Validation"
+---
+- launchApp
+
+# Ensure we're on sign-in screen
+- runFlow: flows/sign_in_email.yaml
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: flows/sign_out.yaml
+
+# Tap sign in without entering credentials
+- tapOn:
+    id: "btn-sign-in"
+
+# Should show validation alert
+- assertVisible: "Missing fields"
+- tapOn: "OK"
+
+# Enter email only, no password
+- tapOn:
+    id: "input-email"
+- inputText: "test@example.com"
+- tapOn:
+    id: "btn-sign-in"
+
+# Should still show validation
+- assertVisible: "Missing fields"
+- tapOn: "OK"

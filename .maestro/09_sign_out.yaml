@@ -1,0 +1,26 @@
+appId: com.playsmashd.app
+name: "Sign Out Flow"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Sign out
+- tapOn: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-settings"
+- extendedWaitUntil:
+    visible:
+      id: "btn-logout"
+    timeout: 5000
+- tapOn:
+    id: "btn-logout"
+- tapOn:
+    text: "Sign Out"
+    index: 1
+
+# Should return to sign-in screen
+- extendedWaitUntil:
+    visible:
+      id: "btn-sign-in"
+    timeout: 10000

@@ -1,0 +1,33 @@
+appId: com.playsmashd.app
+name: "Tournament Creation - Full Wizard Flow"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Play tab and create tournament
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+
+# Step 1: Basics — enter name
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Maestro Test Tournament"
+
+# Go to Step 2
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+
+# Go to Step 3
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+
+# Create the tournament
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 20000

@@ -35,6 +35,7 @@ export default function WizardNavBar({
           label="Back"
           onPress={onBack}
           variant="secondary"
+          testID="btn-wizard-back"
         />
       ) : (
         <View style={styles.spacer} />
@@ -47,6 +48,7 @@ export default function WizardNavBar({
           onPress={onNext}
           variant="primary"
           disabled={nextDisabled}
+          testID="btn-wizard-next"
         />
       ) : (
         <SpringButton
@@ -54,6 +56,7 @@ export default function WizardNavBar({
           onPress={onCreate}
           variant="cta"
           disabled={createLoading}
+          testID="btn-wizard-create"
         />
       )}
     </View>
@@ -67,11 +70,13 @@ function SpringButton({
   onPress,
   variant,
   disabled = false,
+  testID,
 }: {
   label: string;
   onPress: () => void;
   variant: 'primary' | 'secondary' | 'cta';
   disabled?: boolean;
+  testID?: string;
 }) {
   const scale = useSharedValue(1);
 
@@ -123,6 +128,7 @@ function SpringButton({
       onPressOut={handlePressOut}
       style={[buttonStyle, animatedStyle]}
       disabled={disabled}
+      testID={testID}
     >
       <Text style={textStyle}>{label}</Text>
     </AnimatedPressable>

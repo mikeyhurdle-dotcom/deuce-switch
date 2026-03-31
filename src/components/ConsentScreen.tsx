@@ -91,6 +91,7 @@ export function ConsentScreen({ onAccept }: ConsentScreenProps) {
             loading={accepting}
             variant="primary"
             size="lg"
+            testID="btn-consent-continue"
           />
 
           <Text

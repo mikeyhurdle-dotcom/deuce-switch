@@ -331,6 +331,35 @@ export default function ImportMatchesScreen() {
     );
   };
 
+  const addSet = (matchIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== matchIndex) return m;
+        return { ...m, sets: [...m.sets, { team_a: 0, team_b: 0 }], scoreEdited: true };
+      }),
+    );
+  };
+
+  const removeSet = (matchIndex: number, setIndex: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReviewMatches((prev) =>
+      prev.map((m, i) => {
+        if (i !== matchIndex || m.sets.length <= 1) return m;
+        const newSets = m.sets.filter((_, si) => si !== setIndex);
+        // Recompute won
+        const userTeam = m.user_team;
+        let newWon = m.won;
+        if (userTeam) {
+          const totalA = newSets.reduce((sum, s) => sum + s.team_a, 0);
+          const totalB = newSets.reduce((sum, s) => sum + s.team_b, 0);
+          newWon = userTeam === 'a' ? totalA > totalB : totalB > totalA;
+        }
+        return { ...m, sets: newSets, won: newWon, scoreEdited: true };
+      }),
+    );
+  };
+
   // ── Save ──────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -713,6 +742,30 @@ export default function ImportMatchesScreen() {
                       ))}
                     </View>
                   </View>
+                </View>
+
+                {/* Add/Remove Set Controls */}
+                <View style={styles.setControls}>
+                  {match.sets.length > 1 && (
+                    <Pressable
+                      style={styles.setControlBtn}
+                      onPress={() => removeSet(index, match.sets.length - 1)}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="remove-circle-outline" size={18} color={Colors.error} />
+                      <Text style={[styles.setControlText, { color: Colors.error }]}>Remove set</Text>
+                    </Pressable>
+                  )}
+                  {match.sets.length < 5 && (
+                    <Pressable
+                      style={styles.setControlBtn}
+                      onPress={() => addSet(index)}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="add-circle-outline" size={18} color={Colors.aquaGreen} />
+                      <Text style={[styles.setControlText, { color: Colors.aquaGreen }]}>Add set</Text>
+                    </Pressable>
+                  )}
                 </View>
 
                 {match.scoreEdited && (
@@ -1212,6 +1265,23 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
     marginVertical: 2,
+  },
+  setControls: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing[4],
+    marginBottom: Spacing[2],
+  },
+  setControlBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  setControlText: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
   },
   editedHint: {
     fontFamily: Fonts.body,

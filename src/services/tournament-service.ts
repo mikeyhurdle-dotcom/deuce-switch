@@ -91,6 +91,32 @@ export async function addGuestPlayer(
   return profile.id;
 }
 
+/**
+ * Removes a player from a tournament (before it starts).
+ * If the player is a ghost profile, also deletes the ghost profile.
+ */
+export async function removePlayerFromTournament(
+  tournamentId: string,
+  playerId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('tournament_players')
+    .delete()
+    .eq('tournament_id', tournamentId)
+    .eq('player_id', playerId);
+  if (error) throw error;
+
+  // Clean up ghost profile if applicable
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_ghost')
+    .eq('id', playerId)
+    .single();
+  if (profile?.is_ghost) {
+    await supabase.from('profiles').delete().eq('id', playerId);
+  }
+}
+
 // ─── Start Tournament (generate all rounds + matches) ────────────────────────
 
 export async function startTournament(tournamentId: string): Promise<void> {

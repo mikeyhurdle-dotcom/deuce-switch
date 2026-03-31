@@ -1,0 +1,16 @@
+appId: com.playsmashd.app
+name: "Discover Screen - Data Loads"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Discover
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+
+# Wait for data to load — should show event count within 15 seconds
+- extendedWaitUntil:
+    visible: "events found"
+    timeout: 15000

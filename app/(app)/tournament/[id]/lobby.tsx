@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentNotifications } from '../../../../src/hooks/useNotifications';
-import { startTournament, addGuestPlayer } from '../../../../src/services/tournament-service';
+import { startTournament, addGuestPlayer, removePlayerFromTournament } from '../../../../src/services/tournament-service';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, Radius } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
@@ -30,10 +30,12 @@ function PlayerRow({
   displayName,
   index,
   isHost,
+  onRemove,
 }: {
   displayName: string;
   index: number;
   isHost: boolean;
+  onRemove?: () => void;
 }) {
   const translateY = useSharedValue(20);
   const opacity = useSharedValue(0);
@@ -61,8 +63,21 @@ function PlayerRow({
       <View style={styles.playerNumber}>
         <Text style={styles.playerNumText}>{index + 1}</Text>
       </View>
-      <Text style={styles.playerName}>{displayName}</Text>
+      <Text style={[styles.playerName, { flex: 1 }]}>{displayName}</Text>
       {isHost && <Badge label="Host" variant="info" />}
+      {onRemove && (
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onRemove();
+          }}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${displayName}`}
+        >
+          <Ionicons name="close-circle-outline" size={22} color={Colors.error} />
+        </Pressable>
+      )}
     </Animated.View>
   );
 }
@@ -201,6 +216,30 @@ export default function Lobby() {
     }
   };
 
+  const handleRemovePlayer = (playerId: string, displayName: string) => {
+    if (!id) return;
+    Alert.alert(
+      'Remove Player',
+      `Remove ${displayName} from the tournament?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removePlayerFromTournament(id, playerId);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              await refetch();
+            } catch (e: any) {
+              Alert.alert('Error', e.message ?? 'Failed to remove player');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleStart = async () => {
     if (!id) return;
     if (players.length < 4) {
@@ -248,8 +287,10 @@ export default function Lobby() {
     <>
       <Stack.Screen options={{ headerTitle: tournament.name }} />
       <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
         <ScrollView
           contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -310,6 +351,11 @@ export default function Lobby() {
                 displayName={p.displayName}
                 index={i}
                 isHost={p.playerId === tournament.organizer_id}
+                onRemove={
+                  isOrganiser && p.playerId !== tournament.organizer_id
+                    ? () => handleRemovePlayer(p.playerId, p.displayName)
+                    : undefined
+                }
               />
             ))}
 
@@ -324,6 +370,7 @@ export default function Lobby() {
           {/* Add Player — Organiser Only */}
           {isOrganiser && !showAddPlayer && (
             <Pressable
+              testID="btn-add-player"
               style={styles.addPlayerButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -342,6 +389,7 @@ export default function Lobby() {
             <View style={styles.addPlayerForm}>
               <View style={styles.addPlayerNameRow}>
                 <TextInput
+                  testID="input-first-name"
                   style={[styles.addPlayerInput, { flex: 1 }]}
                   placeholder="First name"
                   placeholderTextColor={Colors.textMuted}
@@ -351,6 +399,7 @@ export default function Lobby() {
                   returnKeyType="next"
                 />
                 <TextInput
+                  testID="input-last-name"
                   style={[styles.addPlayerInput, { flex: 1 }]}
                   placeholder="Last name"
                   placeholderTextColor={Colors.textMuted}
@@ -372,6 +421,7 @@ export default function Lobby() {
                   <Text style={styles.addPlayerCancelText}>Cancel</Text>
                 </Pressable>
                 <Pressable
+                  testID="btn-confirm-add-player"
                   style={[styles.addPlayerConfirm, !guestFirstName.trim() && { opacity: 0.4 }]}
                   onPress={handleAddPlayer}
                   disabled={!guestFirstName.trim() || addingPlayer}
@@ -408,6 +458,7 @@ export default function Lobby() {
               disabled={players.length < 4}
               variant="primary"
               size="lg"
+              testID="btn-start-tournament"
             />
           )}
 
@@ -419,6 +470,7 @@ export default function Lobby() {
             </View>
           )}
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );

@@ -702,7 +702,7 @@ export default function Home() {
   }, [fetchActive, fetchUpcoming, fetchFeed, fetchUnreadCount]);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView testID="screen-home" style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}

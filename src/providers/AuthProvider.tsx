@@ -109,20 +109,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        // On fresh sign-in, gate the app behind loading so tabs don't mount
+        // and fire fetches before the Supabase client session is fully settled.
+        if (event === 'SIGNED_IN') {
+          setLoading(true);
+        }
         setSession(session);
         if (session?.user) {
           try {
             const p = await ensureProfile(session.user);
             setProfile(p);
           } catch (err) {
-            // Don't let a profile fetch failure block the auth flow.
-            // Session is already set — the user can still navigate.
             // Profile fetch failed — session is already set, user can still navigate
             setProfile(null);
+          } finally {
+            setLoading(false);
           }
         } else {
           setProfile(null);
+          setLoading(false);
         }
       },
     );

@@ -1,0 +1,47 @@
+appId: com.playsmashd.app
+name: "First Load After Login - Data Loads"
+---
+# Critical test: fresh login, data should load immediately
+- launchApp
+
+# Sign out first if logged in
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: flows/sign_out.yaml
+
+# Handle consent
+- runFlow:
+    when:
+      visible:
+        id: "btn-consent-continue"
+    file: flows/accept_consent.yaml
+
+# Perform fresh login
+- runFlow: flows/do_email_login.yaml
+
+# Home screen should be visible
+- assertVisible:
+    id: "screen-home"
+
+# Navigate to Discover — data should load on first visit
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+- extendedWaitUntil:
+    visible: "events found"
+    timeout: 15000
+
+# Navigate to Play — should work
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- assertVisible:
+    id: "btn-create-tournament"
+
+# Navigate to Profile — should show stats
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"

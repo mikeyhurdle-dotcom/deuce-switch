@@ -732,7 +732,7 @@ export default function DiscoverScreen() {
 
   // ── Fetch play events ────────────────────────────────────────────────────
 
-  const fetchPlayEvents = useCallback(async () => {
+  const fetchPlayEvents = useCallback(async (retry = true) => {
     setPlayLoading(true);
     setPlayError(null);
 
@@ -754,6 +754,10 @@ export default function DiscoverScreen() {
       clearTimeout(timeout);
 
       if (error) {
+        if (retry) {
+          setTimeout(() => fetchPlayEvents(false), 1500);
+          return;
+        }
         setPlayError(error.message);
         setPlayLoading(false);
         return;
@@ -763,6 +767,10 @@ export default function DiscoverScreen() {
       setPlayEvents(rows.map(normalisePlayEvent));
       setPlayLoading(false);
     } catch (e: unknown) {
+      if (retry) {
+        setTimeout(() => fetchPlayEvents(false), 1500);
+        return;
+      }
       const msg = e instanceof Error ? e.message : 'Request timed out';
       setPlayError(msg.includes('abort') ? 'Request timed out — pull to refresh' : msg);
       setPlayLoading(false);
@@ -771,7 +779,7 @@ export default function DiscoverScreen() {
 
   // ── Fetch compete events ─────────────────────────────────────────────────
 
-  const fetchCompeteEvents = useCallback(async () => {
+  const fetchCompeteEvents = useCallback(async (retry = true) => {
     setCompeteLoading(true);
     setCompeteError(null);
 
@@ -792,6 +800,10 @@ export default function DiscoverScreen() {
       clearTimeout(timeout);
 
       if (error) {
+        if (retry) {
+          setTimeout(() => fetchCompeteEvents(false), 1500);
+          return;
+        }
         setCompeteError(error.message);
         setCompeteLoading(false);
         return;
@@ -801,6 +813,10 @@ export default function DiscoverScreen() {
       setCompeteEvents(rows.map(normaliseCompetition));
       setCompeteLoading(false);
     } catch (e: unknown) {
+      if (retry) {
+        setTimeout(() => fetchCompeteEvents(false), 1500);
+        return;
+      }
       const msg = e instanceof Error ? e.message : 'Request timed out';
       setCompeteError(msg.includes('abort') ? 'Request timed out — pull to refresh' : msg);
       setCompeteLoading(false);
@@ -899,7 +915,7 @@ export default function DiscoverScreen() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView testID="screen-discover" style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -915,7 +931,7 @@ export default function DiscoverScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Discover</Text>
-          <Text style={styles.headerSub}>Find events near you</Text>
+          <Text testID="discover-subtitle" style={styles.headerSub}>Find events near you</Text>
         </View>
 
         {/* Tabs: Play / Compete */}

@@ -590,14 +590,14 @@ export default function Play() {
                           <View style={styles.hostScoreRow}>
                             <View style={styles.hostScoreInputWrap}>
                               <Text style={styles.hostScoreLabel}>A</Text>
-                              <Input label="" placeholder="0" value={hostScoreA} onChangeText={setHostScoreA} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} />
+                              <Input label="" placeholder="0" value={hostScoreA} onChangeText={setHostScoreA} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} testID="input-score-a" />
                             </View>
                             <Text style={styles.hostScoreDash}>–</Text>
                             <View style={styles.hostScoreInputWrap}>
                               <Text style={styles.hostScoreLabel}>B</Text>
-                              <Input label="" placeholder="0" value={hostScoreB} onChangeText={setHostScoreB} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} />
+                              <Input label="" placeholder="0" value={hostScoreB} onChangeText={setHostScoreB} keyboardType="number-pad" maxLength={2} style={styles.hostScoreInput} testID="input-score-b" />
                             </View>
-                            <Button title="SET" onPress={handleHostScoreSubmit} loading={hostSubmitting} variant="primary" size="sm" />
+                            <Button title="SET" onPress={handleHostScoreSubmit} loading={hostSubmitting} variant="primary" size="sm" testID="btn-set-score" />
                             <Pressable onPress={() => setHostScoreMatchId(null)} style={styles.hostScoreCancel}>
                               <Ionicons name="close" size={18} color={Colors.textMuted} />
                             </Pressable>
@@ -881,10 +881,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   hostScoreInput: {
-    width: 48,
+    width: 64,
     textAlign: 'center',
     fontSize: 18,
     fontFamily: Fonts.mono,
+    paddingHorizontal: 4,
   },
   hostScoreDash: {
     fontFamily: Fonts.bodyBold,

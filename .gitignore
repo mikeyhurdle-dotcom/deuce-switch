@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# Maestro test credentials
+.maestro/.env
+
 # Expo
 .expo/
 dist/

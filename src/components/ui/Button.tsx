@@ -8,7 +8,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-type ButtonProps = {
+export type ButtonProps = {
   title: string;
   onPress: () => void;
   variant?: ButtonVariant;
@@ -19,6 +19,7 @@ type ButtonProps = {
   textStyle?: TextStyle;
   icon?: React.ReactNode;
   haptic?: boolean;
+  testID?: string;
 };
 
 const SPRING_CONFIG = { damping: 15, stiffness: 400, mass: 0.3 };
@@ -34,6 +35,7 @@ export function Button({
   textStyle,
   icon,
   haptic = true,
+  testID,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const scale = useSharedValue(1);
@@ -59,6 +61,7 @@ export function Button({
 
   return (
     <AnimatedPressable
+      testID={testID}
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}

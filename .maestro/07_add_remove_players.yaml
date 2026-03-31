@@ -1,0 +1,55 @@
+appId: com.playsmashd.app
+name: "Lobby - Add and Remove Players"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Create a fresh tournament
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Add Remove Test"
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-next"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 20000
+
+# Add first player
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Test"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Player"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# Add second player
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Alice"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Smith"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# Verify players were added (should see at least 3 players including host)
+- assertVisible: "Test P."
+- assertVisible: "Alice S."

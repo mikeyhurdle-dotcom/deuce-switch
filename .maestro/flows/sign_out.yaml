@@ -1,0 +1,20 @@
+appId: com.playsmashd.app
+name: "Shared - Sign Out"
+---
+- tapOn: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-settings"
+- extendedWaitUntil:
+    visible:
+      id: "btn-logout"
+    timeout: 5000
+- tapOn:
+    id: "btn-logout"
+- tapOn:
+    text: "Sign Out"
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: "btn-consent-continue"
+    timeout: 10000

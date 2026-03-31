@@ -1,0 +1,21 @@
+appId: com.playsmashd.app
+name: "Google Sign In - Button Responds"
+---
+- launchApp
+
+# Ensure we're on sign-in screen
+- runFlow: flows/sign_in_email.yaml
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: flows/sign_out.yaml
+
+# Verify Google button exists and tap it
+- assertVisible:
+    id: "btn-google"
+- tapOn:
+    id: "btn-google"
+
+# Wait briefly — should either show loading or open browser
+- waitForAnimationToEnd

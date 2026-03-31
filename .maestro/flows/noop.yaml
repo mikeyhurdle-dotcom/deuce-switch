@@ -1,0 +1,4 @@
+appId: com.playsmashd.app
+name: "Shared - No-op"
+---
+- waitForAnimationToEnd
