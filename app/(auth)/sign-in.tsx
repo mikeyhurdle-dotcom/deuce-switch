@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -64,8 +64,38 @@ export default function SignIn() {
     }
   };
 
+  // Track whether Google auth is in progress so the deep link handler knows to act
+  const googleAuthInProgress = useRef(false);
+
+  // Fallback: in production builds, openAuthSessionAsync can hang because the
+  // deep link is caught by the app before ASWebAuthenticationSession recognises it.
+  // This listener catches the redirect URL, sets the session, and dismisses the browser.
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', async ({ url }) => {
+      if (!googleAuthInProgress.current) return;
+      if (!url.startsWith('smashd://')) return;
+
+      const fragment = url.split('#')[1];
+      const query = url.split('?')[1]?.split('#')[0];
+      const params = new URLSearchParams(fragment || query || '');
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+
+      googleAuthInProgress.current = false;
+      setGoogleLoading(false);
+      WebBrowser.dismissAuthSession();
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    googleAuthInProgress.current = true;
     try {
       const redirectTo = makeRedirectUri({ scheme: 'smashd' });
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -81,9 +111,9 @@ export default function SignIn() {
       }
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        if (result.type === 'success') {
+        // If openAuthSessionAsync resolved (works in dev), handle tokens here
+        if (result.type === 'success' && googleAuthInProgress.current) {
           const url = result.url;
-          // Tokens may be in the fragment (#) or query string (?)
           const fragment = url.split('#')[1];
           const query = url.split('?')[1]?.split('#')[0];
           const params = new URLSearchParams(fragment || query || '');
@@ -95,11 +125,11 @@ export default function SignIn() {
             Alert.alert('Sign in failed', 'Could not complete Google sign-in. Please try again.');
           }
         }
-        // If result.type is 'cancel' or 'dismiss', loading is cleared in finally
       }
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Google sign-in failed');
     } finally {
+      googleAuthInProgress.current = false;
       setGoogleLoading(false);
     }
   };
