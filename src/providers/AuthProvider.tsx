@@ -37,42 +37,48 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   return data as Profile;
 }
 
-async function ensureProfile(user: User): Promise<Profile | null> {
-  // Check if profile already exists
-  let profile = await fetchProfile(user.id);
-  if (profile) return profile;
+async function ensureProfile(user: User, retries = 2): Promise<Profile | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    // Check if profile already exists
+    const profile = await fetchProfile(user.id);
+    if (profile) return profile;
 
-  // Create a new profile for first-time users
-  const displayName =
-    user.user_metadata?.full_name ??
-    user.user_metadata?.name ??
-    user.email?.split('@')[0] ??
-    'Player';
+    // Only attempt INSERT on first try — subsequent retries just fetch
+    if (attempt === 0) {
+      const displayName =
+        user.user_metadata?.full_name ??
+        user.user_metadata?.name ??
+        user.email?.split('@')[0] ??
+        'Player';
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .insert({
-      id: user.id,
-      display_name: displayName,
-      username: null,
-      visibility: 'public',
-      matches_played: 0,
-      matches_won: 0,
-      is_ghost: false,
-      marketing_email: false,
-      marketing_push: false,
-      indoor_courts: 0,
-      outdoor_courts: 0,
-    })
-    .select()
-    .single();
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          display_name: displayName,
+          username: null,
+          visibility: 'public',
+          matches_played: 0,
+          matches_won: 0,
+          is_ghost: false,
+          marketing_email: false,
+          marketing_push: false,
+          indoor_courts: 0,
+          outdoor_courts: 0,
+        })
+        .select()
+        .single();
 
-  if (error) {
-    // Profile might have been created by a trigger — try fetching again
-    return fetchProfile(user.id);
+      if (!error && data) return data as Profile;
+    }
+
+    // Brief delay before retry — profile may be mid-creation from another auth event
+    if (attempt < retries) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
 
-  return data as Profile;
+  return null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -82,23 +88,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let profileInFlight = false; // Guard against concurrent ensureProfile calls
 
-    // Safety timeout: never hang on loading for more than 5 seconds.
-    // If getSession hasn't resolved by then, force loading=false so the
-    // app is usable (user will land on sign-in and can re-auth).
+    // Safety timeout: never hang on loading for more than 8 seconds.
     const timeout = setTimeout(() => {
       if (!cancelled) {
         setLoading(false);
       }
-    }, 5000);
+    }, 8000);
+
+    const resolveProfile = async (user: User) => {
+      if (profileInFlight) return; // Already resolving — skip duplicate
+      profileInFlight = true;
+      try {
+        const p = await ensureProfile(user);
+        if (!cancelled) setProfile(p);
+      } catch {
+        // Profile fetch failed — session is set, user can still navigate
+        if (!cancelled) setProfile(null);
+      } finally {
+        profileInFlight = false;
+        if (!cancelled) { clearTimeout(timeout); setLoading(false); }
+      }
+    };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return;
       setSession(session);
       if (session?.user) {
-        ensureProfile(session.user)
-          .then((p) => { if (!cancelled) setProfile(p); })
-          .finally(() => { if (!cancelled) { clearTimeout(timeout); setLoading(false); } });
+        resolveProfile(session.user);
       } else {
         clearTimeout(timeout);
         setLoading(false);
@@ -110,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (cancelled) return;
         // On fresh sign-in, gate the app behind loading so tabs don't mount
         // and fire fetches before the Supabase client session is fully settled.
         if (event === 'SIGNED_IN') {
@@ -117,15 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setSession(session);
         if (session?.user) {
-          try {
-            const p = await ensureProfile(session.user);
-            setProfile(p);
-          } catch (err) {
-            // Profile fetch failed — session is already set, user can still navigate
-            setProfile(null);
-          } finally {
-            setLoading(false);
-          }
+          await resolveProfile(session.user);
         } else {
           setProfile(null);
           setLoading(false);

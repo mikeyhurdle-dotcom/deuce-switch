@@ -490,8 +490,9 @@ export default function StatsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  const profileId = profile?.id;
   const fetchStats = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user || !profileId) { setLoading(false); return; }
     setFetchError(null);
     try {
       const [statsResult, ratingsResult, historyResult] = await Promise.allSettled([
@@ -512,12 +513,13 @@ export default function StatsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user, period, matchTypeFilter]);
+  }, [user, profileId, period, matchTypeFilter]);
 
   useEffect(() => {
+    if (!profileId) return; // Don't fetch until profile is ready
     setLoading(true);
     fetchStats();
-  }, [fetchStats]);
+  }, [fetchStats, profileId]);
 
   const loadMoreHistory = useCallback(async () => {
     if (!user) return;
