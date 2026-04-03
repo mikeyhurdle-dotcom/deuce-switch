@@ -1,0 +1,29 @@
+appId: com.playsmashd.app
+name: "Discover - Notify Me Bell on Full Events (Sprint 4)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Discover
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+
+# Wait for events to load
+- waitForAnimationToEnd
+
+# Take screenshot showing discover with events
+- takeScreenshot: screenshots/discover_with_events
+
+# Look for Notify Me bell (only visible on FULL events)
+- assertVisible:
+    text: ".*Notify.*"
+    optional: true
+
+# Take screenshot
+- takeScreenshot: screenshots/discover_notify_me
+
+# Back to home
+- tapOn:
+    text: "Home, tab, 1 of 6"

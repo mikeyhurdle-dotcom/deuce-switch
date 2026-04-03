@@ -1,0 +1,33 @@
+appId: com.playsmashd.app
+name: "Shared - Complete Profile Setup Wizard"
+---
+# Step 1: Location
+- tapOn:
+    id: "input-location"
+- inputText: "London"
+- tapOn:
+    id: "btn-setup-next"
+
+# Step 2: Level
+- tapOn:
+    id: "chip-level-intermediate"
+- tapOn:
+    id: "btn-setup-next"
+
+# Step 3: Position
+- tapOn:
+    id: "chip-position-both"
+- tapOn:
+    id: "btn-setup-next"
+
+# Step 4: Gender
+- tapOn:
+    id: "chip-gender-male"
+- tapOn:
+    id: "btn-setup-next"
+
+# Wait for home screen after setup completes
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 10000

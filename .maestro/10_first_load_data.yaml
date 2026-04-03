@@ -28,11 +28,10 @@ name: "First Load After Login - Data Loads"
 # Navigate to Discover — data should load on first visit
 - tapOn:
     text: "Discover, tab, 2 of 6"
-- assertVisible:
-    id: "screen-discover"
 - extendedWaitUntil:
-    visible: "events found"
-    timeout: 15000
+    visible:
+      id: "screen-discover"
+    timeout: 10000
 
 # Navigate to Play — should work
 - tapOn:

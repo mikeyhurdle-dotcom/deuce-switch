@@ -12,17 +12,29 @@ name: "Bug Fix - Advance Round Works After Viewing Leaderboard"
 - tapOn:
     id: "input-tournament-name"
 - inputText: "Leaderboard Test"
+- pressKey: Enter
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "SETTINGS"
+    timeout: 5000
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Create Tournament"
+    timeout: 5000
 - tapOn:
     id: "btn-wizard-create"
 - extendedWaitUntil:
     visible: "JOIN CODE"
     timeout: 20000
+
+# Scroll to Add Player button
+- scrollUntilVisible:
+    element:
+      id: "btn-add-player"
+    direction: DOWN
+    timeout: 5000
 
 # Add 3 guest players
 - tapOn:

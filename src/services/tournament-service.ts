@@ -499,3 +499,100 @@ export async function getTotalRounds(tournamentId: string): Promise<number> {
   if (error) throw error;
   return data?.[0]?.round_number ?? 0;
 }
+
+/**
+ * Toggle player anonymisation for a tournament.
+ * When enabled, non-organisers see "Player 1", "Player 2" instead of real names.
+ */
+export async function toggleAnonymisePlayers(
+  tournamentId: string,
+  enabled: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('tournaments')
+    .update({ anonymise_players: enabled })
+    .eq('id', tournamentId);
+  if (error) throw error;
+}
+
+// ─── Match Detail & Editing ─────────────────────────────────────────────────
+
+/**
+ * Fetch a single match by ID with player profile info.
+ */
+export async function getMatchDetail(matchId: string): Promise<Match | null> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', matchId)
+    .single();
+  if (error) return null;
+  return data as Match;
+}
+
+export type MatchUpdate = Partial<
+  Pick<Match, 'team_a_score' | 'team_b_score' | 'conditions' | 'court_side' | 'intensity'>
+>;
+
+/**
+ * Update match score and/or metadata (for post-game editing).
+ * Only allows editing reported or approved matches.
+ */
+export async function updateMatchResult(
+  matchId: string,
+  updates: MatchUpdate,
+): Promise<void> {
+  const { error } = await supabase
+    .from('matches')
+    .update(updates)
+    .eq('id', matchId)
+    .in('status', ['reported', 'approved']);
+  if (error) throw error;
+}
+
+/**
+ * Fetch all player_match_results for a given tournament (for history drill-down).
+ */
+export async function getMatchResultsForTournament(
+  tournamentId: string,
+  playerId: string,
+): Promise<
+  Array<{
+    match: Match;
+    playerNames: Map<string, string>;
+  }>
+> {
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .order('round_number')
+    .order('court_number');
+  if (error) throw error;
+
+  // Collect all player IDs from matches
+  const playerIds = new Set<string>();
+  for (const m of (matches ?? []) as Match[]) {
+    if (m.player1_id) playerIds.add(m.player1_id);
+    if (m.player2_id) playerIds.add(m.player2_id);
+    if (m.player3_id) playerIds.add(m.player3_id);
+    if (m.player4_id) playerIds.add(m.player4_id);
+  }
+
+  // Batch fetch display names
+  const playerNames = new Map<string, string>();
+  if (playerIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', Array.from(playerIds));
+    for (const p of (profiles ?? []) as { id: string; display_name: string | null }[]) {
+      playerNames.set(p.id, p.display_name ?? 'Player');
+    }
+  }
+
+  return ((matches ?? []) as Match[]).map((m) => ({
+    match: m,
+    playerNames,
+  }));
+}

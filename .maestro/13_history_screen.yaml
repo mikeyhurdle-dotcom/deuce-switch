@@ -1,0 +1,23 @@
+appId: com.playsmashd.app
+name: "History Screen - Loads and Displays"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Profile tab (History is a sub-tab on Profile, not a main tab)
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+
+# Tap the History sub-tab on the Profile screen
+- tapOn:
+    id: "tab-profile-history"
+- waitForAnimationToEnd
+
+# Take screenshot for marketing
+- takeScreenshot: screenshots/history_screen
+
+# Either shows tournament cards or empty state
+- assertVisible:
+    text: "No tournaments yet|players"
+    optional: true

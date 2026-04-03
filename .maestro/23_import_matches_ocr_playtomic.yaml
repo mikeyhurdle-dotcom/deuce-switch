@@ -1,0 +1,76 @@
+appId: com.playsmashd.app
+name: "Import Matches OCR — Playtomic Screenshot → Review Cards"
+---
+# End-to-end test of the OCR match import flow using a real Playtomic screenshot.
+# Tests that the edge function correctly handles a different platform's layout
+# (player photos, ratings, multi-set matches, ties).
+#
+# Prerequisites:
+#   - Supabase edge function `ocr-extract-players` must be deployed and reachable
+#   - ANTHROPIC_API_KEY must be set in the edge function environment
+
+# ── Push fixture image to simulator photo library ───────────────────────
+- addMedia:
+    - fixtures/playtomic_match_history.png
+
+# ── Sign in ─────────────────────────────────────────────────────────────
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# ── Navigate to Import Matches via History sub-tab ────────────────────
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- extendedWaitUntil:
+    visible:
+      id: "screen-profile"
+    timeout: 10000
+
+- tapOn:
+    id: "tab-profile-history"
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "Import Match from Screenshot"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Import Match from Screenshot"
+- extendedWaitUntil:
+    visible:
+      id: "screen-import-matches"
+    timeout: 5000
+
+# ── Select Playtomic platform hint ──────────────────────────────────────
+- tapOn: "Playtomic"
+- takeScreenshot: screenshots/ocr_playtomic_01_platform_selected
+
+# ── Pick image from Photo Library ───────────────────────────────────────
+- tapOn: "Photo Library"
+- waitForAnimationToEnd
+
+# Tap the most recent photo in the picker grid
+- tapOn:
+    point: "90%,85%"
+
+# ── Wait for OCR processing ────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "matches selected"
+    timeout: 60000
+
+- takeScreenshot: screenshots/ocr_playtomic_02_results_loaded
+
+# ── Verify review screen ───────────────────────────────────────────────
+- assertVisible: "Match 1"
+- assertVisible:
+    text: "Playtomic"
+
+# The Playtomic screenshot shows 3 matches with multi-set scores.
+# Verify at least one match card has score data.
+- scrollUntilVisible:
+    element:
+      text: "Player Ratings"
+    direction: DOWN
+    timeout: 5000
+
+- takeScreenshot: screenshots/ocr_playtomic_03_match_detail
+

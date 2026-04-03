@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -22,8 +22,9 @@ import {
   pauseClock,
   resetClock,
   getTotalRounds,
+  toggleAnonymisePlayers,
 } from '../../../../src/services/tournament-service';
-import { Colors, Fonts, Radius } from '../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
@@ -205,6 +206,17 @@ export default function OrganiserDashboard() {
     }
   };
 
+  const handleToggleAnonymise = async (enabled: boolean) => {
+    if (!id) return;
+    try {
+      await toggleAnonymisePlayers(id, enabled);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', e.message);
+    }
+  };
+
   const playerName = (id: string | null) => {
     if (!id) return '?';
     const p = players.find((pl) => pl.playerId === id);
@@ -249,7 +261,7 @@ export default function OrganiserDashboard() {
   return (
     <>
       <Stack.Screen options={{ headerTitle: 'Dashboard' }} />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-organiser" style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
           refreshControl={
@@ -536,8 +548,33 @@ export default function OrganiserDashboard() {
             </Animated.View>
           )}
 
-          {/* Actions */}
+          {/* Settings */}
           <Animated.View entering={FadeInDown.delay(500).duration(400).springify()} style={styles.section}>
+            <Text style={styles.sectionTitle}>SETTINGS</Text>
+            <Card>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleTextWrap}>
+                  <Text style={styles.toggleLabel}>Anonymise Players</Text>
+                  <Text style={styles.toggleHint}>
+                    Hide real names from non-organisers
+                  </Text>
+                </View>
+                <Switch
+                  testID="switch-anonymise"
+                  value={tournament.anonymise_players}
+                  onValueChange={handleToggleAnonymise}
+                  trackColor={{ false: Colors.surface, true: Colors.opticYellow }}
+                  thumbColor={
+                    tournament.anonymise_players ? Colors.darkBg : Colors.textSecondary
+                  }
+                  ios_backgroundColor={Colors.surface}
+                />
+              </View>
+            </Card>
+          </Animated.View>
+
+          {/* Actions */}
+          <Animated.View entering={FadeInDown.delay(600).duration(400).springify()} style={styles.section}>
             <Text style={styles.sectionTitle}>ACTIONS</Text>
             <Button
               title="ADVANCE ROUND"
@@ -562,26 +599,26 @@ export default function OrganiserDashboard() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.darkBg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing[4] },
   loadingText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.textDim },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    gap: 24,
+    paddingHorizontal: Spacing[5],
+    paddingTop: Spacing[5],
+    paddingBottom: Spacing[10],
+    gap: Spacing[6],
   },
   clockSection: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: Spacing[5],
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: Spacing[2],
   },
-  statusItem: { alignItems: 'center', gap: 4 },
+  statusItem: { alignItems: 'center', gap: Spacing[1] },
   statusLabel: {
     fontFamily: Fonts.mono,
     fontSize: 10,
@@ -599,19 +636,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   flex1: { flex: 1 },
-  section: { gap: 12 },
+  section: { gap: Spacing[3] },
   sectionTitle: {
     fontFamily: Fonts.mono,
     fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
   },
-  buttonRow: { flexDirection: 'row', gap: 12 },
+  buttonRow: { flexDirection: 'row', gap: Spacing[3] },
   matchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: Spacing[2],
   },
   courtText: {
     fontFamily: Fonts.mono,
@@ -635,7 +672,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   matchScoreCenter: {
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing[2],
     alignItems: 'center',
   },
   matchScore: {
@@ -655,17 +692,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textMuted,
     textAlign: 'center',
-    paddingVertical: 16,
+    paddingVertical: Spacing[4],
   },
   // ─── Score Override Editor ──────────────────────────────────────────────────
   editSection: {
-    gap: 12,
-    paddingTop: 4,
+    gap: Spacing[3],
+    paddingTop: Spacing[1],
   },
   editDivider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 4,
+    marginVertical: Spacing[1],
   },
   editTitle: {
     fontFamily: Fonts.mono,
@@ -678,11 +715,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: Spacing[4],
   },
   editScoreField: {
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing[1],
   },
   editScoreLabel: {
     fontFamily: Fonts.mono,
@@ -706,7 +743,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.mono,
     fontSize: 20,
     color: Colors.textMuted,
-    marginTop: 16,
+    marginTop: Spacing[4],
   },
   editHint: {
     fontFamily: Fonts.body,
@@ -716,14 +753,35 @@ const styles = StyleSheet.create({
   },
   editActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Spacing[3],
   },
   tapHint: {
     fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textMuted,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: Spacing[2],
+  },
+  // ─── Toggle Row ────────────────────────────────────────────────────────────
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing[3],
+  },
+  toggleTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  toggleLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  toggleHint: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textMuted,
   },
   // ─── Error State ────────────────────────────────────────────────────────────
   errorText: {
@@ -743,10 +801,10 @@ const styles = StyleSheet.create({
   standingsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 8,
+    paddingBottom: Spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    marginBottom: 4,
+    marginBottom: Spacing[1],
   },
   standingsHeaderText: {
     fontFamily: Fonts.mono,
@@ -757,10 +815,10 @@ const styles = StyleSheet.create({
   standingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: Spacing[2],
     borderLeftWidth: 3,
     borderLeftColor: 'transparent',
-    paddingLeft: 4,
+    paddingLeft: Spacing[1],
   },
   standingsRank: {
     width: 28,

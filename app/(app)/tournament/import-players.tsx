@@ -36,7 +36,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/providers/AuthProvider';
-import { Colors, Fonts, Spacing, Radius, Shadows, Duration } from '../../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Shadows, Duration, Alpha } from '../../../src/lib/constants';
 import { Button } from '../../../src/components/ui/Button';
 import type { Profile } from '../../../src/lib/types';
 
@@ -300,7 +300,7 @@ export default function ImportPlayersScreen() {
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView testID="screen-import-players" style={styles.safeArea} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Import Players',
@@ -561,6 +561,7 @@ export default function ImportPlayersScreen() {
               <Text style={styles.manualAddLabel}>Add player manually</Text>
               <View style={styles.manualAddRow}>
                 <TextInput
+                  testID="input-manual-player"
                   style={styles.manualInput}
                   value={manualName}
                   onChangeText={setManualName}
@@ -570,6 +571,7 @@ export default function ImportPlayersScreen() {
                   returnKeyType="done"
                 />
                 <Pressable
+                  testID="btn-add-manual-player"
                   style={[styles.manualAddBtn, !manualName.trim() && styles.manualAddBtnDisabled]}
                   onPress={addManualPlayer}
                   disabled={!manualName.trim()}
@@ -660,7 +662,7 @@ const styles = StyleSheet.create({
   },
   stepDotActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
   },
   stepDotComplete: {
     borderColor: Colors.opticYellow,
@@ -733,7 +735,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing[4],
@@ -767,7 +769,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   uploadBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -791,7 +793,7 @@ const styles = StyleSheet.create({
   },
   platformChip: {
     paddingHorizontal: Spacing[3],
-    paddingVertical: 4,
+    paddingVertical: Spacing[1],
     borderRadius: Radius.full,
     borderWidth: 1,
   },
@@ -839,7 +841,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepIconActive: {
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
   },
@@ -876,7 +878,7 @@ const styles = StyleSheet.create({
   },
   resultPreviewInfo: {
     flex: 1,
-    gap: 4,
+    gap: Spacing[1],
   },
   resultPreviewBadge: {
     flexDirection: 'row',
@@ -969,7 +971,7 @@ const styles = StyleSheet.create({
   },
   playerInfo: {
     flex: 1,
-    gap: 4,
+    gap: Spacing[1],
   },
   playerName: {
     fontFamily: Fonts.bodySemiBold,
@@ -992,11 +994,11 @@ const styles = StyleSheet.create({
     color: Colors.warning,
   },
   levelBadge: {
-    backgroundColor: 'rgba(123,47,190,0.2)',
-    paddingHorizontal: 8,
+    backgroundColor: Alpha.violet20,
+    paddingHorizontal: Spacing[2],
     paddingVertical: 2,
     borderRadius: Radius.full,
-    marginLeft: 4,
+    marginLeft: Spacing[1],
   },
   levelBadgeText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1055,25 +1057,25 @@ const styles = StyleSheet.create({
   // Notification Card
   notifCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,207,193,0.08)',
+    backgroundColor: Alpha.aqua08,
     borderRadius: Radius.md,
     padding: Spacing[4],
     gap: Spacing[3],
     borderWidth: 1,
-    borderColor: 'rgba(0,207,193,0.2)',
+    borderColor: Alpha.aqua20,
     marginBottom: Spacing[4],
   },
   notifIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,207,193,0.12)',
+    backgroundColor: Alpha.aqua12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notifContent: {
     flex: 1,
-    gap: 4,
+    gap: Spacing[1],
   },
   notifTitle: {
     fontFamily: Fonts.bodySemiBold,
@@ -1092,11 +1094,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing[3],
-    backgroundColor: 'rgba(204,255,0,0.05)',
+    backgroundColor: Alpha.yellow05,
     borderRadius: Radius.md,
     padding: Spacing[4],
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.1)',
+    borderColor: Alpha.yellow10,
   },
   proTipText: {
     flex: 1,

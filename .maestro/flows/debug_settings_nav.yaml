@@ -1,0 +1,23 @@
+appId: com.playsmashd.app
+name: "Debug - Navigate to Settings"
+---
+- launchApp
+- waitForAnimationToEnd
+
+# Navigate to Profile
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+
+# Take screenshot of profile screen before tapping settings
+- takeScreenshot: screenshots/debug_01_profile
+
+# Try to dismiss any dev menu overlay first
+- back
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/debug_02_after_back
+
+# Now try settings
+- tapOn:
+    id: "btn-settings"
+- takeScreenshot: screenshots/debug_03_after_settings_tap

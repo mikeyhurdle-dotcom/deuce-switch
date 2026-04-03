@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../../src/lib/constants';
+import { getAlertSubscriptions, toggleEventAlert } from '../../../src/services/alert-service';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import { supabase } from '../../../src/lib/supabase';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
@@ -151,7 +153,7 @@ function getStatusBadge(
     return { label: 'FULLY BOOKED', color: Colors.error, bg: 'rgba(239, 68, 68, 0.12)' };
   }
   if (status === 'in_progress') {
-    return { label: 'IN PROGRESS', color: Colors.aquaGreen, bg: 'rgba(0, 207, 193, 0.12)' };
+    return { label: 'IN PROGRESS', color: Colors.aquaGreen, bg: Alpha.aqua12 };
   }
   if (spots !== null && spots > 0 && spots <= 4) {
     return {
@@ -341,14 +343,14 @@ function formatBadgeColor(format: string): string {
 
 function formatBadgeBg(format: string): string {
   switch (format) {
-    case 'americano': return 'rgba(204, 255, 0, 0.1)';
-    case 'mexicano': return 'rgba(123, 47, 190, 0.1)';
-    case 'mixicano': return 'rgba(123, 47, 190, 0.1)';
-    case 'team_americano': return 'rgba(0, 207, 193, 0.1)';
+    case 'americano': return Alpha.yellow10;
+    case 'mexicano': return Alpha.violet10;
+    case 'mixicano': return Alpha.violet10;
+    case 'team_americano': return Alpha.aqua10;
     case 'tournament': return 'rgba(244, 114, 182, 0.1)';
     case 'open_play': return 'rgba(148, 163, 184, 0.08)';
-    case 'pairs': return 'rgba(204, 255, 0, 0.1)';
-    case 'team': return 'rgba(0, 207, 193, 0.1)';
+    case 'pairs': return Alpha.yellow10;
+    case 'team': return Alpha.aqua10;
     case 'individual': return 'rgba(168, 85, 247, 0.1)';
     default: return 'rgba(148, 163, 184, 0.08)';
   }
@@ -367,7 +369,7 @@ function levelBadgeColor(level: string | null): string {
 function levelBadgeBg(level: string | null): string {
   switch (level) {
     case 'beginner': return 'rgba(34, 197, 94, 0.1)';
-    case 'intermediate': return 'rgba(0, 207, 193, 0.1)';
+    case 'intermediate': return Alpha.aqua10;
     case 'advanced': return 'rgba(251, 146, 60, 0.1)';
     case 'all_levels': return 'rgba(148, 163, 184, 0.08)';
     default: return 'rgba(148, 163, 184, 0.08)';
@@ -385,8 +387,8 @@ function categoryBadgeColor(category: CompetitionCategory): string {
 function categoryBadgeBg(category: CompetitionCategory): string {
   switch (category) {
     case 'tournament': return 'rgba(244, 114, 182, 0.1)';
-    case 'league': return 'rgba(0, 207, 193, 0.1)';
-    case 'british_tour': return 'rgba(204, 255, 0, 0.1)';
+    case 'league': return Alpha.aqua10;
+    case 'british_tour': return Alpha.yellow10;
   }
 }
 
@@ -506,10 +508,14 @@ function EventCard({
   event,
   isCompete,
   onPress,
+  alertActive,
+  onToggleAlert,
 }: {
   event: NormalisedEvent;
   isCompete: boolean;
   onPress: () => void;
+  alertActive?: boolean;
+  onToggleAlert?: () => void;
 }) {
   const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
   const statusBadge = getStatusBadge(event.status, event.spotsAvailable);
@@ -644,9 +650,26 @@ function EventCard({
 
         <View style={styles.metaRight}>
           {event.status === 'full' ? (
-            <View style={styles.waitlistBtn}>
-              <Text style={styles.waitlistBtnText}>Full</Text>
-            </View>
+            <Pressable
+              testID={`btn-notify-${event.id}`}
+              style={[styles.notifyBtn, alertActive && styles.notifyBtnActive]}
+              onPress={(e) => {
+                e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onToggleAlert?.();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={alertActive ? 'Cancel spot alert' : 'Notify me when spots open'}
+            >
+              <Ionicons
+                name={alertActive ? 'notifications' : 'notifications-outline'}
+                size={14}
+                color={alertActive ? Colors.darkBg : Colors.textMuted}
+              />
+              <Text style={[styles.notifyBtnText, alertActive && styles.notifyBtnTextActive]}>
+                {alertActive ? 'Notifying' : 'Notify Me'}
+              </Text>
+            </Pressable>
           ) : event.registrationUrl ? (
             <View style={styles.registerBtn}>
               <Text style={styles.registerBtnText}>Register</Text>
@@ -735,6 +758,23 @@ export default function DiscoverScreen() {
   const [competeError, setCompeteError] = useState<string | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // Spot alert subscriptions
+  const [alertSubs, setAlertSubs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getAlertSubscriptions().then(setAlertSubs).catch(() => {});
+  }, []);
+
+  const handleToggleAlert = useCallback(async (eventId: string) => {
+    const nowActive = await toggleEventAlert(eventId);
+    setAlertSubs((prev) => {
+      const next = new Set(prev);
+      if (nowActive) next.add(eventId);
+      else next.delete(eventId);
+      return next;
+    });
+  }, []);
 
   // ── Fetch play events ────────────────────────────────────────────────────
 
@@ -935,13 +975,13 @@ export default function DiscoverScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
           <Text style={styles.headerTitle}>Discover</Text>
           <Text testID="discover-subtitle" style={styles.headerSub}>Find events near you</Text>
-        </View>
+        </Animated.View>
 
         {/* Tabs: Play / Compete */}
-        <View style={styles.tabRow}>
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.tabRow}>
           <TabButton
             label="Play"
             active={activeTab === 'play'}
@@ -954,10 +994,10 @@ export default function DiscoverScreen() {
             onPress={() => setActiveTab('compete')}
             testID="tab-compete"
           />
-        </View>
+        </Animated.View>
 
         {/* Search bar + location */}
-        <View style={styles.searchRow}>
+        <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.searchRow}>
           <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={18} color={Colors.textDim} />
             <TextInput
@@ -1009,7 +1049,7 @@ export default function DiscoverScreen() {
               color={Colors.textDim}
             />
           </Pressable>
-        </View>
+        </Animated.View>
 
         {/* Location dropdown */}
         {showLocationPicker && (
@@ -1112,7 +1152,7 @@ export default function DiscoverScreen() {
 
         {/* Event list grouped by date */}
         {!isLoading && errorMsg === null && totalEvents > 0 && (
-          <View style={styles.eventList}>
+          <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.eventList}>
             {eventGroups.map((group) => (
               <View key={group.dateLabel}>
                 <DateHeader
@@ -1126,11 +1166,13 @@ export default function DiscoverScreen() {
                     event={event}
                     isCompete={activeTab === 'compete'}
                     onPress={() => handleEventPress(event)}
+                    alertActive={alertSubs.has(event.id)}
+                    onToggleAlert={() => handleToggleAlert(event.id)}
                   />
                 ))}
               </View>
             ))}
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -1225,16 +1267,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(123, 47, 190, 0.12)',
+    backgroundColor: Alpha.violet12,
     paddingHorizontal: Spacing[3],
     borderRadius: Radius.full,
     height: 44,
     borderWidth: 1,
-    borderColor: 'rgba(123, 47, 190, 0.25)',
+    borderColor: Alpha.violet25,
   },
   locationPillActive: {
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
-    borderColor: 'rgba(204, 255, 0, 0.25)',
+    backgroundColor: Alpha.yellow08,
+    borderColor: Alpha.yellow25,
   },
   locationText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1266,7 +1308,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(51, 65, 85, 0.3)',
   },
   locationOptionActive: {
-    backgroundColor: 'rgba(204, 255, 0, 0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   locationOptionText: {
     fontFamily: Fonts.body,
@@ -1293,8 +1335,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   filterChipActive: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
-    borderColor: 'rgba(204, 255, 0, 0.3)',
+    backgroundColor: Alpha.yellow10,
+    borderColor: Alpha.yellow30,
   },
   filterChipText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1369,7 +1411,7 @@ const styles = StyleSheet.create({
     gap: Spacing[3],
   },
   eventCardFeatured: {
-    borderColor: 'rgba(204, 255, 0, 0.25)',
+    borderColor: Alpha.yellow25,
     ...Shadows.glowYellow,
   },
 
@@ -1516,12 +1558,12 @@ const styles = StyleSheet.create({
     gap: Spacing[2],
   },
   registerBtn: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: Alpha.yellow10,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[1] + 2,
     borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.25)',
+    borderColor: Alpha.yellow25,
   },
   registerBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1540,6 +1582,29 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
     color: Colors.error,
+  },
+  notifyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(148, 163, 184, 0.08)',
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1] + 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  notifyBtnActive: {
+    backgroundColor: Alpha.yellow10,
+    borderColor: Alpha.yellow25,
+  },
+  notifyBtnText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  notifyBtnTextActive: {
+    color: Colors.opticYellow,
   },
   detailsBtn: {
     backgroundColor: 'rgba(148, 163, 184, 0.08)',
@@ -1600,12 +1665,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   retryBtn: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: Alpha.yellow10,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing[5],
     paddingVertical: Spacing[2],
     borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.25)',
+    borderColor: Alpha.yellow25,
     marginTop: Spacing[2],
   },
   retryBtnText: {

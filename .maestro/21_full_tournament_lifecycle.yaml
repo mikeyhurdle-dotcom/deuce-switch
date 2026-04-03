@@ -1,0 +1,130 @@
+appId: com.playsmashd.app
+name: "Full Tournament Lifecycle - Create → Play → Score → End → Results → Share"
+---
+# End-to-end test of a complete tournament from creation to results
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# ── CREATE ───────────────────────────────────────────────────────
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "E2E Lifecycle"
+- pressKey: Enter
+- tapOn:
+    id: "btn-wizard-next"
+- extendedWaitUntil:
+    visible: "SETTINGS"
+    timeout: 5000
+- tapOn:
+    id: "btn-wizard-next"
+- extendedWaitUntil:
+    visible: "Create Tournament"
+    timeout: 5000
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 10000
+
+# ── ADD PLAYERS ──────────────────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      id: "btn-add-player"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Alice"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Smith"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Bob"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Jones"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "btn-add-player"
+- tapOn:
+    id: "input-first-name"
+- inputText: "Carol"
+- tapOn:
+    id: "input-last-name"
+- inputText: "Davis"
+- tapOn:
+    id: "btn-confirm-add-player"
+- waitForAnimationToEnd
+
+# ── START TOURNAMENT ─────────────────────────────────────────────
+- tapOn:
+    id: "btn-start-tournament"
+- extendedWaitUntil:
+    visible:
+      id: "screen-tournament-play"
+    timeout: 10000
+- takeScreenshot: screenshots/lifecycle_round1
+
+# ── SCORE MATCH ──────────────────────────────────────────────────
+- tapOn:
+    id: "btn-submit-score"
+    index: 0
+- tapOn:
+    id: "input-score-a"
+- inputText: "15"
+- tapOn:
+    id: "input-score-b"
+- inputText: "6"
+- tapOn:
+    id: "btn-set-score"
+- waitForAnimationToEnd
+
+# ── END TOURNAMENT ───────────────────────────────────────────────
+- tapOn:
+    id: "btn-end-tournament"
+# Confirm the alert
+- tapOn: "End"
+
+# ── RESULTS SCREEN ───────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      id: "screen-tournament-results"
+    timeout: 15000
+- takeScreenshot: screenshots/lifecycle_results
+
+# Verify results elements
+- assertVisible:
+    id: "btn-share-results"
+- assertVisible:
+    id: "btn-back-to-home"
+
+# ── SHARE SCREEN ─────────────────────────────────────────────────
+- tapOn:
+    id: "btn-share-results"
+- extendedWaitUntil:
+    visible:
+      id: "screen-tournament-share"
+    timeout: 10000
+
+# Verify share elements
+- assertVisible: "Share Result"
+- assertVisible: "CARD STYLE"
+- assertVisible: "SHARE TO"
+- takeScreenshot: screenshots/lifecycle_share

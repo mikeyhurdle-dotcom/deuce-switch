@@ -1,0 +1,51 @@
+appId: com.playsmashd.app
+name: "Settings Screen - All Sections Visible"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Profile tab
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+
+# Tap Settings button
+- tapOn:
+    id: "btn-settings"
+- extendedWaitUntil:
+    visible:
+      id: "screen-settings"
+    timeout: 5000
+
+# Verify profile card is visible
+- assertVisible: "Edit Profile →"
+
+# Verify section headers
+- assertVisible: "Linked Accounts"
+- assertVisible: "Appearance"
+- assertVisible: "Account"
+
+# Verify key action items
+- assertVisible:
+    id: "btn-change-password"
+- assertVisible:
+    id: "btn-delete-account"
+
+# Scroll down to see remaining items
+- scrollUntilVisible:
+    element:
+      id: "btn-logout"
+    direction: DOWN
+    timeout: 5000
+- assertVisible:
+    id: "btn-privacy-policy"
+- assertVisible:
+    id: "btn-help-support"
+- assertVisible:
+    id: "btn-logout"
+
+# Verify app version info
+- assertVisible: "Smashd v1.0.0"
+
+# Take screenshot
+- takeScreenshot: screenshots/settings_screen

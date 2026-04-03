@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors, Fonts, Radius, Spacing } from '../lib/constants';
+import { Alpha, Colors, Fonts, Radius, Spacing } from '../lib/constants';
 import { toggleReaction } from '../services/feed-service';
 import type { FeedPost, ReactionType } from '../lib/types';
 
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   reactionButtonActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204, 255, 0, 0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   reactionEmoji: {
     fontSize: 14,

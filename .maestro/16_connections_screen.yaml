@@ -1,0 +1,35 @@
+appId: com.playsmashd.app
+name: "Connections Screen - Loads and Shows Search"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Profile tab
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- extendedWaitUntil:
+    visible:
+      id: "screen-profile"
+    timeout: 10000
+
+# Tap connections count to navigate (text is "{count} connections")
+- tapOn:
+    text: ".*connections.*"
+- extendedWaitUntil:
+    visible:
+      id: "screen-connections"
+    timeout: 10000
+
+# Verify header
+- assertVisible: "CONNECTIONS"
+
+# Verify search bar is present
+- assertVisible: "Search connections..."
+
+# Take screenshot
+- takeScreenshot: screenshots/connections_screen
+
+# Either shows connections grid or empty state
+- assertVisible:
+    text: "No connections yet|CONNECTION"
+    optional: true

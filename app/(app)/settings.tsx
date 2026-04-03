@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -14,9 +14,12 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { useTheme, type AppearanceMode } from '../../src/providers/ThemeProvider';
 import { supabase } from '../../src/lib/supabase';
-import { Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../src/hooks/useSpringPress';
+import { getClub } from '../../src/services/club-service';
+import type { Club } from '../../src/lib/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -177,6 +180,61 @@ function LinkedRow({
   );
 }
 
+// ── Appearance Picker ────────────────────────────────────────────────────────
+const APPEARANCE_OPTIONS: { value: AppearanceMode; label: string; icon: IconName }[] = [
+  { value: 'system', label: 'System', icon: 'phone-portrait-outline' },
+  // Light mode disabled until palette is implemented across app screens
+  // { value: 'light', label: 'Light', icon: 'sunny-outline' },
+  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+];
+
+function AppearancePicker() {
+  const { mode, setMode } = useTheme();
+
+  return (
+    <View style={styles.appearanceRow}>
+      <View style={[styles.settingIcon, { backgroundColor: Alpha.yellow08 }]}>
+        <Ionicons name="color-palette-outline" size={16} color={Colors.opticYellow} />
+      </View>
+      <View style={styles.settingContent}>
+        <Text style={styles.settingLabel}>Appearance</Text>
+        <View style={styles.appearancePills}>
+          {APPEARANCE_OPTIONS.map((opt) => {
+            const active = mode === opt.value;
+            return (
+              <Pressable
+                key={opt.value}
+                testID={`btn-appearance-${opt.value}`}
+                style={[styles.appearancePill, active && styles.appearancePillActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setMode(opt.value);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Ionicons
+                  name={opt.icon}
+                  size={13}
+                  color={active ? Colors.opticYellow : Colors.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.appearancePillText,
+                    active && styles.appearancePillTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // ── Divider ──────────────────────────────────────────────────────────────────
 function Divider() {
   return <View style={styles.divider} />;
@@ -202,8 +260,17 @@ function LogoutButton({ onPress }: { onPress: () => void }) {
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
 export default function SettingsScreen() {
-  const { signOut, user } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const [changingPassword, setChangingPassword] = useState(false);
+  const [homeClubName, setHomeClubName] = useState<string | null>(null);
+
+  // Fetch home club name if set
+  useEffect(() => {
+    if (!profile?.home_club_id) { setHomeClubName(null); return; }
+    getClub(profile.home_club_id)
+      .then((club) => setHomeClubName(club?.name ?? null))
+      .catch(() => setHomeClubName(null));
+  }, [profile?.home_club_id]);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -265,7 +332,7 @@ export default function SettingsScreen() {
           headerShadowVisible: false,
         }}
       />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-settings" style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
@@ -274,6 +341,7 @@ export default function SettingsScreen() {
           <ProfileCard />
 
           {/* ── Linked Accounts ────────────────── */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
           <SectionLabel title="Linked Accounts" />
 
           <LinkedRow
@@ -285,15 +353,42 @@ export default function SettingsScreen() {
             btnLabel="Coming Soon"
           />
 
+          </Animated.View>
+
+          <Divider />
+
+          {/* ── Appearance ────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <SectionLabel title="Appearance" />
+          <AppearancePicker />
+          </Animated.View>
+
+          <Divider />
+
+          {/* ── Home Club ────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(300).springify()}>
+          <SectionLabel title="Home Club" />
+          <ChevronRow
+            icon="business"
+            iconColor={Colors.aquaGreen}
+            iconBg={Alpha.aqua12}
+            label="Home Club"
+            sub={homeClubName ?? 'Select your home club'}
+            onPress={() => router.push('/(app)/club-select')}
+            testID="btn-home-club"
+          />
+          </Animated.View>
+
           <Divider />
 
           {/* ── Privacy & Account ─────────────── */}
+          <Animated.View entering={FadeInDown.delay(400).springify()}>
           <SectionLabel title="Account" />
 
           <InfoRow
             icon="eye"
             iconColor={Colors.violet}
-            iconBg="rgba(123,47,190,0.08)"
+            iconBg={Alpha.violet08}
             label="Profile Visibility"
             value="Public — other players can find you"
           />
@@ -316,10 +411,12 @@ export default function SettingsScreen() {
             destructive
             testID="btn-delete-account"
           />
+          </Animated.View>
 
           <Divider />
 
           {/* ── About ──────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(500).springify()}>
           <SectionLabel title="About" />
 
           <ChevronRow
@@ -339,9 +436,12 @@ export default function SettingsScreen() {
             onPress={() => Linking.openURL('mailto:support@playsmashd.com')}
             testID="btn-help-support"
           />
+          </Animated.View>
 
           {/* ── Logout ─────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(600).springify()}>
           <LogoutButton onPress={handleSignOut} />
+          </Animated.View>
 
           {/* ── App Info ────────────────────────── */}
           <Text style={styles.appInfo}>
@@ -493,6 +593,42 @@ const styles = StyleSheet.create({
   linkBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 11,
+  },
+
+  // Appearance
+  appearanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[4],
+    paddingVertical: Spacing[4],
+    paddingHorizontal: Spacing[5],
+  },
+  appearancePills: {
+    flexDirection: 'row',
+    gap: Spacing[2],
+    marginTop: Spacing[2],
+  },
+  appearancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[1],
+    paddingVertical: 6,
+    paddingHorizontal: Spacing[3],
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
+  },
+  appearancePillActive: {
+    backgroundColor: Alpha.yellow08,
+    borderWidth: 1,
+    borderColor: Alpha.yellow20,
+  },
+  appearancePillText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  appearancePillTextActive: {
+    color: Colors.opticYellow,
   },
 
   // Divider

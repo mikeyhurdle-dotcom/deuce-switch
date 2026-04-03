@@ -2,7 +2,7 @@
  * Shared types, constants, and data for the Tournament Creation Wizard.
  * Imported by create.tsx, StepBasics, StepSettings, and StepPreview.
  */
-import { Colors } from '../../lib/constants';
+import { Alpha, Colors } from '../../lib/constants';
 import type { Ionicons } from '@expo/vector-icons';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ export const FORMATS: TournamentFormat[] = [
     desc: 'Rotating partners, individual scores',
     tag: 'POPULAR',
     tagColor: Colors.opticYellow,
-    tagBg: 'rgba(204,255,0,0.08)',
+    tagBg: Alpha.yellow08,
     info: 'Every player partners with everyone else across rounds. Scores are individual — the best all-round player wins.',
     stats: [
       { label: 'players', value: '8-16' },

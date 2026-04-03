@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { Colors, Fonts, Radius } from '../../lib/constants';
+import { Alpha, Colors, Fonts, Radius } from '../../lib/constants';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
 
@@ -15,7 +15,7 @@ const variantColors: Record<BadgeVariant, { bg: string; text: string }> = {
   success: { bg: 'rgba(34, 197, 94, 0.12)', text: Colors.success },
   warning: { bg: 'rgba(251, 146, 60, 0.12)', text: Colors.warning },
   error: { bg: 'rgba(239, 68, 68, 0.12)', text: Colors.error },
-  info: { bg: 'rgba(0, 207, 193, 0.12)', text: Colors.aquaGreen },
+  info: { bg: Alpha.aqua12, text: Colors.aquaGreen },
 };
 
 export function Badge({ label, text, variant = 'default', style }: BadgeProps) {

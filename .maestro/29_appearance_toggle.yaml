@@ -1,0 +1,33 @@
+appId: com.playsmashd.app
+name: "Settings - Appearance Toggle (Sprint 1)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Settings
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- tapOn:
+    id: "btn-settings"
+
+# Verify appearance options exist (light mode disabled until palette ready)
+- scrollUntilVisible:
+    element:
+      id: "btn-appearance-dark"
+    direction: DOWN
+- assertVisible:
+    id: "btn-appearance-system"
+- assertVisible:
+    id: "btn-appearance-dark"
+
+# Toggle to Dark mode
+- tapOn:
+    id: "btn-appearance-dark"
+- takeScreenshot: screenshots/settings_dark_mode
+
+# Toggle back to System
+- tapOn:
+    id: "btn-appearance-system"
+- takeScreenshot: screenshots/settings_system_mode

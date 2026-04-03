@@ -16,7 +16,7 @@ import { useTournament } from '../../../../src/hooks/useTournament';
 import { useTournamentNotifications } from '../../../../src/hooks/useNotifications';
 import { startTournament, addGuestPlayer, removePlayerFromTournament } from '../../../../src/services/tournament-service';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius } from '../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
 import { Badge } from '../../../../src/components/ui/Badge';
@@ -79,6 +79,25 @@ function PlayerRow({
         </Pressable>
       )}
     </Animated.View>
+  );
+}
+
+// ── Add Player Button (spring press) ─────────────────────────────────────────
+function AddPlayerButton({ onPress }: { onPress: () => void }) {
+  const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
+  return (
+    <AnimatedPressable
+      testID="btn-add-player"
+      style={[styles.addPlayerButton, animatedStyle]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Add player manually"
+    >
+      <Ionicons name="person-add-outline" size={20} color={Colors.opticYellow} />
+      <Text style={styles.addPlayerButtonText}>Add Player</Text>
+    </AnimatedPressable>
   );
 }
 
@@ -369,19 +388,12 @@ export default function Lobby() {
 
           {/* Add Player — Organiser Only */}
           {isOrganiser && !showAddPlayer && (
-            <Pressable
-              testID="btn-add-player"
-              style={styles.addPlayerButton}
+            <AddPlayerButton
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setShowAddPlayer(true);
               }}
-              accessibilityRole="button"
-              accessibilityLabel="Add player manually"
-            >
-              <Ionicons name="person-add-outline" size={20} color={Colors.opticYellow} />
-              <Text style={styles.addPlayerButtonText}>Add Player</Text>
-            </Pressable>
+            />
           )}
 
           {/* Add Player Inline Form */}
@@ -459,6 +471,7 @@ export default function Lobby() {
               variant="primary"
               size="lg"
               testID="btn-start-tournament"
+              style={players.length >= 4 ? Shadows.glowYellow : undefined}
             />
           )}
 
@@ -491,9 +504,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing[2],
-    backgroundColor: 'rgba(0,207,193,0.1)',
+    backgroundColor: Alpha.aqua10,
     borderWidth: 1,
-    borderColor: 'rgba(0,207,193,0.25)',
+    borderColor: Alpha.aqua25,
     borderRadius: Radius.md,
     paddingVertical: Spacing[3],
     paddingHorizontal: Spacing[4],

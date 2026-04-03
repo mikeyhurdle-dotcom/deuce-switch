@@ -535,3 +535,151 @@ export async function updateMatchDetails(
     .eq('id', matchId);
   if (error) throw error;
 }
+
+// ─── Head-to-Head ──────────────────────────────────────────────────────────
+
+export type HeadToHeadRecord = {
+  opponentId: string;
+  opponentName: string;
+  opponentAvatar: string | null;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  lastPlayed: string | null;
+};
+
+/**
+ * Compute head-to-head record between the current user and a specific opponent.
+ * Looks at `player_match_results` where the opponent appears as opponent1 or opponent2.
+ */
+export async function getHeadToHead(
+  userId: string,
+  opponentId: string,
+): Promise<HeadToHeadRecord> {
+  const { data: rows, error } = await supabase
+    .from('player_match_results')
+    .select('*')
+    .eq('player_id', userId)
+    .or(`opponent1_id.eq.${opponentId},opponent2_id.eq.${opponentId}`)
+    .order('played_at', { ascending: false });
+
+  if (error) throw error;
+
+  const results = (rows ?? []) as PlayerMatchResult[];
+
+  // Fetch opponent profile for name + avatar
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('display_name, game_face_url')
+    .eq('id', opponentId)
+    .single();
+
+  let wins = 0;
+  let losses = 0;
+  let pointsFor = 0;
+  let pointsAgainst = 0;
+
+  for (const r of results) {
+    if (r.won) wins++;
+    else losses++;
+    pointsFor += r.team_score;
+    pointsAgainst += r.opponent_score;
+  }
+
+  return {
+    opponentId,
+    opponentName: profileData?.display_name ?? 'Unknown',
+    opponentAvatar: profileData?.game_face_url ?? null,
+    matchesPlayed: results.length,
+    wins,
+    losses,
+    pointsFor,
+    pointsAgainst,
+    lastPlayed: results.length > 0 ? results[0].played_at : null,
+  };
+}
+
+/**
+ * Batch-compute h2h records for multiple opponents in a single query.
+ * More efficient than calling getHeadToHead() per opponent.
+ */
+export async function batchHeadToHead(
+  userId: string,
+  opponentIds: string[],
+): Promise<Map<string, HeadToHeadRecord>> {
+  if (opponentIds.length === 0) return new Map();
+
+  // Fetch all match results for the user
+  const orFilter = opponentIds
+    .map((id) => `opponent1_id.eq.${id},opponent2_id.eq.${id}`)
+    .join(',');
+
+  const { data: rows, error } = await supabase
+    .from('player_match_results')
+    .select('*')
+    .eq('player_id', userId)
+    .or(orFilter)
+    .order('played_at', { ascending: false });
+
+  if (error) throw error;
+
+  const results = (rows ?? []) as PlayerMatchResult[];
+
+  // Fetch opponent profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name, game_face_url')
+    .in('id', opponentIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p: { id: string; display_name: string; game_face_url: string | null }) => [
+      p.id,
+      { name: p.display_name, avatar: p.game_face_url },
+    ]),
+  );
+
+  // Aggregate per opponent
+  const aggMap = new Map<
+    string,
+    { wins: number; losses: number; pointsFor: number; pointsAgainst: number; lastPlayed: string | null }
+  >();
+
+  for (const id of opponentIds) {
+    aggMap.set(id, { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, lastPlayed: null });
+  }
+
+  for (const r of results) {
+    const matchedIds = opponentIds.filter(
+      (id) => r.opponent1_id === id || r.opponent2_id === id,
+    );
+    for (const id of matchedIds) {
+      const agg = aggMap.get(id)!;
+      if (r.won) agg.wins++;
+      else agg.losses++;
+      agg.pointsFor += r.team_score;
+      agg.pointsAgainst += r.opponent_score;
+      if (!agg.lastPlayed) agg.lastPlayed = r.played_at;
+    }
+  }
+
+  const result = new Map<string, HeadToHeadRecord>();
+  for (const id of opponentIds) {
+    const agg = aggMap.get(id)!;
+    const prof = profileMap.get(id);
+    result.set(id, {
+      opponentId: id,
+      opponentName: prof?.name ?? 'Unknown',
+      opponentAvatar: prof?.avatar ?? null,
+      matchesPlayed: agg.wins + agg.losses,
+      wins: agg.wins,
+      losses: agg.losses,
+      pointsFor: agg.pointsFor,
+      pointsAgainst: agg.pointsAgainst,
+      lastPlayed: agg.lastPlayed,
+    });
+  }
+
+  return result;
+}

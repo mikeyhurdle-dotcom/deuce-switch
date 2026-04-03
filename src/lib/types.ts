@@ -54,6 +54,7 @@ export type Profile = {
   racket_model: string | null;
   shoe_brand: string | null;
   shoe_model: string | null;
+  home_club_id: string | null;
   created_at: string;
 };
 
@@ -72,6 +73,7 @@ export type Tournament = {
   current_round_started_at: string | null;
   current_round_duration_seconds: number | null;
   master_clock_running: boolean;
+  anonymise_players: boolean;
   created_at: string;
 };
 

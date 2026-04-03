@@ -1,0 +1,64 @@
+appId: com.playsmashd.app
+name: "Settings — Logout, Change Password, Delete Account Alerts"
+---
+# Tests that settings CTAs actually trigger their expected alerts/actions.
+# Does NOT complete destructive actions — only verifies the confirmation
+# dialogs appear and then cancels them.
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# ── Navigate to Settings ────────────────────────────────────────────────
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-settings"
+- extendedWaitUntil:
+    visible:
+      id: "screen-settings"
+    timeout: 5000
+
+# ── Test Change Password ────────────────────────────────────────────────
+- tapOn:
+    id: "btn-change-password"
+# Should trigger a password reset email and show confirmation alert
+- extendedWaitUntil:
+    visible: "Check Your Email"
+    timeout: 10000
+- tapOn: "OK"
+- takeScreenshot: screenshots/settings_01_password_reset_sent
+
+# ── Test Delete Account ─────────────────────────────────────────────────
+- tapOn:
+    id: "btn-delete-account"
+# Should show confirmation alert with "Email Support" and "Cancel"
+- extendedWaitUntil:
+    visible: "Delete Account"
+    timeout: 5000
+- assertVisible: "Email Support"
+# Cancel — do NOT proceed with deletion
+- tapOn: "Cancel"
+- takeScreenshot: screenshots/settings_02_delete_cancelled
+
+# ── Test Logout ─────────────────────────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      id: "btn-logout"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "btn-logout"
+# Should show "Sign Out" confirmation alert
+- extendedWaitUntil:
+    visible: "Sign Out"
+    timeout: 5000
+- assertVisible: "Are you sure you want to sign out?"
+# Cancel — do NOT log out (would break subsequent tests)
+- tapOn: "Cancel"
+- takeScreenshot: screenshots/settings_03_logout_cancelled
+
+# ── Verify we're still on settings after cancelling everything ──────────
+- assertVisible:
+    id: "screen-settings"
+- assertVisible: "Smashd v1.0.0"
+

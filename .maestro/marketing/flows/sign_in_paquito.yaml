@@ -1,0 +1,30 @@
+appId: com.playsmashd.app
+name: "Marketing - Sign In as Paquito"
+---
+# Handle consent screen if it appears
+- runFlow:
+    when:
+      visible:
+        id: "btn-consent-continue"
+    file: ../../flows/accept_consent.yaml
+
+# If already logged in, sign out first
+- runFlow:
+    when:
+      visible:
+        id: "screen-home"
+    file: sign_out_for_marketing.yaml
+
+# Handle profile setup if it appears
+- runFlow:
+    when:
+      visible:
+        id: "screen-profile-setup"
+    file: ../../flows/dismiss_profile_setup.yaml
+
+# Sign in as Paquito
+- runFlow:
+    when:
+      visible:
+        id: "btn-sign-in"
+    file: do_paquito_login.yaml

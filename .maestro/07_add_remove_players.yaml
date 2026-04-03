@@ -12,17 +12,29 @@ name: "Lobby - Add and Remove Players"
 - tapOn:
     id: "input-tournament-name"
 - inputText: "Add Remove Test"
+- pressKey: Enter
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "SETTINGS"
+    timeout: 5000
 - tapOn:
     id: "btn-wizard-next"
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Create Tournament"
+    timeout: 5000
 - tapOn:
     id: "btn-wizard-create"
 - extendedWaitUntil:
     visible: "JOIN CODE"
     timeout: 20000
+
+# Scroll to find Add Player button (below JOIN CODE, QR, and player list)
+- scrollUntilVisible:
+    element:
+      id: "btn-add-player"
+    direction: DOWN
+    timeout: 5000
 
 # Add first player
 - tapOn:

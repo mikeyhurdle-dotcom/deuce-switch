@@ -1,0 +1,104 @@
+appId: com.playsmashd.app
+name: "Import Matches OCR — Nettla Screenshot → Review Cards"
+---
+# End-to-end test of the OCR match import flow using a real Nettla screenshot.
+# This pushes a fixture image to the simulator photo library, navigates to the
+# import-matches screen, picks the image, waits for the Supabase edge function
+# (ocr-extract-players) to process it, and verifies the review screen.
+#
+# Prerequisites:
+#   - Supabase edge function `ocr-extract-players` must be deployed and reachable
+#   - ANTHROPIC_API_KEY must be set in the edge function environment
+#   - Simulator must have photo library access granted (or auto-grant enabled)
+
+# ── Push fixture image to simulator photo library ───────────────────────
+- addMedia:
+    - fixtures/nettla_match_history_wins.png
+
+# ── Sign in ─────────────────────────────────────────────────────────────
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# ── Navigate to Import Matches via History sub-tab ────────────────────
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- extendedWaitUntil:
+    visible:
+      id: "screen-profile"
+    timeout: 10000
+
+- tapOn:
+    id: "tab-profile-history"
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: "Import Match from Screenshot"
+    direction: DOWN
+    timeout: 10000
+- tapOn: "Import Match from Screenshot"
+- extendedWaitUntil:
+    visible:
+      id: "screen-import-matches"
+    timeout: 5000
+
+# ── Verify upload zone ──────────────────────────────────────────────────
+- assertVisible: "Screenshot Import"
+- assertVisible: "Camera"
+- assertVisible: "Photo Library"
+- takeScreenshot: screenshots/ocr_01_upload_zone
+
+# ── Select Nettla platform hint for better accuracy ─────────────────────
+- tapOn: "Nettla"
+
+# ── Pick image from Photo Library ───────────────────────────────────────
+- tapOn: "Photo Library"
+
+# The iOS PHPicker opens with most recent photos visible at the bottom.
+# The fixture image we pushed via addMedia will be the most recent photo.
+# Wait for the picker to fully load, then tap the most recent photo.
+- waitForAnimationToEnd
+
+# Tap the most recent photo in the picker grid (bottom-right area).
+# NOTE: This point-based tap targets the most recent photo in iOS PHPicker.
+# If the test fails here, adjust the point coordinates for your device/iOS version.
+- tapOn:
+    point: "90%,85%"
+
+# ── Wait for OCR processing ────────────────────────────────────────────
+# The edge function calls Claude Sonnet vision API — this can take 15-30s.
+# The UI shows 3 processing steps: "Reading screenshot" → "Extracting match
+# data" → "Identifying your results"
+- extendedWaitUntil:
+    visible: "matches selected"
+    timeout: 60000
+
+- takeScreenshot: screenshots/ocr_02_results_loaded
+
+# ── Verify review screen ───────────────────────────────────────────────
+# The Nettla screenshot contains 4+ matches with scores and player names.
+# We check that at least the first match card rendered and key UI elements exist.
+- assertVisible: "Match 1"
+- assertVisible:
+    text: "Nettla"
+
+# Verify match details extracted — player names from the screenshot
+# The Nettla screenshot shows "Mikey & Frazer" vs "Sam & Alessio" etc.
+# The OCR should extract these player names.
+- scrollUntilVisible:
+    element:
+      text: "Player Ratings"
+    direction: DOWN
+    timeout: 5000
+
+- takeScreenshot: screenshots/ocr_03_match_card_detail
+
+# ── Verify save button appears ──────────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      text: "Save"
+    direction: DOWN
+    timeout: 5000
+
+- takeScreenshot: screenshots/ocr_04_save_button
+

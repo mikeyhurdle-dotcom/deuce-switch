@@ -1,0 +1,31 @@
+appId: com.playsmashd.app
+name: "Marketing - Tournament Lifecycle (Create → Play → Results)"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# Navigate to Play tab
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- waitForAnimationToEnd
+
+# 1. Create tournament — tap the + FAB or create button
+- takeScreenshot: marketing/tournament_01_play_hub
+
+# Navigate to Home and tap create if available
+- tapOn:
+    text: "Home, tab, 1 of 6"
+- waitForAnimationToEnd
+
+# Look for an active tournament to showcase
+- takeScreenshot: marketing/tournament_02_home_active
+
+# Tap into a tournament if one exists in lobby/running state
+- tapOn:
+    text: ".*Dedup Test.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: marketing/tournament_03_lobby_or_play
+
+# Capture leaderboard if visible
+- takeScreenshot: marketing/tournament_04_current_state

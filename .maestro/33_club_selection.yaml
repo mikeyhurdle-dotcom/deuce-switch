@@ -1,0 +1,38 @@
+appId: com.playsmashd.app
+name: "Club Selection - Search and Set Home Club (Sprint 4)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Settings
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- tapOn:
+    id: "btn-settings"
+
+# Scroll to find Home Club option and tap it
+- scrollUntilVisible:
+    element:
+      id: "btn-home-club"
+    direction: DOWN
+- tapOn:
+    id: "btn-home-club"
+- waitForAnimationToEnd
+
+# Verify club selection screen loads
+- extendedWaitUntil:
+    visible:
+      id: "screen-club-select"
+    timeout: 5000
+
+# Verify search input exists
+- assertVisible:
+    id: "input-club-search"
+
+# Take screenshot of club selection
+- takeScreenshot: screenshots/club_selection
+
+# Go back
+- back

@@ -1,0 +1,38 @@
+appId: com.playsmashd.app
+name: "Marketing - Connections & Notifications"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# 1. Notifications — tap bell from home
+- tapOn:
+    text: "Notifications"
+- extendedWaitUntil:
+    visible:
+      id: "screen-notifications"
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: marketing/social_01_notifications
+
+# Back to home
+- back
+- waitForAnimationToEnd
+
+# 2. Navigate to Profile > Connections
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+
+# Tap connections count or search
+- tapOn:
+    text: ".*connections.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: marketing/social_02_connections
+
+# 3. Back to profile — show suggestions with H2H records
+- back
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/social_03_profile_suggestions

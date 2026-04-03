@@ -1,0 +1,44 @@
+appId: com.playsmashd.app
+name: "Marketing - Profile & Stats Deep Dive"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# Navigate to Profile
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- waitForAnimationToEnd
+
+# 1. Profile overview — level, stats card, recent tournaments
+- takeScreenshot: marketing/profile_01_overview
+
+# 2. Stats sub-tab
+- tapOn:
+    text: "Stats"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/profile_02_stats
+
+# 3. Feed sub-tab
+- tapOn:
+    text: "Feed"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/profile_03_feed
+
+# 4. History sub-tab
+- tapOn:
+    text: "History"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/profile_04_history
+
+# 5. Back to Overview — scroll down to Invite Friends + Frequent Partners
+- tapOn:
+    text: "Overview"
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "btn-invite-friends"
+    direction: DOWN
+    timeout: 5000
+- takeScreenshot: marketing/profile_05_invite_friends

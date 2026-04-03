@@ -1,0 +1,31 @@
+appId: com.playsmashd.app
+name: "Marketing - Sign Out Current User"
+---
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- waitForAnimationToEnd
+
+# Scroll to sign out on profile screen
+- scrollUntilVisible:
+    element:
+      id: "btn-sign-out"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "btn-sign-out"
+
+# Wait longer for alert to appear
+- extendedWaitUntil:
+    visible: "Are you sure you want to sign out?"
+    timeout: 10000
+
+# Confirm sign out (index 1 = destructive button, not the profile one)
+- tapOn:
+    text: "Sign Out"
+    index: 1
+
+# Wait for sign-in screen
+- extendedWaitUntil:
+    visible:
+      id: "btn-sign-in"
+    timeout: 15000

@@ -1,0 +1,13 @@
+appId: com.playsmashd.app
+name: "Shared - Dismiss Expo Dev Menu"
+---
+# Full dev client settings page: X close button is top-right (~93%, ~10%)
+- tapOn:
+    point: "93%,10%"
+- waitForAnimationToEnd
+
+# Small floating overlay: tap "Go home" to return to app
+- tapOn:
+    text: "Go home"
+    optional: true
+- waitForAnimationToEnd

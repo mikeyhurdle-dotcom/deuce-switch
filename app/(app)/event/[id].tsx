@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useState, useCallback, useMemo } from 'react';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Alpha.black50,
     justifyContent: 'center',
     alignItems: 'center',
   },

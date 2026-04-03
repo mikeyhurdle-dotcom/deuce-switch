@@ -47,6 +47,50 @@ export const Colors = {
   bronze: '#CD7F32',
 } as const;
 
+// ─── Alpha Layers (brand colors at standard opacity levels) ─────────────────
+// Use these instead of inline rgba() strings for consistency.
+
+export const Alpha = {
+  // Yellow (opticYellow #CCFF00)
+  yellow04: 'rgba(204,255,0,0.04)',
+  yellow05: 'rgba(204,255,0,0.05)',
+  yellow06: 'rgba(204,255,0,0.06)',
+  yellow08: 'rgba(204,255,0,0.08)',
+  yellow10: 'rgba(204,255,0,0.1)',
+  yellow12: 'rgba(204,255,0,0.12)',
+  yellow15: 'rgba(204,255,0,0.15)',
+  yellow20: 'rgba(204,255,0,0.2)',
+  yellow25: 'rgba(204,255,0,0.25)',
+  yellow30: 'rgba(204,255,0,0.3)',
+
+  // Aqua (aquaGreen #00CFC1)
+  aqua08: 'rgba(0,207,193,0.08)',
+  aqua10: 'rgba(0,207,193,0.1)',
+  aqua12: 'rgba(0,207,193,0.12)',
+  aqua20: 'rgba(0,207,193,0.2)',
+  aqua25: 'rgba(0,207,193,0.25)',
+
+  // Violet (#7B2FBE)
+  violet08: 'rgba(123,47,190,0.08)',
+  violet10: 'rgba(123,47,190,0.1)',
+  violet12: 'rgba(123,47,190,0.12)',
+  violet15: 'rgba(123,47,190,0.15)',
+  violet20: 'rgba(123,47,190,0.2)',
+  violet25: 'rgba(123,47,190,0.25)',
+
+  // White (overlays on dark backgrounds)
+  white05: 'rgba(255,255,255,0.05)',
+  white06: 'rgba(255,255,255,0.06)',
+  white08: 'rgba(255,255,255,0.08)',
+
+  // Black (overlays on light backgrounds)
+  black05: 'rgba(0,0,0,0.05)',
+  black08: 'rgba(0,0,0,0.08)',
+  black40: 'rgba(0,0,0,0.4)',
+  black50: 'rgba(0,0,0,0.5)',
+  black60: 'rgba(0,0,0,0.6)',
+} as const;
+
 // ─── Typography ──────────────────────────────────────────────────────────────
 
 export const Fonts = {

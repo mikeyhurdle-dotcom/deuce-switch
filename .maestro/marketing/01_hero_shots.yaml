@@ -1,0 +1,45 @@
+appId: com.playsmashd.app
+name: "Marketing - Hero Shots (App Store & Social)"
+---
+- launchApp
+- waitForAnimationToEnd
+
+# 1. Sign-in screen — branded first impression
+- takeScreenshot: marketing/hero_01_sign_in
+
+# Sign in as Paquito
+- runFlow: flows/sign_in_paquito.yaml
+
+# 2. Home screen — tournaments + upcoming games
+- waitForAnimationToEnd
+- takeScreenshot: marketing/hero_02_home_feed
+
+# 3. Discover — events near you
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/hero_03_discover
+
+# 4. Play hub
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- assertVisible:
+    id: "screen-play"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/hero_04_play
+
+# 5. Stats
+- tapOn:
+    text: "Stats, tab, 4 of 6"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/hero_05_stats
+
+# 6. Profile — the money shot (level, stats, tournaments)
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/hero_06_profile

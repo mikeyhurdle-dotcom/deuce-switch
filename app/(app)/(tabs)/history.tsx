@@ -226,7 +226,7 @@ export default function History() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView testID="screen-history" style={styles.safe}>
         <View style={styles.container}>
           <Text style={styles.title}>HISTORY</Text>
           <ListSkeleton count={4} />
@@ -236,7 +236,7 @@ export default function History() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView testID="screen-history" style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.container}
         refreshControl={

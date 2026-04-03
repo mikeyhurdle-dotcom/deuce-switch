@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -24,7 +26,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../../src/lib/constants';
 import { SmashdLogo } from '../../../src/components/ui/SmashdLogo';
 import { SmashdWordmark } from '../../../src/components/ui/SmashdWordmark';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
@@ -73,6 +75,21 @@ type RawMatchResult = {
   played_at: string;
   set_scores: Array<{ team_a: number; team_b: number }> | null;
   tournaments: { name: string; tournament_format: string } | null;
+};
+
+type PlayThisWeekEvent = {
+  id: string;
+  name: string;
+  venue: string;
+  city: string;
+  date: string;
+  time: string;
+  format: string;
+  level: string;
+  price: string;
+  spotsAvailable: number | null;
+  status: string;
+  registrationUrl: string | null;
 };
 
 type ActiveTournament = {
@@ -243,6 +260,54 @@ function UpcomingCard({ event }: { event: UpcomingEvent }) {
   );
 }
 
+function PlayThisWeekCard({ event }: { event: PlayThisWeekEvent }) {
+  const spring = useSpringPress();
+  const isFull = event.status === 'full';
+  const isLow = event.spotsAvailable !== null && event.spotsAvailable > 0 && event.spotsAvailable <= 4;
+
+  return (
+    <AnimatedPressable
+      style={[styles.ptwCard, spring.animatedStyle]}
+      onPressIn={spring.onPressIn}
+      onPressOut={spring.onPressOut}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (event.registrationUrl) {
+          Linking.openURL(event.registrationUrl);
+        }
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`${event.name} at ${event.venue}, ${event.format}, ${isFull ? 'fully booked' : event.spotsAvailable ? `${event.spotsAvailable} spots left` : 'available'}`}
+    >
+      <Text style={styles.ptwDate}>{event.date}</Text>
+      <Text style={styles.ptwName} numberOfLines={2}>{event.name}</Text>
+      <Text style={styles.ptwVenue} numberOfLines={1}>{event.venue}</Text>
+      {event.time ? (
+        <Text style={styles.ptwTime}>{event.time}</Text>
+      ) : null}
+      <View style={styles.ptwBottom}>
+        <View style={styles.ptwPills}>
+          <View style={styles.ucFormatPill}>
+            <Text style={styles.ucFormatText}>{event.format}</Text>
+          </View>
+          {event.level !== 'all_levels' && (
+            <View style={styles.ptwLevelPill}>
+              <Text style={styles.ptwLevelText}>{event.level}</Text>
+            </View>
+          )}
+        </View>
+        {isFull ? (
+          <Text style={styles.ucSpotsFull}>FULL</Text>
+        ) : isLow ? (
+          <Text style={styles.ucSpotsLow}>{event.spotsAvailable} left</Text>
+        ) : event.price ? (
+          <Text style={styles.ptwPrice}>{event.price}</Text>
+        ) : null}
+      </View>
+    </AnimatedPressable>
+  );
+}
+
 function getRankColor(rank: number): string {
   if (rank === 1) return Colors.gold;
   if (rank === 2) return Colors.silver;
@@ -327,14 +392,14 @@ function FeedPostItem({ post }: { post: FeedPost }) {
   const [likeCount, setLikeCount] = useState(post.likes);
 
   const badgeMap = {
-    tournament: { bg: 'rgba(204,255,0,0.12)', fg: Colors.opticYellow, label: 'TOURNAMENT' },
-    imported:   { bg: 'rgba(0,207,193,0.12)',  fg: Colors.aquaGreen,   label: 'IMPORTED' },
+    tournament: { bg: Alpha.yellow12, fg: Colors.opticYellow, label: 'TOURNAMENT' },
+    imported:   { bg: Alpha.aqua12,  fg: Colors.aquaGreen,   label: 'IMPORTED' },
     milestone:  { bg: 'rgba(255,215,0,0.12)',  fg: Colors.gold,        label: 'MILESTONE' },
   };
   const badge = badgeMap[post.type];
 
   const handleLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLiked((prev) => {
       const next = !prev;
       setLikeCount((c) => (next ? c + 1 : c - 1));
@@ -392,7 +457,7 @@ function FeedPostItem({ post }: { post: FeedPost }) {
         </Pressable>
         <Pressable
           style={styles.postAction}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
           accessibilityRole="button"
           accessibilityLabel="Share"
         >
@@ -436,6 +501,7 @@ export default function Home() {
   const [activeTournament, setActiveTournament] = useState<ActiveTournament | null>(null);
   const [loadingActive, setLoadingActive] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [playThisWeek, setPlayThisWeek] = useState<PlayThisWeekEvent[]>([]);
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
 
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -578,6 +644,93 @@ export default function Home() {
     }
   }, [user, activeTournament]);
 
+  // Fetch "Play This Week" events from scout events, personalised by user location + level
+  const fetchPlayThisWeek = useCallback(async () => {
+    try {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const nextWeek = new Date(now.getTime() + 7 * 86400000);
+      const endDate = `${nextWeek.getFullYear()}-${String(nextWeek.getMonth() + 1).padStart(2, '0')}-${String(nextWeek.getDate()).padStart(2, '0')}`;
+
+      let query = supabase
+        .from('upcoming_scout_events')
+        .select('*')
+        .gte('event_date', today)
+        .lte('event_date', endDate)
+        .neq('status', 'full')
+        .order('event_date')
+        .order('start_time')
+        .limit(8);
+
+      // Filter by user's city if they have a location set
+      if (profile?.location) {
+        // Extract city name — profile.location might be "London", "London, UK", or a postcode
+        const city = profile.location.split(',')[0].trim();
+        if (city.length > 2) {
+          query = query.ilike('city', `%${city}%`);
+        }
+      }
+
+      const { data, error } = await query;
+      if (error || !data) { setPlayThisWeek([]); return; }
+
+      const formatLabel = (v: string) =>
+        v.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+      const formatPrice = (cents: number | null, currency: string | null) => {
+        if (cents === null || cents === 0) return 'Free';
+        const sym: Record<string, string> = { GBP: '£', EUR: '€', USD: '$', SEK: 'kr' };
+        const s = sym[(currency ?? 'GBP').toUpperCase()] ?? (currency ?? '');
+        return `${s}${Math.floor(cents / 100)}`;
+      };
+
+      const formatTime = (start: string | null, end: string | null) => {
+        if (!start) return '';
+        const fmt = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          const suffix = h >= 12 ? 'pm' : 'am';
+          const h12 = h % 12 || 12;
+          return m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, '0')}${suffix}`;
+        };
+        return end ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
+      };
+
+      const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      const events: PlayThisWeekEvent[] = (data as any[]).map((r) => {
+        const [y, m, d] = (r.event_date as string).split('-').map(Number);
+        const eventDate = new Date(y, m - 1, d);
+        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const diffDays = Math.round((eventDate.getTime() - todayDate.getTime()) / 86400000);
+
+        let dateStr: string;
+        if (diffDays === 0) dateStr = 'Today';
+        else if (diffDays === 1) dateStr = 'Tomorrow';
+        else dateStr = `${DAY_NAMES[eventDate.getDay()]} ${eventDate.getDate()} ${MONTH_NAMES[eventDate.getMonth()]}`;
+
+        return {
+          id: r.id as string,
+          name: r.name as string,
+          venue: (r.venue_name as string) ?? 'TBC',
+          city: (r.city as string) ?? '',
+          date: dateStr,
+          time: formatTime(r.start_time, r.end_time),
+          format: formatLabel(r.format as string),
+          level: formatLabel(r.level as string),
+          price: formatPrice(r.price_cents, r.currency),
+          spotsAvailable: r.spots_available as number | null,
+          status: r.status as string,
+          registrationUrl: r.registration_url as string | null,
+        };
+      });
+
+      setPlayThisWeek(events);
+    } catch {
+      // Non-critical
+    }
+  }, [profile?.location]);
+
   // Fetch recent match results as activity feed
   const fetchFeed = useCallback(async () => {
     if (!user) return;
@@ -678,11 +831,12 @@ export default function Home() {
     refreshProfile();
   }, [fetchActive, fetchUnreadCount, refreshProfile]);
 
-  // Fetch upcoming + feed after active tournament is resolved
+  // Fetch upcoming + feed + play this week after active tournament is resolved
   useEffect(() => {
     fetchUpcoming();
     fetchFeed();
-  }, [fetchUpcoming, fetchFeed]);
+    fetchPlayThisWeek();
+  }, [fetchUpcoming, fetchFeed, fetchPlayThisWeek]);
 
   const handleBannerPress = () => {
     if (!activeTournament) return;
@@ -697,7 +851,7 @@ export default function Home() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchActive(), fetchUpcoming(), fetchFeed(), fetchUnreadCount()]);
+    await Promise.all([fetchActive(), fetchUpcoming(), fetchPlayThisWeek(), fetchFeed(), fetchUnreadCount()]);
     setRefreshing(false);
   }, [fetchActive, fetchUpcoming, fetchFeed, fetchUnreadCount]);
 
@@ -762,7 +916,7 @@ export default function Home() {
 
         {/* ─── Upcoming Events ─── */}
         {upcomingEvents.length > 0 && (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>{'\uD83D\uDCC5'}  Your Upcoming Games</Text>
               <Pressable
@@ -784,12 +938,39 @@ export default function Home() {
                 <UpcomingCard key={e.id} event={e} />
               ))}
             </ScrollView>
-          </View>
+          </Animated.View>
+        )}
+
+        {/* ─── Play This Week ─── */}
+        {playThisWeek.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>{'\u26A1'}  Play This Week</Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(app)/(tabs)/discover');
+                }}
+                hitSlop={8}
+              >
+                <Text style={styles.seeAll}>Browse All</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.ucScroll}
+            >
+              {playThisWeek.map((e) => (
+                <PlayThisWeekCard key={e.id} event={e} />
+              ))}
+            </ScrollView>
+          </Animated.View>
         )}
 
         {/* ─── Activity Feed ─── */}
         {feedPosts.length > 0 ? (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>{'\uD83D\uDD25'}  Activity</Text>
               <Pressable
@@ -807,9 +988,9 @@ export default function Home() {
                 <FeedPostItem post={p} />
               </View>
             ))}
-          </View>
+          </Animated.View>
         ) : (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>{'\uD83D\uDD25'}  Activity</Text>
               <Pressable
@@ -827,7 +1008,7 @@ export default function Home() {
                 No recent activity yet.{'\n'}Play a match or join a tournament to get started!
               </Text>
             </View>
-          </View>
+          </Animated.View>
         )}
 
       </ScrollView>
@@ -876,7 +1057,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Alpha.white06,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1038,6 +1219,68 @@ const styles = StyleSheet.create({
   ucSpotsLow: { color: Colors.warning },
   ucSpotsFull: { color: Colors.error },
 
+  // Play This Week Cards
+  ptwCard: {
+    width: 200,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    padding: 14,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  ptwDate: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.aquaGreen,
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  ptwName: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13,
+    color: Colors.textPrimary,
+    lineHeight: 17,
+  },
+  ptwVenue: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  ptwTime: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.textDim,
+    marginBottom: Spacing[1],
+  },
+  ptwBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing[1],
+  },
+  ptwPills: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
+  },
+  ptwLevelPill: {
+    backgroundColor: Alpha.aqua12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  ptwLevelText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 9,
+    color: Colors.aquaGreen,
+  },
+  ptwPrice: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.textDim,
+  },
+
   // Feed Post
   feedPost: {
     backgroundColor: Colors.card,
@@ -1106,7 +1349,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: Spacing[3],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: Alpha.white06,
   },
   prcStat: { alignItems: 'center' },
   prcStatVal: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.opticYellow },
@@ -1124,15 +1367,15 @@ const styles = StyleSheet.create({
     marginTop: Spacing[3],
     paddingTop: Spacing[3],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: Alpha.white06,
   },
   prcConditionPill: {
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.15)',
+    borderColor: Alpha.yellow15,
   },
   prcConditionText: {
     fontFamily: Fonts.mono,
@@ -1179,10 +1422,10 @@ const styles = StyleSheet.create({
     gap: Spacing[2],
     paddingTop: Spacing[2],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: Alpha.white05,
   },
   importSourcePill: {
-    backgroundColor: 'rgba(0,207,193,0.12)',
+    backgroundColor: Alpha.aqua12,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,

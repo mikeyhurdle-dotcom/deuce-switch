@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -143,8 +143,20 @@ function LeaderboardRow({
 export default function Leaderboard() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { tournament, standings, loading, refetch } = useTournament(id ?? null);
+  const { tournament, standings, players, loading, refetch } = useTournament(id ?? null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Anonymise names if the organiser toggled it on
+  const displayStandings = useMemo(() => {
+    if (!tournament?.anonymise_players) return standings;
+    const anonMap = new Map(
+      players.map((p, i) => [p.playerId, `Player ${i + 1}`]),
+    );
+    return standings.map((entry) => ({
+      ...entry,
+      displayName: anonMap.get(entry.playerId) ?? 'Player',
+    }));
+  }, [standings, players, tournament?.anonymise_players]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -191,7 +203,7 @@ export default function Leaderboard() {
             </Text>
           )}
 
-          {standings.length === 0 ? (
+          {displayStandings.length === 0 ? (
             <Card>
               <View style={styles.empty}>
                 <Text style={styles.emptyEmoji}>📊</Text>
@@ -217,7 +229,7 @@ export default function Leaderboard() {
               </View>
 
               {/* Rows */}
-              {standings.map((entry: Standing, i: number) => (
+              {displayStandings.map((entry: Standing, i: number) => (
                 <LeaderboardRow
                   key={entry.playerId}
                   entry={entry}

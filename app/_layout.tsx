@@ -16,6 +16,7 @@ import 'react-native-reanimated';
 import { AuthProvider } from '../src/providers/AuthProvider';
 import { ConsentGate } from '../src/providers/ConsentGate';
 import { PostHogProvider } from '../src/providers/PostHogProvider';
+import { ThemeProvider, useTheme } from '../src/providers/ThemeProvider';
 import {
   addNotificationResponseListener,
   type NotificationData,
@@ -72,8 +73,18 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
+  );
+}
+
+function ThemedApp() {
+  const { scheme, colors } = useTheme();
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <ConsentGate>
         <AuthProvider>
           <PostHogProvider>

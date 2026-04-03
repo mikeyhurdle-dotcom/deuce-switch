@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -16,17 +18,19 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
-import { Colors, Fonts, Spacing, Radius } from '../../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Alpha } from '../../../src/lib/constants';
 import { Button } from '../../../src/components/ui/Button';
 import { Badge } from '../../../src/components/ui/Badge';
 import { Input } from '../../../src/components/ui/Input';
 import { getConnectionCount } from '../../../src/services/connection-service';
 import { getPlayerSuggestions } from '../../../src/services/suggestion-service';
+import { updateAvatar } from '../../../src/services/profile-service';
 import { PlayerSuggestionCard } from '../../../src/components/PlayerSuggestionCard';
+import { batchHeadToHead, type HeadToHeadRecord } from '../../../src/services/stats-service';
 import type { TournamentFormat, PlayerSuggestion } from '../../../src/lib/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -360,24 +364,34 @@ function HistoryTab({ tournaments }: { tournaments: RecentTournament[] }) {
       ) : (
         <View style={styles.historyList}>
           {filtered.map((t) => (
-            <View key={t.tournament_id} style={styles.historyCard}>
-              <View style={styles.matchTypeBadge}>
-                <Text style={styles.matchTypeText}>
-                  {t.format.toUpperCase().replace('_', ' ')}
-                </Text>
-              </View>
-              <View style={styles.historyCardInner}>
-                <View style={styles.historyRankBadge}>
-                  <Text style={styles.historyRankText}>#{t.rank ?? '—'}</Text>
-                </View>
-                <View style={styles.historyInfo}>
-                  <Text style={styles.historyName} numberOfLines={1}>{t.name}</Text>
-                  <Text style={styles.historyMeta}>
-                    {t.totalPoints ?? 0} pts · {t.playerCount} players · {fmtDate(t.date)}
+            <Pressable
+              key={t.tournament_id}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/(app)/tournament/${t.tournament_id}/matches`);
+              }}
+              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+            >
+              <View style={styles.historyCard}>
+                <View style={styles.matchTypeBadge}>
+                  <Text style={styles.matchTypeText}>
+                    {t.format.toUpperCase().replace('_', ' ')}
                   </Text>
                 </View>
+                <View style={styles.historyCardInner}>
+                  <View style={styles.historyRankBadge}>
+                    <Text style={styles.historyRankText}>#{t.rank ?? '—'}</Text>
+                  </View>
+                  <View style={styles.historyInfo}>
+                    <Text style={styles.historyName} numberOfLines={1}>{t.name}</Text>
+                    <Text style={styles.historyMeta}>
+                      {t.totalPoints ?? 0} pts · {t.playerCount} players · {fmtDate(t.date)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                </View>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
@@ -389,6 +403,9 @@ function HistoryTab({ tournaments }: { tournaments: RecentTournament[] }) {
 
 export default function Profile() {
   const { profile, user, signOut, refreshProfile } = useAuth();
+
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -414,6 +431,7 @@ export default function Profile() {
   );
   const [tournamentCount, setTournamentCount] = useState(0);
   const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
+  const [h2hMap, setH2hMap] = useState<Map<string, HeadToHeadRecord>>(new Map());
   const [loadingExtra, setLoadingExtra] = useState(true);
 
   // ── Data Fetching ──────────────────────────────────────────────────────
@@ -450,8 +468,21 @@ export default function Profile() {
       setConnectionCount(countResult);
       setSuggestions(suggestionsResult);
 
+      // Batch-compute h2h records for top partners
+      if (suggestionsResult.length > 0) {
+        const opponentIds = suggestionsResult.map((s) => s.user_id);
+        batchHeadToHead(user.id, opponentIds)
+          .then(setH2hMap)
+          .catch(() => { /* non-critical */ });
+      }
+
       if (!historyResult.error && historyResult.data) {
-        const filtered = (historyResult.data as any[]).filter((r) => r.tournaments);
+        const filtered = (historyResult.data as any[]).filter((r) => {
+          // Supabase embedded join may return object or array — normalise
+          const t = Array.isArray(r.tournaments) ? r.tournaments[0] : r.tournaments;
+          if (t) r.tournaments = t;
+          return !!t;
+        });
         const tournamentIds = filtered.map((r) => r.tournament_id);
 
         // Batch-fetch player match results for points & rank calculation
@@ -601,6 +632,61 @@ export default function Profile() {
     }, 1500);
   };
 
+  const handleInvite = (opponentId: string, opponentName: string) => {
+    router.push(`/(app)/invite?opponentId=${opponentId}&opponentName=${encodeURIComponent(opponentName)}`);
+  };
+
+  const handleGenericInvite = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const { default: Sharing } = await import('expo-sharing');
+    const available = await Sharing.isAvailableAsync();
+    if (!available) {
+      Alert.alert('Sharing', 'Sharing is not available on this device.');
+      return;
+    }
+    const { default: ClipboardModule } = await import('expo-clipboard');
+    await ClipboardModule.setStringAsync('https://playsmashd.com');
+    Alert.alert('Link Copied!', 'Download link copied to clipboard. Share it with your padel partners!');
+  };
+
+  const handleAvatarPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Take Photo', 'Choose from Library', 'Cancel'],
+          cancelButtonIndex: 2,
+        },
+        (index) => {
+          if (index === 0) doAvatarUpload('camera');
+          if (index === 1) doAvatarUpload('library');
+        },
+      );
+    } else {
+      Alert.alert('Change Photo', 'Choose a source', [
+        { text: 'Take Photo', onPress: () => doAvatarUpload('camera') },
+        { text: 'Choose from Library', onPress: () => doAvatarUpload('library') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
+
+  const doAvatarUpload = async (source: 'camera' | 'library') => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    try {
+      const url = await updateAvatar(user.id, source);
+      if (url) {
+        await refreshProfile();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (e: any) {
+      Alert.alert('Upload Failed', e.message ?? 'Could not update your photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   // ── Derived Values ─────────────────────────────────────────────────────
 
   const winRate =
@@ -655,7 +741,7 @@ export default function Profile() {
           {/* ── Cover & Profile Header ────────────────────────────────── */}
           <View style={styles.coverArea}>
             <LinearGradient
-              colors={['rgba(124,58,237,0.30)', 'rgba(204,255,0,0.10)']}
+              colors={['rgba(124,58,237,0.30)', Alpha.yellow10]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.coverGradient}
@@ -694,8 +780,13 @@ export default function Profile() {
               </Pressable>
             </View>
 
-            {/* Avatar */}
-            <View style={styles.avatarOuter}>
+            {/* Avatar (tappable to change photo) */}
+            <Pressable
+              testID="btn-change-avatar"
+              onPress={handleAvatarPress}
+              disabled={uploadingAvatar}
+              style={styles.avatarOuter}
+            >
               {hasAvatar ? (
                 <Image
                   source={{ uri: profile!.game_face_url! }}
@@ -706,6 +797,15 @@ export default function Profile() {
                   <Text style={styles.avatarText}>{initials}</Text>
                 </View>
               )}
+              {uploadingAvatar ? (
+                <View style={styles.avatarOverlay}>
+                  <ActivityIndicator size="small" color={Colors.opticYellow} />
+                </View>
+              ) : (
+                <View style={styles.avatarCameraBadge}>
+                  <Ionicons name="camera" size={12} color={Colors.textPrimary} />
+                </View>
+              )}
               {profile?.preferred_position && (
                 <View style={styles.positionBadge}>
                   <Text style={styles.positionBadgeText}>
@@ -713,7 +813,7 @@ export default function Profile() {
                   </Text>
                 </View>
               )}
-            </View>
+            </Pressable>
 
             {/* Name & Handle */}
             <Text style={styles.displayName}>
@@ -893,7 +993,7 @@ export default function Profile() {
 
           {/* ── Stat Cards ────────────────────────────────────────────── */}
           {!editing && (
-            <View style={styles.statsGrid}>
+            <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.statsGrid}>
               <StatCard
                 value={profile?.matches_played ?? 0}
                 label="MATCHES"
@@ -918,15 +1018,21 @@ export default function Profile() {
                 </View>
                 <Text style={styles.statLabel}>GAMES</Text>
               </View>
-            </View>
+            </Animated.View>
           )}
 
           {/* ── XP Bar ────────────────────────────────────────────────── */}
-          {!editing && <XPBar current={2450} max={3000} level={12} />}
+          {!editing && (
+            <Animated.View entering={FadeInDown.delay(200).springify()}>
+              <XPBar current={2450} max={3000} level={12} />
+            </Animated.View>
+          )}
 
           {/* ── Tab Switcher ──────────────────────────────────────────── */}
           {!editing && (
-            <TabSwitcher active={activeTab} onSelect={setActiveTab} />
+            <Animated.View entering={FadeInDown.delay(300).springify()}>
+              <TabSwitcher active={activeTab} onSelect={setActiveTab} />
+            </Animated.View>
           )}
 
           {/* ── Overview Tab ──────────────────────────────────────────── */}
@@ -997,12 +1103,17 @@ export default function Profile() {
                   <FlatList
                     data={suggestions}
                     keyExtractor={(item) => item.user_id}
-                    renderItem={({ item }) => (
-                      <PlayerSuggestionCard
-                        suggestion={item}
-                        onConnected={handleSuggestionConnected}
-                      />
-                    )}
+                    renderItem={({ item }) => {
+                      const record = h2hMap.get(item.user_id);
+                      return (
+                        <PlayerSuggestionCard
+                          suggestion={item}
+                          onConnected={handleSuggestionConnected}
+                          h2h={record ? { wins: record.wins, losses: record.losses } : null}
+                          onInvite={handleInvite}
+                        />
+                      );
+                    }}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.hScroll}
@@ -1012,6 +1123,24 @@ export default function Profile() {
                   />
                 </View>
               )}
+
+              {/* Invite Friends CTA */}
+              <Pressable
+                testID="btn-invite-friends"
+                style={styles.inviteCta}
+                onPress={handleGenericInvite}
+              >
+                <View style={styles.inviteCtaIconWrap}>
+                  <Ionicons name="paper-plane" size={20} color={Colors.aquaGreen} />
+                </View>
+                <View style={styles.inviteCtaContent}>
+                  <Text style={styles.inviteCtaTitle}>Invite Friends</Text>
+                  <Text style={styles.inviteCtaDesc}>
+                    Invite your padel partners to Smashd
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={Colors.textDim} />
+              </Pressable>
 
               {/* Recent Tournaments */}
               {recentTournaments.length > 0 && (
@@ -1133,6 +1262,7 @@ export default function Profile() {
           {/* ── Sign Out ──────────────────────────────────────────────── */}
           {!editing && (
             <Pressable
+              testID="btn-sign-out"
               onPress={handleSignOut}
               style={styles.signOutBtn}
               hitSlop={8}
@@ -1261,6 +1391,26 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: Colors.textPrimary,
   },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 48,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    left: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   positionBadge: {
     position: 'absolute',
     bottom: 0,
@@ -1301,9 +1451,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0, 207, 193, 0.08)',
+    backgroundColor: Alpha.aqua08,
     borderWidth: 1,
-    borderColor: 'rgba(0, 207, 193, 0.2)',
+    borderColor: Alpha.aqua20,
     borderRadius: Radius.full,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -1608,7 +1758,7 @@ const styles = StyleSheet.create({
   },
   posChipActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
+    backgroundColor: Alpha.yellow08,
   },
   posChipText: {
     fontFamily: Fonts.mono,
@@ -1693,13 +1843,13 @@ const styles = StyleSheet.create({
     padding: Spacing[4],
     marginTop: Spacing[6],
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.15)',
+    borderColor: Alpha.yellow15,
   },
   importMatchesIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1927,12 +2077,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 215, 0, 0.25)',
   },
   resultChipYellow: {
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
-    borderColor: 'rgba(204, 255, 0, 0.20)',
+    backgroundColor: Alpha.yellow08,
+    borderColor: Alpha.yellow20,
   },
   resultChipAqua: {
-    backgroundColor: 'rgba(0, 207, 193, 0.08)',
-    borderColor: 'rgba(0, 207, 193, 0.20)',
+    backgroundColor: Alpha.aqua08,
+    borderColor: Alpha.aqua20,
   },
   resultChipText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1956,7 +2106,7 @@ const styles = StyleSheet.create({
   },
   filterChipActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
+    backgroundColor: Alpha.yellow08,
   },
   filterChipText: {
     fontFamily: Fonts.bodySemiBold,
@@ -2022,6 +2172,43 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textMuted,
+  },
+
+  // ── Invite CTA ──
+  inviteCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    padding: Spacing[4],
+    marginHorizontal: Spacing[5],
+    marginTop: Spacing[2],
+    borderWidth: 1,
+    borderColor: Alpha.aqua20,
+  },
+  inviteCtaIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Alpha.aqua08,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteCtaContent: {
+    flex: 1,
+    gap: 2,
+  },
+  inviteCtaTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  inviteCtaDesc: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textDim,
+    lineHeight: 16,
   },
 
   // ── Import Match Button ──

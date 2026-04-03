@@ -36,7 +36,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors, Fonts, Radius, Spacing } from '../../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Radius, Spacing } from '../../../../../src/lib/constants';
 import { useAuth } from '../../../../../src/providers/AuthProvider';
 import {
   getTournamentFeed,
@@ -147,6 +147,7 @@ function SendButton({
 
   return (
     <AnimatedPressable
+      testID="btn-send-comment"
       style={[
         styles.sendButton,
         disabled && styles.sendButtonDisabled,
@@ -464,7 +465,7 @@ export default function PostDetailScreen() {
         }}
       />
 
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-post-detail" style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -498,6 +499,7 @@ export default function PostDetailScreen() {
           <View style={styles.inputBar}>
             <TextInput
               ref={commentInputRef}
+              testID="input-comment"
               style={styles.commentInput}
               placeholder="Add a comment..."
               placeholderTextColor={Colors.textMuted}
@@ -624,7 +626,7 @@ const styles = StyleSheet.create({
   },
   reactionButtonActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204, 255, 0, 0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   reactionEmoji: {
     fontSize: 14,

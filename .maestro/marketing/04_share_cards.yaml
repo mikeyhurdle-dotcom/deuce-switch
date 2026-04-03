@@ -1,0 +1,42 @@
+appId: com.playsmashd.app
+name: "Marketing - Share Card Variants (H2H + Player)"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# Navigate to Profile
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- waitForAnimationToEnd
+
+# Scroll to Frequent Partners section where opponent invite buttons are
+- scrollUntilVisible:
+    element:
+      text: "FREQUENT PARTNERS"
+    direction: DOWN
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: marketing/share_00_frequent_partners
+
+# Tap any opponent's invite button (dynamic testID: btn-invite-{userId})
+- tapOn:
+    id: "btn-invite-.*"
+    index: 0
+    optional: true
+- waitForAnimationToEnd
+
+# If invite screen opened, capture the H2H cards
+- runFlow:
+    when:
+      visible:
+        id: "screen-invite"
+    file: flows/capture_share_cards.yaml
+
+# Fallback: if no invite screen, use btn-invite-friends general CTA
+- runFlow:
+    when:
+      notVisible:
+        id: "screen-invite"
+    file: flows/capture_invite_fallback.yaml

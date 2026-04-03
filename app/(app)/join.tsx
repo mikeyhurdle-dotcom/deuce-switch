@@ -9,7 +9,7 @@ import { useAuth } from '../../src/providers/AuthProvider';
 import { requestNotificationPermissionOnJoin } from '../../src/services/notification-service';
 import { getUnclaimedGhosts, claimGhostPlayer } from '../../src/services/tournament-service';
 import { trackPlayerJoined } from '../../src/services/analytics';
-import { Colors, Fonts } from '../../src/lib/constants';
+import { Colors, Fonts, Spacing } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 
@@ -153,7 +153,7 @@ export default function JoinTournament() {
           headerTitleStyle: { fontFamily: Fonts.mono, fontSize: 16 },
         }}
       />
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-join" style={styles.safe} edges={['bottom']}>
         <View style={styles.container}>
           <View style={styles.content}>
             <Animated.View entering={FadeInDown.duration(400).springify()}>
@@ -186,11 +186,11 @@ export default function JoinTournament() {
             </Animated.View>
           </View>
 
-          {/* QR Scanner — coming soon */}
+          {/* QR Scanner */}
           <Animated.View entering={FadeInDown.delay(300).duration(400).springify()} style={styles.qrSection}>
             <View style={styles.qrComingSoon}>
               <Text style={styles.qrIcon}>📷</Text>
-              <Text style={styles.qrText}>QR scanning coming soon</Text>
+              <Text style={styles.qrText}>Or scan the tournament QR code</Text>
             </View>
           </Animated.View>
         </View>
@@ -206,13 +206,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: Spacing[5],
+    paddingTop: Spacing[5],
+    paddingBottom: Spacing[10],
     justifyContent: 'space-between',
   },
   content: {
-    gap: 16,
+    gap: Spacing[4],
   },
   heading: {
     fontFamily: Fonts.heading,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textDim,
-    marginBottom: 8,
+    marginBottom: Spacing[2],
   },
   codeInput: {
     fontFamily: Fonts.mono,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   qrComingSoon: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing[2],
     opacity: 0.4,
   },
   qrIcon: {

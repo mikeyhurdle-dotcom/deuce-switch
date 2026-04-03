@@ -16,7 +16,7 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const SPRING_CONFIG = { damping: 15, stiffness: 400, mass: 0.3 };
@@ -49,21 +49,21 @@ const STEPS: OnboardingStep[] = [
       {
         icon: 'flash',
         iconColor: Colors.opticYellow,
-        iconBg: 'rgba(204,255,0,0.08)',
+        iconBg: Alpha.yellow08,
         title: 'Run & Join Americanos',
         desc: 'Live scoring, auto-generated rounds, instant results',
       },
       {
         icon: 'bar-chart',
         iconColor: Colors.violet,
-        iconBg: 'rgba(123,47,190,0.08)',
+        iconBg: Alpha.violet08,
         title: 'Track Your Stats',
         desc: 'Import matches, build your profile, climb the ranks',
       },
       {
         icon: 'search',
         iconColor: Colors.aquaGreen,
-        iconBg: 'rgba(0,207,193,0.08)',
+        iconBg: Alpha.aqua08,
         title: 'Find Local Events',
         desc: 'Discover Americanos near you, set alerts, never miss out',
       },
@@ -78,14 +78,14 @@ const STEPS: OnboardingStep[] = [
       {
         icon: 'people',
         iconColor: Colors.opticYellow,
-        iconBg: 'rgba(204,255,0,0.08)',
+        iconBg: Alpha.yellow08,
         title: 'Auto-Generated Rounds',
         desc: 'Smart pairing ensures fair, varied matchups every round',
       },
       {
         icon: 'trophy',
         iconColor: Colors.violet,
-        iconBg: 'rgba(123,47,190,0.08)',
+        iconBg: Alpha.violet08,
         title: 'Live Leaderboard',
         desc: 'Real-time standings updated as scores come in',
       },
@@ -100,14 +100,14 @@ const STEPS: OnboardingStep[] = [
       {
         icon: 'trending-up',
         iconColor: Colors.aquaGreen,
-        iconBg: 'rgba(0,207,193,0.08)',
+        iconBg: Alpha.aqua08,
         title: 'Performance Tracking',
         desc: 'Win rate, points per game, form trends over time',
       },
       {
         icon: 'medal',
         iconColor: Colors.opticYellow,
-        iconBg: 'rgba(204,255,0,0.08)',
+        iconBg: Alpha.yellow08,
         title: 'Achievements & Levels',
         desc: 'Earn badges, level up, and show off your progress',
       },
@@ -122,14 +122,14 @@ const STEPS: OnboardingStep[] = [
       {
         icon: 'person-add',
         iconColor: Colors.violet,
-        iconBg: 'rgba(123,47,190,0.08)',
+        iconBg: Alpha.violet08,
         title: 'Connect After Matches',
         desc: 'Add players from tournaments directly to your network',
       },
       {
         icon: 'location',
         iconColor: Colors.aquaGreen,
-        iconBg: 'rgba(0,207,193,0.08)',
+        iconBg: Alpha.aqua08,
         title: 'Club Discovery',
         desc: 'Find padel clubs near you and follow for event alerts',
       },

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Fonts, Shadows, AppConfig, ShareCardColors } from '../lib/constants';
+import { Alpha, Colors, Fonts, Shadows, AppConfig, ShareCardColors } from '../lib/constants';
 import type { AmericanoStanding, TournamentFormat } from '../lib/types';
 import { TOURNAMENT_FORMAT_LABELS } from '../lib/types';
 import Logo from '../../assets/images/smashd-logo.svg';
@@ -42,7 +42,7 @@ export function ShareCard({
   const textDim = isLight ? ShareCardColors.lightMuted : Colors.textDim;
   const textMuted = isLight ? ShareCardColors.lightMuted : Colors.textMuted;
   const cardBg = isLight ? ShareCardColors.lightCard : Colors.card;
-  const borderCol = isLight ? 'rgba(0,0,0,0.08)' : Colors.border;
+  const borderCol = isLight ? Alpha.black08 : Colors.border;
 
   return (
     <View style={[styles.card, { backgroundColor: THEME_BG[theme] }]}>
@@ -299,12 +299,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ctaPill: {
-    backgroundColor: 'rgba(204, 255, 0, 0.08)',
+    backgroundColor: Alpha.yellow08,
     paddingHorizontal: 16,
     paddingVertical: 5,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.2)',
+    borderColor: Alpha.yellow20,
   },
   cta: {
     fontFamily: Fonts.mono,

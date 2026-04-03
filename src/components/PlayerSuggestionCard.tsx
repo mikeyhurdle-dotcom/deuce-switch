@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radius, Spacing } from '../lib/constants';
 import type { PlayerSuggestion } from '../lib/types';
 import { sendConnectionRequest } from '../services/connection-service';
@@ -22,9 +23,11 @@ const CARD_WIDTH = 160;
 type Props = {
   suggestion: PlayerSuggestion;
   onConnected?: (userId: string) => void;
+  h2h?: { wins: number; losses: number } | null;
+  onInvite?: (userId: string, displayName: string) => void;
 };
 
-export function PlayerSuggestionCard({ suggestion, onConnected }: Props) {
+export function PlayerSuggestionCard({ suggestion, onConnected, h2h, onInvite }: Props) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -47,6 +50,11 @@ export function PlayerSuggestionCard({ suggestion, onConnected }: Props) {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleInvite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onInvite?.(suggestion.user_id, suggestion.display_name ?? 'Player');
   };
 
   const initials = (suggestion.display_name ?? '?')
@@ -105,28 +113,54 @@ export function PlayerSuggestionCard({ suggestion, onConnected }: Props) {
         {sharedLabel}
       </Text>
 
-      {/* Connect Button */}
-      <Pressable
-        style={[
-          styles.connectButton,
-          sent && styles.connectButtonSent,
-          sending && styles.connectButtonSending,
-        ]}
-        onPress={handleConnect}
-        disabled={sending || sent}
-        accessibilityRole="button"
-        accessibilityLabel={sent ? 'Connection request sent' : `Connect with ${suggestion.display_name ?? 'player'}`}
-        accessibilityState={{ disabled: sending || sent, busy: sending }}
-      >
-        <Text
+      {/* H2H Record (compact) */}
+      {h2h && (h2h.wins > 0 || h2h.losses > 0) && (
+        <View style={styles.h2hRow}>
+          <Text style={styles.h2hWins}>W{h2h.wins}</Text>
+          <Text style={styles.h2hDash}> — </Text>
+          <Text style={styles.h2hLosses}>L{h2h.losses}</Text>
+        </View>
+      )}
+
+      {/* Action Row */}
+      <View style={styles.actionRow}>
+        {/* Connect Button */}
+        <Pressable
           style={[
-            styles.connectButtonText,
-            sent && styles.connectButtonTextSent,
+            styles.connectButton,
+            onInvite && styles.connectButtonWithInvite,
+            sent && styles.connectButtonSent,
+            sending && styles.connectButtonSending,
           ]}
+          onPress={handleConnect}
+          disabled={sending || sent}
+          accessibilityRole="button"
+          accessibilityLabel={sent ? 'Connection request sent' : `Connect with ${suggestion.display_name ?? 'player'}`}
+          accessibilityState={{ disabled: sending || sent, busy: sending }}
         >
-          {sent ? 'SENT' : sending ? '...' : 'CONNECT'}
-        </Text>
-      </Pressable>
+          <Text
+            style={[
+              styles.connectButtonText,
+              sent && styles.connectButtonTextSent,
+            ]}
+          >
+            {sent ? 'SENT' : sending ? '...' : 'CONNECT'}
+          </Text>
+        </Pressable>
+
+        {/* Invite Button */}
+        {onInvite && (
+          <Pressable
+            testID={`btn-invite-${suggestion.user_id}`}
+            style={styles.inviteButton}
+            onPress={handleInvite}
+            accessibilityRole="button"
+            accessibilityLabel={`Invite ${suggestion.display_name ?? 'player'} to Smashd`}
+          >
+            <Ionicons name="paper-plane-outline" size={14} color={Colors.aquaGreen} />
+          </Pressable>
+        )}
+      </View>
     </AnimatedPressable>
   );
 }
@@ -202,15 +236,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  // ── H2H Row ──
+  h2hRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  h2hWins: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.success,
+    letterSpacing: 0.5,
+  },
+  h2hDash: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  h2hLosses: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.coral,
+    letterSpacing: 0.5,
+  },
+
+  // ── Action Row ──
+  actionRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 6,
+    marginTop: 4,
+  },
+
   // ── Connect Button ──
   connectButton: {
-    width: '100%',
+    flex: 1,
     paddingVertical: 8,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
     alignItems: 'center',
-    marginTop: 4,
+  },
+  connectButtonWithInvite: {
+    // Slightly narrower when invite button is present
   },
   connectButtonSending: {
     borderColor: Colors.textMuted,
@@ -228,5 +296,17 @@ const styles = StyleSheet.create({
   },
   connectButtonTextSent: {
     color: Colors.aquaGreen,
+  },
+
+  // ── Invite Button ──
+  inviteButton: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.aquaGreen,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,207,193,0.08)',
   },
 });

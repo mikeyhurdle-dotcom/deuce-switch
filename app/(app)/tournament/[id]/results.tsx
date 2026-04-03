@@ -29,7 +29,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
-import { Colors, Fonts, Shadows, Spacing, Radius } from '../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Shadows, Spacing, Radius } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
 import { ShareCard } from '../../../../src/components/ShareCard';
@@ -147,6 +147,12 @@ function ConfettiPieceView({ piece }: { piece: ConfettiPiece }) {
 
 function ConfettiOverlay() {
   const pieces = useMemo(() => generatePieces(), []);
+
+  // Victory haptic burst on mount
+  useEffect(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
   return (
     <View style={styles.confettiContainer} pointerEvents="none">
       {pieces.map((p) => (
@@ -206,7 +212,7 @@ function MVPCard({ winner }: { winner: Standing }) {
   return (
     <Animated.View entering={FadeInDown.duration(600).delay(200)}>
       <LinearGradient
-        colors={['rgba(255,215,0,0.08)', 'rgba(204,255,0,0.04)']}
+        colors={['rgba(255,215,0,0.08)', Alpha.yellow04]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.mvpCard}
@@ -832,7 +838,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: 60,
     height: '100%',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Alpha.white06,
     borderRadius: Radius.lg,
   },
   mvpAvatarRing: {
@@ -977,7 +983,7 @@ const styles = StyleSheet.create({
   lbRowMe: {
     borderWidth: 1,
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.04)',
+    backgroundColor: Alpha.yellow04,
   },
   lbRank: {
     fontFamily: Fonts.mono,
@@ -1064,7 +1070,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.12)',
+    borderColor: Alpha.yellow12,
     padding: Spacing[5],
     gap: Spacing[4],
   },

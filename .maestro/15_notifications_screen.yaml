@@ -1,0 +1,26 @@
+appId: com.playsmashd.app
+name: "Notifications Screen - Activity Feed"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Wait for home screen to fully load
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 10000
+
+# Tap the notifications bell (accessibility label)
+- tapOn:
+    text: ".*Notifications.*"
+- extendedWaitUntil:
+    visible:
+      id: "screen-notifications"
+    timeout: 5000
+
+# Verify the notifications screen loaded (activity feed or empty state)
+- takeScreenshot: screenshots/notifications_screen
+
+# Navigate back
+- tapOn:
+    text: "Home, tab, 1 of 6"

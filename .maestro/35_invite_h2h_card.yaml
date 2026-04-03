@@ -1,0 +1,23 @@
+appId: com.playsmashd.app
+name: "Invite Friends - H2H Share Card (Sprint 6)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Profile
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- waitForAnimationToEnd
+
+# Verify Invite Friends CTA is visible on profile
+- assertVisible:
+    id: "btn-invite-friends"
+- takeScreenshot: screenshots/invite_cta_on_profile
+
+# Tap Invite Friends
+- tapOn:
+    id: "btn-invite-friends"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/invite_h2h_card

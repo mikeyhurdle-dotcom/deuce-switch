@@ -1,0 +1,30 @@
+appId: com.playsmashd.app
+name: "Marketing - Perform Paquito Login"
+---
+- tapOn:
+    id: "input-email"
+- inputText: "paquito.demo@playsmashd.com"
+- tapOn:
+    id: "input-password"
+- inputText: "PaquitoSmashd2026!"
+
+- tapOn:
+    id: "btn-sign-in"
+
+# Dismiss iOS "Save Password?" dialog if it appears
+- tapOn:
+    text: "Not Now"
+    optional: true
+
+# Handle profile setup wizard if it appears
+- runFlow:
+    when:
+      visible:
+        id: "screen-profile-setup"
+    file: ../../flows/dismiss_profile_setup.yaml
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 15000

@@ -23,7 +23,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
 import type {
   OCRMatch,
@@ -455,7 +455,7 @@ export default function ImportMatchesScreen() {
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView testID="screen-import-matches" style={styles.safeArea} edges={['bottom']}>
       <Stack.Screen
         options={{
           title: 'Import Matches',
@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing[4],
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   uploadBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
   },
   platformChip: {
     paddingHorizontal: Spacing[3],
-    paddingVertical: 4,
+    paddingVertical: Spacing[1],
     borderRadius: Radius.full,
     borderWidth: 1,
   },
@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepIconActive: {
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
   },
@@ -1084,7 +1084,7 @@ const styles = StyleSheet.create({
   },
   resultPreviewInfo: {
     flex: 1,
-    gap: 4,
+    gap: Spacing[1],
   },
   resultPreviewBadge: {
     flexDirection: 'row',
@@ -1149,7 +1149,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[3],
   },
   matchBadge: {
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     paddingHorizontal: Spacing[3],
     paddingVertical: 3,
     borderRadius: Radius.full,
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
 
   // Match meta
   matchMeta: {
-    gap: 4,
+    gap: Spacing[1],
     marginBottom: Spacing[3],
   },
   metaRow: {
@@ -1275,9 +1275,9 @@ const styles = StyleSheet.create({
   setControlBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    gap: Spacing[1],
+    paddingVertical: Spacing[1],
+    paddingHorizontal: Spacing[2],
   },
   setControlText: {
     fontFamily: Fonts.body,
@@ -1311,11 +1311,11 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: Colors.aquaGreen,
-    backgroundColor: 'rgba(0,207,193,0.08)',
+    backgroundColor: Alpha.aqua08,
   },
   matchTypeToggleCompetitive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
   },
   matchTypeToggleText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1332,7 +1332,7 @@ const styles = StyleSheet.create({
   detailChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing[1],
     paddingHorizontal: Spacing[3],
     paddingVertical: 5,
     borderRadius: Radius.full,
@@ -1425,7 +1425,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.06)',
+    backgroundColor: Alpha.yellow06,
   },
   retryBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1438,11 +1438,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing[3],
-    backgroundColor: 'rgba(204,255,0,0.05)',
+    backgroundColor: Alpha.yellow05,
     borderRadius: Radius.md,
     padding: Spacing[4],
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.1)',
+    borderColor: Alpha.yellow10,
     marginTop: Spacing[2],
   },
   proTipText: {

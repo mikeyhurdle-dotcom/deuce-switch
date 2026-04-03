@@ -444,6 +444,27 @@ export default function TVMode() {
     );
   }
 
+  // Anonymise player names if the organiser toggled it on
+  const displayPlayers = useMemo(() => {
+    if (!tournament.anonymise_players) return players;
+    return players.map((p, i) => ({
+      ...p,
+      displayName: `Player ${i + 1}`,
+    }));
+  }, [players, tournament.anonymise_players]);
+
+  const displayStandings = useMemo(() => {
+    if (!tournament.anonymise_players) return standings;
+    // Build a stable playerId → "Player N" map from the players array
+    const anonMap = new Map(
+      players.map((p, i) => [p.playerId, `Player ${i + 1}`]),
+    );
+    return standings.map((entry) => ({
+      ...entry,
+      displayName: anonMap.get(entry.playerId) ?? 'Player',
+    }));
+  }, [standings, players, tournament.anonymise_players]);
+
   const currentRound = tournament.current_round ?? 1;
   const maxRound = matches.length > 0
     ? Math.max(...matches.map((m) => m.round_number ?? 0))
@@ -454,7 +475,7 @@ export default function TVMode() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
+      <View testID="screen-tv-mode" style={styles.container}>
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -530,7 +551,7 @@ export default function TVMode() {
               exiting={FadeOut.duration(200)}
               style={styles.viewContainer}
             >
-              <LeaderboardView standings={standings} players={players} />
+              <LeaderboardView standings={displayStandings} players={displayPlayers} />
             </Animated.View>
           ) : (
             <Animated.View
@@ -541,7 +562,7 @@ export default function TVMode() {
             >
               <CourtsView
                 matches={currentRoundMatches}
-                players={players}
+                players={displayPlayers}
               />
             </Animated.View>
           )}
@@ -675,10 +696,10 @@ const styles = StyleSheet.create({
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing[1] + 2,
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1],
     borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.3)',
@@ -700,10 +721,10 @@ const styles = StyleSheet.create({
   roundPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing[1],
     backgroundColor: Colors.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing[3] - 2,
+    paddingVertical: Spacing[1],
     borderRadius: Radius.full,
   },
   roundText: {
@@ -715,10 +736,10 @@ const styles = StyleSheet.create({
   clockPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing[1],
     backgroundColor: Colors.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing[3] - 2,
+    paddingVertical: Spacing[1],
     borderRadius: Radius.full,
   },
   clockText: {
@@ -946,10 +967,10 @@ const styles = StyleSheet.create({
   autoRotatePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing[1] + 2,
     backgroundColor: Colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1] + 2,
     borderRadius: Radius.full,
   },
   autoRotateText: {
@@ -961,7 +982,7 @@ const styles = StyleSheet.create({
   viewDots: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing[2],
   },
   dot: {
     width: 8,
@@ -978,10 +999,10 @@ const styles = StyleSheet.create({
   joinCodePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing[1] + 2,
     backgroundColor: Colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[1] + 2,
     borderRadius: Radius.full,
   },
   joinCodeText: {

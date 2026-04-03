@@ -1,0 +1,25 @@
+appId: com.playsmashd.app
+name: "Notifications - Activity Feed (Sprint 3)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 10000
+
+# Tap the notifications bell icon
+- tapOn:
+    text: "Notifications"
+- extendedWaitUntil:
+    visible:
+      id: "screen-notifications"
+    timeout: 5000
+
+# Should show activity items or "All caught up" empty state
+- takeScreenshot: screenshots/notifications_feed
+
+# Navigate back
+- back

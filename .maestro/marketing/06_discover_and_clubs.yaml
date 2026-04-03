@@ -1,0 +1,44 @@
+appId: com.playsmashd.app
+name: "Marketing - Discover Events & Club Selection"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# 1. Discover tab — event feed
+- tapOn:
+    text: "Discover, tab, 2 of 6"
+- assertVisible:
+    id: "screen-discover"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/discover_01_events_feed
+
+# 2. Scroll down to show more events
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- takeScreenshot: marketing/discover_02_events_scrolled
+
+# 3. Navigate to Settings > Club Selection
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- tapOn:
+    id: "btn-settings"
+- waitForAnimationToEnd
+
+# Scroll to Home Club
+- scrollUntilVisible:
+    element:
+      text: ".*Home Club.*"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    text: ".*Home Club.*"
+    optional: true
+
+# 4. Club selection screen
+- extendedWaitUntil:
+    visible:
+      id: "screen-club-select"
+    timeout: 5000
+- takeScreenshot: marketing/discover_03_club_selection

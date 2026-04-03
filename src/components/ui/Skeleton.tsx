@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Colors, Radius } from '../../lib/constants';
+import { Colors, Duration, Radius } from '../../lib/constants';
 
 type SkeletonProps = {
   width?: number | `${number}%`;
@@ -28,8 +28,8 @@ export function Skeleton({
   useEffect(() => {
     opacity.value = withRepeat(
       withSequence(
-        withTiming(0.7, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.7, { duration: Duration.glacial, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.3, { duration: Duration.glacial, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
     );

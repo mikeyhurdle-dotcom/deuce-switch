@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Colors, Fonts } from '../../../src/lib/constants';
+import { Alpha, Colors, Fonts } from '../../../src/lib/constants';
 
 // ─── Tab Icon ────────────────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ export default function TabLayout() {
         } as any}
         listeners={makeListeners()}
       />
-      {/* Hidden — content absorbed into Stats tab */}
+      {/* history.tsx kept as hidden route — content absorbed into Profile tab */}
       <Tabs.Screen
         name="history"
         options={{ href: null }}
@@ -131,6 +131,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   iconFocused: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: Alpha.yellow10,
   },
 });

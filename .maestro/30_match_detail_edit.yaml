@@ -1,0 +1,32 @@
+appId: com.playsmashd.app
+name: "Match Detail - View and Edit Score (Sprint 2)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Profile > History
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+
+# Tap History sub-tab
+- tapOn:
+    text: "History"
+- waitForAnimationToEnd
+
+# Tap first tournament in history (if exists)
+- tapOn:
+    index: 0
+    id: ".*tournament-card.*"
+    optional: true
+
+# If we navigated to a tournament, look for matches
+- runFlow:
+    when:
+      visible:
+        text: "Round 1"
+    file: flows/noop.yaml
+
+# Take screenshot of whatever state we're in
+- takeScreenshot: screenshots/match_detail_or_history

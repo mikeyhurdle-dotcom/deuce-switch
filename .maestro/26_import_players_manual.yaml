@@ -1,0 +1,58 @@
+appId: com.playsmashd.app
+name: "Import Players — Manual Add Flow"
+---
+# Tests the import players screen's manual add functionality.
+# Since the OCR flow requires a real tournament context and image picker,
+# this test focuses on the manual player add path which is always available.
+#
+# NOTE: The import-players screen requires a tournamentId param to navigate
+# back to the lobby. We test it by creating a tournament first.
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# ── Create tournament ───────────────────────────────────────────────────
+- tapOn:
+    text: "Play, tab, 3 of 6"
+- tapOn:
+    id: "btn-create-tournament"
+- tapOn:
+    id: "input-tournament-name"
+- inputText: "Import Players Test"
+- pressKey: Enter
+- tapOn:
+    id: "btn-wizard-next"
+- extendedWaitUntil:
+    visible: "SETTINGS"
+    timeout: 5000
+- tapOn:
+    id: "btn-wizard-next"
+- extendedWaitUntil:
+    visible: "Create Tournament"
+    timeout: 5000
+- tapOn:
+    id: "btn-wizard-create"
+- extendedWaitUntil:
+    visible: "JOIN CODE"
+    timeout: 10000
+
+# ── Navigate to Import Players ──────────────────────────────────────────
+# The import players button is available from the lobby screen
+- scrollUntilVisible:
+    element:
+      text: "Import Players from Screenshot"
+    direction: DOWN
+    timeout: 5000
+- tapOn: "Import Players from Screenshot"
+
+- extendedWaitUntil:
+    visible:
+      id: "screen-import-players"
+    timeout: 5000
+
+# ── Verify upload zone ──────────────────────────────────────────────────
+- assertVisible: "Screenshot Import"
+- assertVisible: "Camera"
+- assertVisible: "Photo Library"
+- assertVisible: "Supported platforms:"
+- takeScreenshot: screenshots/import_players_01_upload_zone
+

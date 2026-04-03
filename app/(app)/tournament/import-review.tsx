@@ -23,7 +23,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../../src/lib/constants';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
 import type { Profile, MatchSource } from '../../../src/lib/types';
@@ -188,7 +188,7 @@ export default function ImportReviewScreen() {
           }}
         />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing[6], gap: Spacing[4] }}>
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(204,255,0,0.08)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: Alpha.yellow08, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="camera-outline" size={36} color={Colors.opticYellow} />
           </View>
           <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 20, color: Colors.textPrimary, textAlign: 'center' }}>
@@ -205,8 +205,8 @@ export default function ImportReviewScreen() {
           <Pressable
             style={{
               flexDirection: 'row', alignItems: 'center', gap: Spacing[2],
-              backgroundColor: uploading ? 'rgba(204,255,0,0.05)' : 'rgba(204,255,0,0.1)',
-              borderWidth: 1, borderColor: 'rgba(204,255,0,0.3)',
+              backgroundColor: uploading ? Alpha.yellow05 : Alpha.yellow10,
+              borderWidth: 1, borderColor: Alpha.yellow30,
               borderRadius: Radius.md, paddingHorizontal: Spacing[5], paddingVertical: Spacing[3], marginTop: Spacing[2],
             }}
             onPress={handlePickAndProcess}
@@ -1101,9 +1101,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreCellUs: {
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     borderWidth: 1,
-    borderColor: 'rgba(204,255,0,0.2)',
+    borderColor: Alpha.yellow20,
   },
   scoreCellThem: {
     backgroundColor: Colors.surface,
@@ -1214,7 +1214,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarMatched: {
-    backgroundColor: 'rgba(204,255,0,0.15)',
+    backgroundColor: Alpha.yellow15,
     borderWidth: 2,
     borderColor: Colors.opticYellow,
   },
@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   badgeMatched: {
-    backgroundColor: 'rgba(204,255,0,0.12)',
+    backgroundColor: Alpha.yellow12,
   },
   badgeNew: {
     backgroundColor: 'rgba(245,158,11,0.12)',
@@ -1269,7 +1269,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ratingPill: {
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.sm,
@@ -1309,7 +1309,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: 12,
     color: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
     paddingHorizontal: 8,
     paddingVertical: 5,
   },
@@ -1403,7 +1403,7 @@ const styles = StyleSheet.create({
   },
   courtSideBtnActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
   },
   courtSideBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1441,7 +1441,7 @@ const styles = StyleSheet.create({
   },
   conditionChipActive: {
     borderColor: Colors.aquaGreen,
-    backgroundColor: 'rgba(0,207,193,0.08)',
+    backgroundColor: Alpha.aqua08,
   },
   conditionChipText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1469,7 +1469,7 @@ const styles = StyleSheet.create({
   },
   weatherChipActive: {
     borderColor: Colors.aquaGreen,
-    backgroundColor: 'rgba(0,207,193,0.08)',
+    backgroundColor: Alpha.aqua08,
   },
   weatherChipText: {
     fontFamily: Fonts.body,
@@ -1510,7 +1510,7 @@ const styles = StyleSheet.create({
     gap: Spacing[2],
   },
   previewBadgeImported: {
-    backgroundColor: 'rgba(123,47,190,0.15)',
+    backgroundColor: Alpha.violet15,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,

@@ -34,7 +34,7 @@ import Animated, {
   SlideInDown,
 } from 'react-native-reanimated';
 
-import { Colors, Duration, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
+import { Alpha, Colors, Duration, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import {
   getTournamentFeed,
@@ -229,7 +229,7 @@ export default function TournamentFeedScreen() {
         }}
       />
 
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView testID="screen-tournament-feed" style={styles.safe} edges={['bottom']}>
         <FlatList
           data={posts}
           keyExtractor={(item) => item.post_id}
@@ -288,7 +288,7 @@ export default function TournamentFeedScreen() {
               >
                 <View style={styles.composerHeader}>
                   <Text style={styles.composerTitle}>NEW POST</Text>
-                  <Pressable onPress={handleCloseComposer} hitSlop={8}>
+                  <Pressable testID="btn-close-composer" onPress={handleCloseComposer} hitSlop={8}>
                     <Ionicons
                       name="close"
                       size={20}
@@ -299,6 +299,7 @@ export default function TournamentFeedScreen() {
 
                 <TextInput
                   ref={composerInputRef}
+                  testID="input-composer"
                   style={styles.composerInput}
                   placeholder="Share something with the group…"
                   placeholderTextColor={Colors.textMuted}
@@ -315,6 +316,7 @@ export default function TournamentFeedScreen() {
                     {composerText.length}/2000
                   </Text>
                   <Pressable
+                    testID="btn-submit-post"
                     style={[
                       styles.composerSubmitButton,
                       (!composerText.trim() || posting) &&
@@ -338,6 +340,7 @@ export default function TournamentFeedScreen() {
         {/* ── FAB (Floating Action Button) ──────────────────────────────── */}
         {!composerOpen && (
           <AnimatedPressable
+            testID="btn-compose-post"
             style={[styles.fab, fabAnimatedStyle]}
             onPressIn={() => {
               fabScale.value = withSpring(0.9, SPRING_CONFIG);
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
   },
   composerBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: Alpha.black60,
   },
   composerSheet: {
     backgroundColor: Colors.card,

@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius } from '../../lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../lib/constants';
 import { TOGGLES, ADVANCED_SETTINGS, clamp } from './wizard-data';
 import type { Club } from '../../lib/types';
 
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(0,207,193,0.1)',
+    backgroundColor: Alpha.aqua10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
   // Venue Search Modal
   venueModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: Alpha.black60,
     justifyContent: 'flex-end',
   },
   venueModal: {
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   pillActive: {
-    backgroundColor: 'rgba(204,255,0,0.12)',
+    backgroundColor: Alpha.yellow12,
     borderColor: Colors.opticYellow,
   },
   pillText: {

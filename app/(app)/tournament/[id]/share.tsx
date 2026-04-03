@@ -13,11 +13,12 @@ import ViewShot from 'react-native-view-shot';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
-import { Colors, Fonts, Spacing, Radius } from '../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../../../src/lib/constants';
+import { AnimatedPressable, useSpringPress } from '../../../../src/hooks/useSpringPress';
 import {
   PlayerShareCard,
   type CardStyle,
@@ -52,7 +53,7 @@ const SHARE_TARGETS: ShareTarget[] = [
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', bg: '#E1306C', color: '#FFFFFF' },
   { key: 'save', label: 'Save Image', icon: 'download-outline', bg: Colors.surface, color: Colors.textSecondary },
   { key: 'more', label: 'More', icon: 'ellipsis-horizontal', bg: Colors.surface, color: Colors.textSecondary },
-  { key: 'feed', label: 'My Feed', icon: 'newspaper-outline', bg: 'rgba(204,255,0,0.12)', color: Colors.opticYellow },
+  { key: 'feed', label: 'My Feed', icon: 'newspaper-outline', bg: Alpha.yellow12, color: Colors.opticYellow },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -64,6 +65,32 @@ function getBadges(rank: number, winRate: number, matchesWon: number): PlayerSha
   if (winRate >= 0.75) badges.push({ emoji: '🔥', label: 'On Fire', variant: 'green' });
   if (matchesWon >= 5) badges.push({ emoji: '⚡', label: 'Win Streak', variant: 'aqua' });
   return badges.slice(0, 3);
+}
+
+// ── Share Target Button ──────────────────────────────────────────────────────
+
+function ShareTargetButton({
+  target,
+  onPress,
+}: {
+  target: ShareTarget;
+  onPress: () => void;
+}) {
+  const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
+  return (
+    <AnimatedPressable
+      testID={`btn-share-${target.key}`}
+      style={[styles.shareItem, animatedStyle]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+    >
+      <View style={[styles.shareIcon, { backgroundColor: target.bg }]}>
+        <Ionicons name={target.icon} size={22} color={target.color} />
+      </View>
+      <Text style={styles.shareLabel}>{target.label}</Text>
+    </AnimatedPressable>
+  );
 }
 
 // ── Main Screen ─────────────────────────────────────────────────────────────
@@ -168,7 +195,7 @@ export default function ShareScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView testID="screen-tournament-share" style={styles.safe}>
         {/* ─── Header ────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <Pressable
@@ -183,6 +210,7 @@ export default function ShareScreen() {
           </Pressable>
           <Text style={styles.headerTitle}>Share Result</Text>
           <Pressable
+            testID="btn-save-image"
             style={styles.saveButton}
             onPress={handleSaveImage}
             hitSlop={8}
@@ -196,7 +224,7 @@ export default function ShareScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ─── Card Preview ──────────────────────────────────────── */}
-          <Animated.View entering={FadeIn.duration(300)} style={styles.cardPreview}>
+          <Animated.View key={cardStyle} entering={FadeIn.duration(250)} style={styles.cardPreview}>
             <ViewShot
               ref={cardRef}
               options={{ format: 'png', quality: 1 }}
@@ -225,6 +253,7 @@ export default function ShareScreen() {
               {CARD_STYLES.map((s) => (
                 <Pressable
                   key={s.key}
+                  testID={`btn-card-style-${s.key}`}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setCardStyle(s.key);
@@ -248,19 +277,14 @@ export default function ShareScreen() {
             <Text style={styles.sectionLabel}>SHARE TO</Text>
             <View style={styles.shareGrid}>
               {SHARE_TARGETS.map((t) => (
-                <Pressable
+                <ShareTargetButton
                   key={t.key}
-                  style={styles.shareItem}
+                  target={t}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     handleTargetPress(t.key);
                   }}
-                >
-                  <View style={[styles.shareIcon, { backgroundColor: t.bg }]}>
-                    <Ionicons name={t.icon} size={22} color={t.color} />
-                  </View>
-                  <Text style={styles.shareLabel}>{t.label}</Text>
-                </Pressable>
+                />
               ))}
             </View>
           </Animated.View>
@@ -268,6 +292,7 @@ export default function ShareScreen() {
           {/* ─── Feed CTA ──────────────────────────────────────────── */}
           <Animated.View entering={FadeInUp.delay(300).duration(250)}>
             <Pressable
+              testID="btn-feed-cta"
               style={styles.feedCta}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -326,7 +351,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: 'rgba(204,255,0,0.12)',
+    backgroundColor: Alpha.yellow12,
   },
   saveButtonText: {
     fontFamily: Fonts.bodySemiBold,

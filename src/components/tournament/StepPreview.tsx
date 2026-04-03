@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius } from '../../lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../lib/constants';
 import { FORMATS, TOGGLES, ADVANCED_SETTINGS } from './wizard-data';
 import type { Club } from '../../lib/types';
 
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing[3],
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: Spacing[4],
     paddingTop: Spacing[8],
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Alpha.black50,
   },
   bannerName: {
     fontFamily: Fonts.bodyBold,
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.sm,
-    backgroundColor: 'rgba(0,207,193,0.1)',
+    backgroundColor: Alpha.aqua10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   advancedValuePill: {
-    backgroundColor: 'rgba(204,255,0,0.12)',
+    backgroundColor: Alpha.yellow12,
     paddingHorizontal: Spacing[3],
     paddingVertical: 3,
     borderRadius: Radius.full,

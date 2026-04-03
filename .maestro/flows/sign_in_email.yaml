@@ -1,6 +1,21 @@
 appId: com.playsmashd.app
 name: "Shared - Email Sign In"
 ---
+# Dismiss Expo dev client page if visible (full settings page or small overlay)
+- runFlow:
+    when:
+      visible:
+        text: "Open DevTools"
+    file: dismiss_dev_menu.yaml
+- runFlow:
+    when:
+      visible:
+        text: "Go home"
+    file: dismiss_dev_menu.yaml
+
+# Wait for app UI to be ready
+- waitForAnimationToEnd
+
 # Handle consent screen if it appears
 - runFlow:
     when:

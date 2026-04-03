@@ -11,7 +11,7 @@ import {
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Spacing, Radius } from '../../lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius } from '../../lib/constants';
 import { FORMATS, type TournamentFormat } from './wizard-data';
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing[3],
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   formatCardSelected: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.04)',
+    backgroundColor: Alpha.yellow04,
   },
   cardCheck: {
     position: 'absolute',
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: Spacing[2],
     padding: Spacing[3],
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: Alpha.black40,
   },
   bannerChangeBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(204,255,0,0.08)',
+    backgroundColor: Alpha.yellow08,
     alignItems: 'center',
     justifyContent: 'center',
   },

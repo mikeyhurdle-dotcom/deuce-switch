@@ -1,0 +1,5 @@
+appId: com.playsmashd.app
+name: "Marketing - Fallback invite capture"
+---
+# No opponent invite available, capture profile state instead
+- takeScreenshot: marketing/share_fallback_profile

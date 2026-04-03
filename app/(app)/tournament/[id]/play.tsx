@@ -2,7 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../../src/providers/AuthProvider';
@@ -20,7 +30,7 @@ import {
 } from '../../../../src/services/tournament-service';
 import { enqueueScore, flushQueue, pendingCount } from '../../../../src/services/offline-queue';
 import { notifyClockExpired } from '../../../../src/services/notification-service';
-import { Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import type { MatchConditions, CourtSide, MatchIntensity } from '../../../../src/lib/types';
 import { Button } from '../../../../src/components/ui/Button';
 import { Card } from '../../../../src/components/ui/Card';
@@ -40,6 +50,44 @@ export default function Play() {
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const clockExpiredRef = useRef(false);
+
+  // ── Round transition animation ──────────────────────────────────────────
+  const [showRoundReveal, setShowRoundReveal] = useState(false);
+  const prevRoundRef = useRef<number | null>(null);
+  const revealScale = useSharedValue(0);
+  const revealOpacity = useSharedValue(0);
+
+  const revealStyle = useAnimatedStyle(() => ({
+    opacity: revealOpacity.value,
+    transform: [{ scale: revealScale.value }],
+  }));
+
+  useEffect(() => {
+    const currentRound = tournament?.current_round ?? null;
+    if (
+      prevRoundRef.current !== null &&
+      currentRound !== null &&
+      currentRound > prevRoundRef.current
+    ) {
+      // Round changed — trigger reveal animation
+      setShowRoundReveal(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      revealOpacity.value = withTiming(1, { duration: 200 });
+      revealScale.value = withSequence(
+        withTiming(1.2, { duration: 300, easing: Easing.out(Easing.back(1.5)) }),
+        withDelay(
+          800,
+          withTiming(0.8, { duration: 200, easing: Easing.in(Easing.ease) }),
+        ),
+      );
+      revealOpacity.value = withDelay(1100, withTiming(0, { duration: 200 }));
+
+      const timer = setTimeout(() => setShowRoundReveal(false), 1400);
+      return () => clearTimeout(timer);
+    }
+    prevRoundRef.current = currentRound;
+  }, [tournament?.current_round]);
 
   // Match metadata (captured alongside score)
   const [conditions, setConditions] = useState<MatchConditions | null>(null);
@@ -375,6 +423,24 @@ export default function Play() {
         options={{ headerTitle: `Round ${tournament.current_round ?? 1}` }}
       />
       <SafeAreaView testID="screen-tournament-play" style={styles.safe} edges={['bottom']}>
+        {/* ─── Round Reveal Overlay ─── */}
+        {showRoundReveal && (
+          <Animated.View
+            entering={FadeIn.duration(150)}
+            exiting={FadeOut.duration(200)}
+            style={styles.revealOverlay}
+            pointerEvents="none"
+          >
+            <Animated.View style={[styles.revealContent, revealStyle]}>
+              <Text style={styles.revealLabel}>ROUND</Text>
+              <Text style={styles.revealNumber}>
+                {tournament.current_round ?? 1}
+              </Text>
+              <Text style={styles.revealSub}>New Pairings</Text>
+            </Animated.View>
+          </Animated.View>
+        )}
+
         <ScrollView
           contentContainerStyle={styles.container}
           refreshControl={
@@ -398,7 +464,7 @@ export default function Play() {
 
           {/* Current Match */}
           {currentMatch && matchInfo ? (
-            <Animated.View entering={FadeInDown.delay(150).duration(400).springify()}>
+            <Animated.View key={`match-r${tournament.current_round}`} entering={FadeInDown.delay(showRoundReveal ? 1200 : 150).duration(400).springify()}>
             <Card variant="highlighted">
               <View style={styles.matchCard}>
                 <Text style={styles.courtLabel}>
@@ -682,6 +748,39 @@ export default function Play() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.darkBg },
+
+  // ── Round Reveal Overlay ──
+  revealOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,15,28,0.92)',
+  },
+  revealContent: {
+    alignItems: 'center',
+    gap: Spacing[2],
+  },
+  revealLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: 14,
+    color: Colors.textDim,
+    letterSpacing: 4,
+    textTransform: 'uppercase' as const,
+  },
+  revealNumber: {
+    fontFamily: Fonts.display,
+    fontSize: 72,
+    color: Colors.opticYellow,
+    lineHeight: 80,
+  },
+  revealSub: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 16,
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+  },
+
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   loadingText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.textDim },
   container: {
@@ -829,7 +928,7 @@ const styles = StyleSheet.create({
   },
   metaChipActive: {
     borderColor: Colors.opticYellow,
-    backgroundColor: 'rgba(204,255,0,0.12)',
+    backgroundColor: Alpha.yellow12,
   },
   metaChipText: {
     fontFamily: Fonts.bodySemiBold,

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Fonts, ShareCardColors, AppConfig } from '../lib/constants';
+import { Alpha, Colors, Fonts, ShareCardColors, AppConfig } from '../lib/constants';
 import { TOURNAMENT_FORMAT_LABELS } from '../lib/types';
 import type { TournamentFormat } from '../lib/types';
 import Logo from '../../assets/images/smashd-logo.svg';
@@ -61,17 +61,17 @@ const THEME_ACCENT: Record<CardStyle, string> = {
 };
 
 const THEME_CARD: Record<CardStyle, string> = {
-  dark: 'rgba(255,255,255,0.06)',
-  neon: 'rgba(204,255,0,0.06)',
+  dark: Alpha.white06,
+  neon: Alpha.yellow06,
   violet: 'rgba(168,85,247,0.08)',
-  light: 'rgba(0,0,0,0.05)',
+  light: Alpha.black05,
 };
 
 const THEME_BORDER: Record<CardStyle, string> = {
-  dark: 'rgba(255,255,255,0.08)',
-  neon: 'rgba(204,255,0,0.12)',
+  dark: Alpha.white08,
+  neon: Alpha.yellow12,
   violet: 'rgba(168,85,247,0.15)',
-  light: 'rgba(0,0,0,0.08)',
+  light: Alpha.black08,
 };
 
 const BADGE_COLORS: Record<
@@ -89,8 +89,8 @@ const BADGE_COLORS: Record<
     text: Colors.success,
   },
   aqua: {
-    bg: 'rgba(0,207,193,0.12)',
-    border: 'rgba(0,207,193,0.25)',
+    bg: Alpha.aqua12,
+    border: Alpha.aqua25,
     text: Colors.aquaGreen,
   },
 };
@@ -191,7 +191,7 @@ export function PlayerShareCard({
             {
               backgroundColor: isLight
                 ? ShareCardColors.lightAvatar
-                : 'rgba(204,255,0,0.08)',
+                : Alpha.yellow08,
               borderColor: accent,
             },
           ]}
@@ -322,11 +322,11 @@ export function PlayerShareCard({
               styles.ctaPill,
               {
                 backgroundColor: isLight
-                  ? 'rgba(123,47,190,0.08)'
-                  : 'rgba(204,255,0,0.08)',
+                  ? Alpha.violet08
+                  : Alpha.yellow08,
                 borderColor: isLight
-                  ? 'rgba(123,47,190,0.2)'
-                  : 'rgba(204,255,0,0.2)',
+                  ? Alpha.violet20
+                  : Alpha.yellow20,
               },
             ]}
           >

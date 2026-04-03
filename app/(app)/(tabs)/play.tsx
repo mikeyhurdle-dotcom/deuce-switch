@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 
 // ─── Format data ─────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ const FORMATS: {
     desc: 'Rotate partners every round',
     icon: 'shuffle-outline',
     color: Colors.opticYellow,
-    bgColor: 'rgba(204, 255, 0, 0.08)',
+    bgColor: Alpha.yellow08,
   },
   {
     key: 'mexicano',
@@ -33,7 +33,7 @@ const FORMATS: {
     desc: 'Skill-based pairing each round',
     icon: 'trending-up-outline',
     color: Colors.violet,
-    bgColor: 'rgba(123, 47, 190, 0.1)',
+    bgColor: Alpha.violet10,
   },
   {
     key: 'team_americano',
@@ -41,7 +41,7 @@ const FORMATS: {
     desc: 'Fixed pairs, round-robin',
     icon: 'people-outline',
     color: Colors.aquaGreen,
-    bgColor: 'rgba(0, 207, 193, 0.08)',
+    bgColor: Alpha.aqua08,
   },
   {
     key: 'mixicano',
@@ -174,7 +174,7 @@ export default function PlayScreen() {
           style={[styles.heroCta, createPress.animatedStyle]}
         >
           <LinearGradient
-            colors={['rgba(204, 255, 0, 0.12)', 'rgba(204, 255, 0, 0.03)']}
+            colors={[Alpha.yellow12, 'rgba(204, 255, 0, 0.03)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroGradient}
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing[5],
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.2)',
+    borderColor: Alpha.yellow20,
     overflow: 'hidden',
     ...Shadows.glowYellow,
   },
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(204, 255, 0, 0.12)',
+    backgroundColor: Alpha.yellow12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     textAlign: 'center',
     borderRadius: 14,
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: Alpha.yellow10,
     overflow: 'hidden',
   },
   stepLine: {

@@ -15,6 +15,13 @@ name: "Shared - Perform Email Login"
     text: "Not Now"
     optional: true
 
+# Handle profile setup wizard if it appears (Sprint 3 onboarding)
+- runFlow:
+    when:
+      visible:
+        id: "screen-profile-setup"
+    file: dismiss_profile_setup.yaml
+
 # Wait for home screen
 - extendedWaitUntil:
     visible:

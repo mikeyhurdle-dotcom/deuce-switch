@@ -1,0 +1,26 @@
+appId: com.playsmashd.app
+name: "Marketing - Capture H2H Share Card Variants"
+---
+# 1. Dark variant (default)
+- takeScreenshot: marketing/share_01_h2h_dark
+
+# 2. Neon variant
+- tapOn:
+    id: "btn-invite-style-neon"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: marketing/share_02_h2h_neon
+
+# 3. Violet variant
+- tapOn:
+    id: "btn-invite-style-violet"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: marketing/share_03_h2h_violet
+
+# 4. Light variant
+- tapOn:
+    id: "btn-invite-style-light"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: marketing/share_04_h2h_light

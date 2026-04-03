@@ -24,11 +24,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Colors, Duration, Fonts, Radius, Spacing } from '../../src/lib/constants';
 import { useAuth } from '../../src/providers/AuthProvider';
@@ -156,7 +152,7 @@ export default function ConnectionsScreen() {
         }}
       />
 
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView testID="screen-connections" style={styles.container} edges={['bottom']}>
         <FlatList
           data={filteredConnections}
           keyExtractor={(item) => item.connection_id}
@@ -175,7 +171,7 @@ export default function ConnectionsScreen() {
           ListHeaderComponent={
             <View style={styles.headerSection}>
               {/* Search Bar */}
-              <View style={styles.searchContainer}>
+              <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.searchContainer}>
                 <Ionicons
                   name="search"
                   size={16}
@@ -183,6 +179,7 @@ export default function ConnectionsScreen() {
                   style={styles.searchIcon}
                 />
                 <TextInput
+                  testID="input-search-connections"
                   style={styles.searchInput}
                   placeholder="Search connections..."
                   placeholderTextColor={Colors.textMuted}
@@ -204,11 +201,11 @@ export default function ConnectionsScreen() {
                     />
                   </Pressable>
                 )}
-              </View>
+              </Animated.View>
 
               {/* Pending Requests Section */}
               {pendingRequests.length > 0 && (
-                <View style={styles.pendingSection}>
+                <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.pendingSection}>
                   <Pressable
                     style={styles.pendingSectionHeader}
                     onPress={togglePending}
@@ -241,17 +238,17 @@ export default function ConnectionsScreen() {
                       ))}
                     </View>
                   )}
-                </View>
+                </Animated.View>
               )}
 
               {/* Grid Section Header */}
-              <View style={styles.gridHeader}>
+              <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.gridHeader}>
                 <Text style={styles.gridTitle}>
                   {searchQuery.trim()
                     ? `${filteredConnections.length} RESULT${filteredConnections.length !== 1 ? 'S' : ''}`
                     : `${connections.length} CONNECTION${connections.length !== 1 ? 'S' : ''}`}
                 </Text>
-              </View>
+              </Animated.View>
             </View>
           }
           renderItem={({ item }) => (

@@ -1,0 +1,62 @@
+appId: com.playsmashd.app
+name: "Marketing - Dark/Light Mode Comparison"
+---
+- launchApp
+- runFlow: flows/sign_in_paquito.yaml
+
+# Navigate to Profile > Settings
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- assertVisible:
+    id: "screen-profile"
+- tapOn:
+    id: "btn-settings"
+- waitForAnimationToEnd
+
+# Find appearance section
+- scrollUntilVisible:
+    element:
+      id: "btn-appearance-dark"
+    direction: DOWN
+    timeout: 5000
+
+# 1. Dark mode — capture settings
+- tapOn:
+    id: "btn-appearance-dark"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/appearance_01_settings_dark
+
+# 2. Switch to Light mode — capture settings
+- tapOn:
+    id: "btn-appearance-light"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/appearance_02_settings_light
+
+# 3. Go back to profile in light mode
+- back
+- waitForAnimationToEnd
+- takeScreenshot: marketing/appearance_03_profile_light
+
+# 4. Go to home in light mode
+- tapOn:
+    text: "Home, tab, 1 of 6"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/appearance_04_home_light
+
+# 5. Reset to dark and capture home
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+- tapOn:
+    id: "btn-settings"
+- scrollUntilVisible:
+    element:
+      id: "btn-appearance-dark"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "btn-appearance-dark"
+- back
+- tapOn:
+    text: "Home, tab, 1 of 6"
+- waitForAnimationToEnd
+- takeScreenshot: marketing/appearance_05_home_dark

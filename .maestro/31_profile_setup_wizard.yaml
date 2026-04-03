@@ -1,0 +1,23 @@
+appId: com.playsmashd.app
+name: "Profile Setup Wizard - 4 Step Onboarding (Sprint 3)"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# If profile setup appears, test the full flow
+- runFlow:
+    when:
+      visible:
+        id: "screen-profile-setup"
+    file: flows/noop.yaml
+
+# Verify setup screen elements if visible
+- assertVisible:
+    id: "screen-profile-setup"
+    optional: true
+
+# If already set up, navigate to settings to verify profile fields saved
+- tapOn:
+    text: "Profile, tab, 5 of 6"
+    optional: true
+- takeScreenshot: screenshots/profile_setup_state

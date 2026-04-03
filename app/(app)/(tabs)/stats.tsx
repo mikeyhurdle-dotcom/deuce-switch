@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../src/providers/AuthProvider';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
+import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { ListSkeleton } from '../../../src/components/ui/Skeleton';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import {
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(204,255,0,0.1)',
+    backgroundColor: Alpha.yellow10,
   },
   heroTop: {
     flexDirection: 'row',
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(123,47,190,0.15)',
+    borderColor: Alpha.violet15,
     borderLeftWidth: 3,
     borderLeftColor: Colors.violet,
     borderRadius: Radius.md,
