@@ -49,38 +49,6 @@ function StatCard({
   );
 }
 
-function XPBar({
-  current,
-  max,
-  level,
-}: {
-  current: number;
-  max: number;
-  level: number;
-}) {
-  const pct = Math.min((current / max) * 100, 100);
-  return (
-    <View style={styles.xpContainer}>
-      <View style={styles.xpHeader}>
-        <Text style={styles.xpLevel}>Level {level}</Text>
-        <Text style={styles.xpNext}>Next: {max.toLocaleString()} XP</Text>
-      </View>
-      <View style={styles.xpTrack}>
-        <LinearGradient
-          colors={[Colors.aquaGreen, Colors.opticYellow]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.xpFill, { width: `${pct}%` as any }]}
-        />
-      </View>
-      <View style={styles.xpNumbers}>
-        <Text style={styles.xpNum}>{current.toLocaleString()}</Text>
-        <Text style={styles.xpNum}>{max.toLocaleString()}</Text>
-      </View>
-    </View>
-  );
-}
-
 const PROFILE_TAB_TEST_IDS: Record<ProfileTab, string> = {
   Overview: 'tab-profile-overview',
   Stats: 'tab-profile-stats',
@@ -527,13 +495,6 @@ export function ProfileHeader({
         </Animated.View>
       )}
 
-      {/* ── XP Bar ────────────────────────────────────────────────── */}
-      {!editing && (
-        <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <XPBar current={2450} max={3000} level={12} />
-        </Animated.View>
-      )}
-
       {/* ── Tab Switcher ──────────────────────────────────────────── */}
       {!editing && (
         <Animated.View entering={FadeInDown.delay(300).springify()}>
@@ -723,52 +684,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: Colors.textMuted,
     letterSpacing: 1,
-  },
-
-  // ── XP Bar ──
-  xpContainer: {
-    marginHorizontal: Spacing[5],
-    marginTop: Spacing[3],
-    backgroundColor: Colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.surface,
-    padding: Spacing[4],
-    gap: 8,
-  },
-  xpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  xpLevel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
-    color: Colors.textPrimary,
-  },
-  xpNext: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  xpTrack: {
-    height: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  xpFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  xpNumbers: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  xpNum: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textMuted,
   },
 
   // ── Tabs ──
