@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   reactionCountActive: {
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   commentsLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1.5,
   },
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   },
   commentAvatarText: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textPrimary,
   },
   commentBody: {
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   commentTime: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   commentContent: {

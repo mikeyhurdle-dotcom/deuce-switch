@@ -103,6 +103,7 @@ export default function ClubSelectScreen() {
         options={{
           headerShown: true,
           headerTitle: 'Select Home Club',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: { fontFamily: Fonts.bodySemiBold, fontSize: 18 },
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
   },
   clubCourts: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
 });

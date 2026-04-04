@@ -148,6 +148,7 @@ export default function JoinTournament() {
         options={{
           headerShown: true,
           headerTitle: 'Join Tournament',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: { fontFamily: Fonts.mono, fontSize: 16 },

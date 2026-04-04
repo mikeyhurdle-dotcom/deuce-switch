@@ -231,7 +231,7 @@ export default function MatchDetail() {
   if (loading) {
     return (
       <SafeAreaView testID="screen-match-detail" style={styles.safe}>
-        <Stack.Screen options={{ title: 'MATCH DETAIL', headerShown: true }} />
+        <Stack.Screen options={{ title: 'MATCH DETAIL', headerShown: true, headerBackTitle: '' }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.opticYellow} />
         </View>
@@ -247,6 +247,7 @@ export default function MatchDetail() {
         options={{
           title: 'MATCH DETAIL',
           headerShown: true,
+          headerBackTitle: '',
           headerRight: () =>
             canEdit && !editing ? (
               <Pressable
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
   },
   tournamentFormat: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 0.5,
   },
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.5,
   },
   resultTextWin: {
@@ -654,7 +655,7 @@ const styles = StyleSheet.create({
   },
   metadataTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1.5,
   },
@@ -684,7 +685,7 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },

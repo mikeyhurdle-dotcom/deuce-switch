@@ -36,6 +36,7 @@ import Animated, {
 
 import { Alpha, Colors, Duration, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { useAuth } from '../../../../src/providers/AuthProvider';
+import { useTournament } from '../../../../src/hooks/useTournament';
 import {
   getTournamentFeed,
   createTournamentPost,
@@ -51,6 +52,7 @@ const PAGE_SIZE = 20;
 export default function TournamentFeedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { tournament } = useTournament(id ?? null);
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,7 +207,14 @@ export default function TournamentFeedScreen() {
   if (loading) {
     return (
       <>
-        <Stack.Screen options={{ headerTitle: 'FEED' }} />
+        <Stack.Screen options={{
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>FEED</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
+        }} />
         <SafeAreaView style={styles.safe}>
           <View style={styles.center}>
             <ActivityIndicator size="large" color={Colors.opticYellow} />
@@ -220,12 +229,12 @@ export default function TournamentFeedScreen() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: 'FEED',
-          headerTitleStyle: {
-            fontFamily: Fonts.mono,
-            fontSize: 14,
-            letterSpacing: 2,
-          } as any,
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>FEED</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
         }}
       />
 
@@ -479,7 +488,7 @@ const styles = StyleSheet.create({
   },
   composerCharCount: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   composerSubmitButton: {

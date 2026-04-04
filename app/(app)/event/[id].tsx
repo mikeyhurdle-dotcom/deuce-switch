@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -668,13 +668,13 @@ const styles = StyleSheet.create({
   },
   detailSublabel: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     marginTop: 1,
   },
   detailAction: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
   },
 
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   },
   attendeeName: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textDim,
     maxWidth: 56,
     textAlign: 'center',
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
   },
   pastMeta: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     marginTop: 4,
   },
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
   },
   winnerName: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textSecondary,
   },
 

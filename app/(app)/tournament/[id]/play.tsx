@@ -420,7 +420,14 @@ export default function Play() {
   return (
     <>
       <Stack.Screen
-        options={{ headerTitle: `Round ${tournament.current_round ?? 1}` }}
+        options={{
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>ROUND {tournament.current_round ?? 1}</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
+        }}
       />
       <SafeAreaView testID="screen-tournament-play" style={styles.safe} edges={['bottom']}>
         {/* ─── Round Reveal Overlay ─── */}
@@ -812,7 +819,7 @@ const styles = StyleSheet.create({
   team: { alignItems: 'center', gap: 4, flex: 1 },
   teamLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -830,7 +837,7 @@ const styles = StyleSheet.create({
   scoreEntry: { gap: 12, alignItems: 'center' },
   scoreLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -857,7 +864,7 @@ const styles = StyleSheet.create({
   },
   scorePreviewLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -905,7 +912,7 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
     textAlign: 'center',
@@ -948,7 +955,7 @@ const styles = StyleSheet.create({
   },
   orgTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
   },
@@ -962,7 +969,7 @@ const styles = StyleSheet.create({
   },
   miniCourt: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     width: 24,
   },
@@ -979,7 +986,7 @@ const styles = StyleSheet.create({
   },
   miniPending: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
   },
   // Host score input row
@@ -996,7 +1003,7 @@ const styles = StyleSheet.create({
   },
   hostScoreLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   hostScoreInput: {

@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
   },
   sourceDetail: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     marginTop: 2,
   },
@@ -1021,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   confidenceHint: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
 
@@ -1043,13 +1043,13 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 1,
   },
   sectionHint: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 
@@ -1070,13 +1070,13 @@ const styles = StyleSheet.create({
   },
   scoreLabelUs: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.opticYellow,
     letterSpacing: 0.5,
   },
   scoreLabelThem: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 0.5,
   },
@@ -1152,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   editedFlagSub: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 
@@ -1187,7 +1187,7 @@ const styles = StyleSheet.create({
   // Players
   teamLabel: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.opticYellow,
     letterSpacing: 0.8,
     marginBottom: Spacing[2],
@@ -1264,7 +1264,7 @@ const styles = StyleSheet.create({
   },
   playerDetail: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     marginTop: 2,
   },
@@ -1276,7 +1276,7 @@ const styles = StyleSheet.create({
   },
   ratingPillText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
   },
 
@@ -1300,7 +1300,7 @@ const styles = StyleSheet.create({
   },
   ratingChipName: {
     fontFamily: Fonts.body,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textDim,
     paddingHorizontal: 8,
     paddingVertical: 5,
@@ -1319,7 +1319,7 @@ const styles = StyleSheet.create({
   },
   ratingNote: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     lineHeight: 16,
   },
@@ -1473,7 +1473,7 @@ const styles = StyleSheet.create({
   },
   weatherChipText: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
   weatherChipTextActive: {
@@ -1583,7 +1583,7 @@ const styles = StyleSheet.create({
   },
   metaChipText: {
     fontFamily: Fonts.body,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textDim,
   },
 
@@ -1618,7 +1618,7 @@ const styles = StyleSheet.create({
   },
   saveSub: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     textAlign: 'center',
     marginTop: Spacing[2],

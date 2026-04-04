@@ -14,7 +14,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
-import { ListSkeleton } from '../../../src/components/ui/Skeleton';
+import { Skeleton } from '../../../src/components/ui/Skeleton';
+import { CountUp } from '../../../src/components/ui/CountUp';
+import { SectionHeader } from '../../../src/components/ui/SectionHeader';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import {
   fetchPlayerStats,
@@ -32,6 +34,7 @@ import {
   updateMatchDetails,
 } from '../../../src/services/stats-service';
 import { RatingProgressionChart, WinRateTrendChart, MatchHistoryFeed } from '../../../src/components/StatsCharts';
+import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -165,22 +168,22 @@ function HeroCard({
         {/* Stats grid */}
         <View style={styles.heroStats}>
           <View style={styles.heroStat}>
-            <Text style={[styles.heroStatVal, { color: Colors.opticYellow }]}>{matchesPlayed}</Text>
+            <CountUp value={matchesPlayed} style={[styles.heroStatVal, { color: Colors.opticYellow }]} />
             <Text style={styles.heroStatLbl}>GAMES</Text>
           </View>
           <View style={styles.heroStat}>
-            <Text style={[styles.heroStatVal, { color: Colors.aquaGreen }]}>{winRate}%</Text>
+            <CountUp value={winRate} suffix="%" style={[styles.heroStatVal, { color: Colors.aquaGreen }]} />
             <Text style={styles.heroStatLbl}>WIN RATE</Text>
           </View>
           <View style={styles.heroStat}>
-            <Text style={[styles.heroStatVal, { color: Colors.gold }]}>{tournamentCount}</Text>
+            <CountUp value={tournamentCount} style={[styles.heroStatVal, { color: Colors.gold }]} />
             <View style={styles.heroStatLblRow}>
               <Ionicons name="trophy" size={11} color={Colors.textMuted} />
               <Text style={styles.heroStatLbl}>TOURNAMENTS</Text>
             </View>
           </View>
           <View style={styles.heroStat}>
-            <Text style={[styles.heroStatVal, { color: Colors.success }]}>{streakLabel}</Text>
+            <Text style={styles.heroStatVal}>{streakLabel}</Text>
             <Text style={styles.heroStatLbl}>STREAK</Text>
           </View>
         </View>
@@ -542,6 +545,7 @@ export default function StatsScreen() {
   const hasMatches = stats !== null && stats.matchesPlayed > 0;
 
   return (
+    <ErrorBoundary fallbackMessage="Stats couldn't load. Tap retry to try again.">
     <SafeAreaView testID="screen-stats" style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
@@ -582,7 +586,21 @@ export default function StatsScreen() {
         }
       >
         {loading ? (
-          <View testID="state-stats-loading"><ListSkeleton count={6} /></View>
+          <View testID="state-stats-loading" style={{ padding: Spacing[5], gap: Spacing[3] }}>
+            {/* Hero stat card */}
+            <Skeleton width="100%" height={120} borderRadius={Radius.lg} />
+            {/* Period filter row */}
+            <Skeleton width="100%" height={40} borderRadius={Radius.md} />
+            {/* Stat summary cards */}
+            <View style={{ flexDirection: 'row', gap: Spacing[3] }}>
+              <Skeleton width="48%" height={80} borderRadius={Radius.md} />
+              <Skeleton width="48%" height={80} borderRadius={Radius.md} />
+            </View>
+            {/* Match history cards */}
+            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
+            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
+            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
+          </View>
         ) : fetchError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
             <Ionicons name="cloud-offline-outline" size={48} color={Colors.surfaceLight} />
@@ -645,9 +663,7 @@ export default function StatsScreen() {
               stats.courtSideBreakdown.length > 0 ||
               stats.intensityBreakdown.length > 0) && (
               <>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Performance Breakdown</Text>
-                </View>
+                <SectionHeader label="Performance Breakdown" />
                 <View style={styles.breakdownGrid}>
                   <BreakdownCard title="BY FORMAT" icon="analytics-outline" items={stats.formatBreakdown} />
                   <BreakdownCard title="CONDITIONS" icon="partly-sunny-outline" items={stats.conditionsBreakdown} />
@@ -661,9 +677,7 @@ export default function StatsScreen() {
             {/* Best Partners */}
             {stats.partners.length > 0 && (
               <>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Best Partners</Text>
-                </View>
+                <SectionHeader label="Best Partners" accentColor={Colors.violet} />
                 {stats.partners.map((p, i) => (
                   <PartnerRow key={p.id} partner={p} colorIndex={i} />
                 ))}
@@ -673,8 +687,8 @@ export default function StatsScreen() {
             {/* Head-to-Head Rivals */}
             {stats.rivals.length > 0 && (
               <>
-                <View style={[styles.sectionHeader, { marginTop: Spacing[4] }]}>
-                  <Text style={styles.sectionTitle}>Head-to-Head Rivals</Text>
+                <View style={{ marginTop: Spacing[4] }}>
+                  <SectionHeader label="Head-to-Head Rivals" accentColor={Colors.violet} />
                 </View>
                 {stats.rivals.map((r) => (
                   <H2HCard key={r.id} rival={r} />
@@ -716,6 +730,7 @@ export default function StatsScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -858,8 +873,8 @@ const styles = StyleSheet.create({
   },
   heroStatVal: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 26,
   },
   heroStatLbl: {
     fontFamily: Fonts.mono,
@@ -888,7 +903,7 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 
@@ -908,7 +923,7 @@ const styles = StyleSheet.create({
   },
   formDotText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
   },
 
   // Insight card
@@ -952,6 +967,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.aquaGreen,
     borderRadius: Radius.md,
     padding: 14,
   },
@@ -966,7 +983,7 @@ const styles = StyleSheet.create({
   },
   bdTitle: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
   },
@@ -978,7 +995,7 @@ const styles = StyleSheet.create({
   },
   bdLabel: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
   bdValue: {
@@ -1032,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   partnerGames: {
     fontFamily: Fonts.body,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   partnerRight: {
@@ -1074,7 +1091,7 @@ const styles = StyleSheet.create({
   },
   h2hInitials: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
   h2hName: {
@@ -1229,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   matchTypeTabText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   matchTypeTabTextActive: {

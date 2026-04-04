@@ -19,7 +19,7 @@ import Animated, {
 import { useAuth } from '../../../../src/providers/AuthProvider';
 import { useTournament } from '../../../../src/hooks/useTournament';
 import { Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
-import { Card } from '../../../../src/components/ui/Card';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,7 +180,14 @@ export default function Leaderboard() {
 
   return (
     <>
-      <Stack.Screen options={{ headerTitle: 'Leaderboard' }} />
+      <Stack.Screen options={{
+        headerTitle: () => (
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>LEADERBOARD</Text>
+            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+          </View>
+        ),
+      }} />
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -204,15 +211,13 @@ export default function Leaderboard() {
           )}
 
           {displayStandings.length === 0 ? (
-            <Card>
-              <View style={styles.empty}>
-                <Text style={styles.emptyEmoji}>📊</Text>
-                <Text style={styles.emptyTitle}>No scores yet</Text>
-                <Text style={styles.emptyText}>
-                  The leaderboard will update in real-time as matches are scored.
-                </Text>
-              </View>
-            </Card>
+            <EmptyState
+              icon="podium-outline"
+              iconColor={Colors.opticYellow}
+              title="No scores yet"
+              subtitle="Scores will appear here after the first round"
+              testID="state-leaderboard-empty"
+            />
           ) : (
             <View style={styles.list}>
               {/* Column headers */}
@@ -283,22 +288,6 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
 
-  // ── Empty state
-  empty: { padding: Spacing[8], alignItems: 'center', gap: Spacing[2] },
-  emptyEmoji: { fontSize: 32 },
-  emptyTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 16,
-    color: Colors.textPrimary,
-  },
-  emptyText: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textDim,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
   // ── List
   list: { gap: 3 },
 
@@ -312,7 +301,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1.2,
     textTransform: 'uppercase',

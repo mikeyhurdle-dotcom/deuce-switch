@@ -21,10 +21,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
 import { Colors, Fonts } from '../../../src/lib/constants';
-import { Button } from '../../../src/components/ui/Button';
 import { Card } from '../../../src/components/ui/Card';
 import { Badge } from '../../../src/components/ui/Badge';
 import { ListSkeleton } from '../../../src/components/ui/Skeleton';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import type { TournamentFormat } from '../../../src/lib/types';
 
@@ -252,31 +252,28 @@ export default function History() {
         </Animated.View>
 
         {tournaments.length === 0 ? (
-          <Animated.View entering={FadeInDown.delay(100).duration(400).springify()}>
-            <Card>
-              <View style={styles.empty}>
-                <Text style={styles.emptyEmoji}>📋</Text>
-                <Text style={styles.emptyTitle}>No tournaments yet</Text>
-                <Text style={styles.emptyDesc}>
-                  Create or join a tournament to get started.
-                </Text>
-                <View style={styles.emptyCtas}>
-                  <Button
-                    title="CREATE"
-                    onPress={() => router.push('/(app)/tournament/create')}
-                    variant="primary"
-                    size="md"
-                  />
-                  <Button
-                    title="JOIN"
-                    onPress={() => router.push('/(app)/join')}
-                    variant="outline"
-                    size="md"
-                  />
-                </View>
-              </View>
-            </Card>
-          </Animated.View>
+          <EmptyState
+            icon="trophy-outline"
+            iconColor={Colors.opticYellow}
+            badgeIcon="add-circle-outline"
+            title="No tournaments yet"
+            subtitle="Create or join a tournament to start tracking your history"
+            actions={[
+              {
+                label: 'CREATE',
+                onPress: () => router.push('/(app)/tournament/create'),
+                variant: 'primary',
+                testID: 'btn-create-tournament',
+              },
+              {
+                label: 'JOIN',
+                onPress: () => router.push('/(app)/join'),
+                variant: 'secondary',
+                testID: 'btn-join-tournament',
+              },
+            ]}
+            testID="state-history-empty"
+          />
         ) : (
           <View style={styles.list}>
             {tournaments.map((item, index) => (
@@ -311,31 +308,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: Colors.textPrimary,
     letterSpacing: 3,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  emptyEmoji: {
-    fontSize: 40,
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontFamily: Fonts.heading,
-    fontSize: 18,
-    color: Colors.textPrimary,
-  },
-  emptyDesc: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textDim,
-    textAlign: 'center',
-  },
-  emptyCtas: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
   },
   list: {
     gap: 12,

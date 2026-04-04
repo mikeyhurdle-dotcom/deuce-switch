@@ -323,6 +323,7 @@ export default function SettingsScreen() {
         options={{
           headerShown: true,
           headerTitle: 'Settings',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: {
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
   // Section Label
   sectionLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
   },
   settingSub: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     marginTop: 1,
   },
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
   },
   linkedStatus: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 1,
   },
   linkBtn: {
@@ -592,7 +593,7 @@ const styles = StyleSheet.create({
   },
   linkBtnText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
   },
 
   // Appearance
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
   // App Info
   appInfo: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,

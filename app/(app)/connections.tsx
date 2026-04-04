@@ -33,6 +33,7 @@ import {
   getPendingRequests,
 } from '../../src/services/connection-service';
 import type { ConnectionProfile, PendingRequest } from '../../src/lib/types';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import { ConnectionCard } from '../../src/components/ConnectionCard';
 import { PendingRequestCard } from '../../src/components/PendingRequestCard';
 
@@ -122,6 +123,7 @@ export default function ConnectionsScreen() {
           options={{
             headerShown: true,
             headerTitle: 'CONNECTIONS',
+            headerBackTitle: '',
             headerStyle: { backgroundColor: Colors.darkBg },
             headerTintColor: Colors.textPrimary,
             headerTitleStyle: {
@@ -143,6 +145,7 @@ export default function ConnectionsScreen() {
         options={{
           headerShown: true,
           headerTitle: 'CONNECTIONS',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: {
@@ -260,19 +263,14 @@ export default function ConnectionsScreen() {
             </View>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="tennisball-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>
-                {searchQuery.trim()
-                  ? 'No matches found'
-                  : 'No connections yet'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {searchQuery.trim()
-                  ? 'Try a different search term'
-                  : 'Play in tournaments to meet other players and grow your network'}
-              </Text>
-            </View>
+            <EmptyState
+              icon="people-outline"
+              iconColor={Colors.violet}
+              badgeIcon="link-outline"
+              title={searchQuery.trim() ? 'No matches found' : 'No connections yet'}
+              subtitle={searchQuery.trim() ? 'Try a different name' : 'Find players to connect with after your next tournament'}
+              testID="state-connections-empty"
+            />
           }
         />
       </SafeAreaView>
@@ -347,7 +345,7 @@ const styles = StyleSheet.create({
   },
   pendingTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 1.5,
   },
@@ -361,7 +359,7 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textPrimary,
     fontWeight: '700',
   },
@@ -377,7 +375,7 @@ const styles = StyleSheet.create({
   },
   gridTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 1.5,
   },
@@ -390,24 +388,4 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[3],
   },
 
-  // ── Empty State ──
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: Spacing[12],
-    paddingHorizontal: Spacing[8],
-    gap: Spacing[2],
-  },
-  emptyTitle: {
-    fontFamily: Fonts.heading,
-    fontSize: 18,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textDim,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
 });

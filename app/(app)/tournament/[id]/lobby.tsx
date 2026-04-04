@@ -304,7 +304,14 @@ export default function Lobby() {
 
   return (
     <>
-      <Stack.Screen options={{ headerTitle: tournament.name }} />
+      <Stack.Screen options={{
+        headerTitle: () => (
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>LOBBY</Text>
+            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+          </View>
+        ),
+      }} />
       <SafeAreaView testID="screen-tournament-lobby" style={styles.safe} edges={['bottom']}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={100}>
         <ScrollView
@@ -524,7 +531,7 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
   },

@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   liveText: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.error,
     letterSpacing: 2,
   },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   },
   roundText: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 1,
   },
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
   },
   lbHeaderText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
   },
   courtLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
     textAlign: 'center',
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   },
   courtVs: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
   },
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
   },
   courtStatusText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.success,
     letterSpacing: 1,
   },
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
   },
   autoRotateText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textDim,
     letterSpacing: 1,
   },

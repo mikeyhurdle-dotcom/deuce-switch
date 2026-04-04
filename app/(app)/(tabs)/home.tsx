@@ -28,8 +28,10 @@ import { useAuth } from '../../../src/providers/AuthProvider';
 import { supabase } from '../../../src/lib/supabase';
 import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../../src/lib/constants';
 import { SmashdLogo } from '../../../src/components/ui/SmashdLogo';
+import { SectionHeader } from '../../../src/components/ui/SectionHeader';
 import { SmashdWordmark } from '../../../src/components/ui/SmashdWordmark';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
+import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -127,9 +129,11 @@ type TournamentPost = FeedPostBase & {
   rank: number;
   eventName: string;
   eventVenue: string;
+  format: string;
   points: number;
   record: string;
   winRate: string;
+  roundCount: number;
   levelDelta?: string;
   conditions?: string[];
 };
@@ -263,11 +267,15 @@ function UpcomingCard({ event }: { event: UpcomingEvent }) {
 function PlayThisWeekCard({ event }: { event: PlayThisWeekEvent }) {
   const spring = useSpringPress();
   const isFull = event.status === 'full';
-  const isLow = event.spotsAvailable !== null && event.spotsAvailable > 0 && event.spotsAvailable <= 4;
+  const spotsText = isFull
+    ? 'Full'
+    : event.spotsAvailable != null && event.spotsAvailable <= 4
+      ? `${event.spotsAvailable} left`
+      : null;
 
   return (
     <AnimatedPressable
-      style={[styles.ptwCard, spring.animatedStyle]}
+      style={[styles.ptwChip, spring.animatedStyle, isFull && styles.ptwChipFull]}
       onPressIn={spring.onPressIn}
       onPressOut={spring.onPressOut}
       onPress={() => {
@@ -277,33 +285,17 @@ function PlayThisWeekCard({ event }: { event: PlayThisWeekEvent }) {
         }
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${event.name} at ${event.venue}, ${event.format}, ${isFull ? 'fully booked' : event.spotsAvailable ? `${event.spotsAvailable} spots left` : 'available'}`}
+      accessibilityLabel={`${event.venue}, ${event.time ?? event.date}, ${event.format}`}
     >
-      <Text style={styles.ptwDate}>{event.date}</Text>
-      <Text style={styles.ptwName} numberOfLines={2}>{event.name}</Text>
-      <Text style={styles.ptwVenue} numberOfLines={1}>{event.venue}</Text>
-      {event.time ? (
-        <Text style={styles.ptwTime}>{event.time}</Text>
-      ) : null}
-      <View style={styles.ptwBottom}>
-        <View style={styles.ptwPills}>
-          <View style={styles.ucFormatPill}>
-            <Text style={styles.ucFormatText}>{event.format}</Text>
-          </View>
-          {event.level !== 'all_levels' && (
-            <View style={styles.ptwLevelPill}>
-              <Text style={styles.ptwLevelText}>{event.level}</Text>
-            </View>
-          )}
-        </View>
-        {isFull ? (
-          <Text style={styles.ucSpotsFull}>FULL</Text>
-        ) : isLow ? (
-          <Text style={styles.ucSpotsLow}>{event.spotsAvailable} left</Text>
-        ) : event.price ? (
-          <Text style={styles.ptwPrice}>{event.price}</Text>
-        ) : null}
-      </View>
+      <Text style={styles.ptwChipVenue} numberOfLines={1}>{event.venue}</Text>
+      <Text style={styles.ptwChipDivider}>·</Text>
+      <Text style={styles.ptwChipTime} numberOfLines={1}>{event.time || event.date}</Text>
+      {spotsText && (
+        <>
+          <Text style={styles.ptwChipDivider}>·</Text>
+          <Text style={[styles.ptwChipSpots, isFull && { color: Colors.error }]}>{spotsText}</Text>
+        </>
+      )}
     </AnimatedPressable>
   );
 }
@@ -325,10 +317,19 @@ function TournamentResultCard({ post }: { post: TournamentPost }) {
   return (
     <View style={styles.resultCard}>
       <View style={styles.prcPlacement}>
-        <Text style={[styles.prcRank, { color: getRankColor(post.rank) }]}>#{post.rank}</Text>
+        {post.rank > 0 && (
+          <Text style={[styles.prcRank, { color: getRankColor(post.rank) }]}>#{post.rank}</Text>
+        )}
         <View style={styles.prcEvent}>
           <Text style={styles.prcEventName}>{post.eventName}</Text>
-          <Text style={styles.prcEventVenue}>{post.eventVenue}</Text>
+          <View style={styles.prcEventMeta}>
+            <View style={styles.prcFormatPill}>
+              <Text style={styles.prcFormatText}>{post.format}</Text>
+            </View>
+            {post.roundCount > 0 && (
+              <Text style={styles.prcEventVenue}>{post.roundCount} rounds</Text>
+            )}
+          </View>
         </View>
       </View>
       <View style={styles.prcStats}>
@@ -735,6 +736,7 @@ export default function Home() {
   const fetchFeed = useCallback(async () => {
     if (!user) return;
     try {
+      // Fetch more rows so we can aggregate tournament rounds into single cards
       const { data } = await supabase
         .from('player_match_results')
         .select(`
@@ -754,72 +756,124 @@ export default function Home() {
         `)
         .eq('player_id', user.id)
         .order('played_at', { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (!data || data.length === 0) {
         setFeedPosts([]);
         return;
       }
 
-      // Fetch the user's profile for display info
       const displayName = profile?.display_name ?? 'You';
       const avatarUrl = profile?.game_face_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=7C3AED&color=fff`;
+      const rows = data as unknown as RawMatchResult[];
 
-      const posts: FeedPost[] = (data as unknown as RawMatchResult[]).map((r) => {
-        const playedAt = new Date(r.played_at);
+      function formatTimeAgo(iso: string): string {
+        const playedAt = new Date(iso);
         const now = new Date();
         const diffMs = now.getTime() - playedAt.getTime();
         const diffMin = Math.max(0, Math.floor(diffMs / 60000));
         const diffHr = Math.floor(diffMs / 3600000);
         const diffDay = Math.floor(diffMs / 86400000);
-        const timeAgo = diffMs < 0 ? 'just now'
+        return diffMs < 0 ? 'just now'
           : diffMin < 60 ? `${diffMin}m ago`
           : diffHr < 24 ? `${diffHr}h ago`
           : diffDay <= 30 ? `${diffDay}d ago`
           : playedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: diffDay > 365 ? 'numeric' : undefined });
+      }
 
-        const base: FeedPostBase = {
-          id: r.id,
+      const FORMAT_LABELS: Record<string, string> = {
+        americano: 'Americano',
+        mexicano: 'Mexicano',
+        team_americano: 'Team Americano',
+        mixicano: 'Mixicano',
+      };
+
+      // ── Separate tournament vs non-tournament rows ──
+      const tournamentRows = new Map<string, RawMatchResult[]>();
+      const standaloneRows: RawMatchResult[] = [];
+
+      for (const r of rows) {
+        const isTournament = r.tournament_id && r.tournaments
+          && r.source !== 'manual' && r.source !== 'playtomic' && r.source !== 'screenshot';
+        if (isTournament) {
+          const key = r.tournament_id!;
+          if (!tournamentRows.has(key)) tournamentRows.set(key, []);
+          tournamentRows.get(key)!.push(r);
+        } else {
+          standaloneRows.push(r);
+        }
+      }
+
+      // ── Aggregate tournament rounds into single posts ──
+      const tournamentPosts: FeedPost[] = [];
+      for (const [, rounds] of tournamentRows) {
+        const latest = rounds[0]; // already sorted by played_at DESC
+        const wins = rounds.filter((r) => r.won).length;
+        const losses = rounds.length - wins;
+        const totalPoints = rounds.reduce((sum, r) => sum + r.team_score, 0);
+        const winPct = rounds.length > 0 ? Math.round((wins / rounds.length) * 100) : 0;
+        const format = latest.tournaments!.tournament_format;
+
+        tournamentPosts.push({
+          id: `tournament-${latest.tournament_id}`,
           username: displayName,
           avatarUrl,
-          timeAgo,
+          timeAgo: formatTimeAgo(latest.played_at),
           likes: 0,
           comments: 0,
-        };
+          type: 'tournament',
+          rank: 0,
+          eventName: latest.tournaments!.name,
+          eventVenue: FORMAT_LABELS[format] ?? format,
+          format: FORMAT_LABELS[format] ?? format,
+          points: totalPoints,
+          record: `${wins}W-${losses}L`,
+          winRate: `${winPct}%`,
+          roundCount: rounds.length,
+        });
+      }
 
-        // Tournament-sourced results → TournamentPost
-        if (r.tournaments && r.source !== 'manual' && r.source !== 'playtomic' && r.source !== 'screenshot') {
-          const result: TournamentPost = {
-            ...base,
-            type: 'tournament',
-            rank: 0, // No rank data per-result — display omitted in card
-            eventName: r.tournaments.name,
-            eventVenue: `${r.tournaments.tournament_format === 'americano' ? 'Americano' : r.tournaments.tournament_format === 'mexicano' ? 'Mexicano' : r.tournaments.tournament_format === 'team_americano' ? 'Team Americano' : 'Mixicano'}`,
-            points: r.team_score,
-            record: r.won ? '1W' : '1L',
-            winRate: r.won ? '100%' : '0%',
-          };
-          return result;
-        }
-
-        // External / manual results → ImportPost
+      // ── Build standalone (imported/manual) posts ──
+      const importPosts: FeedPost[] = standaloneRows.map((r) => {
         const scoreDisplay = r.set_scores && r.set_scores.length > 0
           ? r.set_scores.map((s) => `${s.team_a}-${s.team_b}`).join(', ')
           : `${r.team_score}-${r.opponent_score}`;
-        const result: ImportPost = {
-          ...base,
-          type: 'imported',
+        return {
+          id: r.id,
+          username: displayName,
+          avatarUrl,
+          timeAgo: formatTimeAgo(r.played_at),
+          likes: 0,
+          comments: 0,
+          type: 'imported' as const,
           team1: r.partner_name ? `${displayName} + ${r.partner_name}` : displayName,
           team2: [r.opponent1_name, r.opponent2_name].filter(Boolean).join(' + ') || 'Opponents',
           score: scoreDisplay,
-          result: r.team_score === r.opponent_score ? 'draw' : r.won ? 'won' : 'lost',
+          result: (r.team_score === r.opponent_score ? 'draw' : r.won ? 'won' : 'lost') as 'won' | 'lost' | 'draw',
           source: r.source === 'playtomic' ? 'Playtomic' : r.source === 'screenshot' ? 'Screenshot' : 'Manual',
           sourceVenue: '',
         };
-        return result;
       });
 
-      setFeedPosts(posts);
+      // ── Merge and sort by most recent, cap at 10 ──
+      const allPosts = [...tournamentPosts, ...importPosts];
+      // Sort by parsing timeAgo is unreliable — use original played_at from first row
+      // Tournament posts use latest round's played_at, import posts use their own
+      // Since both groups are already ordered, interleave by comparing timeAgo heuristically
+      // Simpler: just keep the order — tournaments first (most recent), then imports
+      // Actually, let's properly sort using a timestamp map
+      const tsMap = new Map<string, number>();
+      for (const r of rows) {
+        const key = r.tournament_id && r.tournaments
+          && r.source !== 'manual' && r.source !== 'playtomic' && r.source !== 'screenshot'
+          ? `tournament-${r.tournament_id}`
+          : r.id;
+        const ts = new Date(r.played_at).getTime();
+        if (!tsMap.has(key) || ts > tsMap.get(key)!) tsMap.set(key, ts);
+      }
+      allPosts.sort((a, b) => (tsMap.get(b.id) ?? 0) - (tsMap.get(a.id) ?? 0));
+
+      setFeedPosts(allPosts.slice(0, 10));
     } catch {
       // Fail silently
     }
@@ -856,6 +910,7 @@ export default function Home() {
   }, [fetchActive, fetchUpcoming, fetchFeed, fetchUnreadCount]);
 
   return (
+    <ErrorBoundary fallbackMessage="Home couldn't load. Tap retry to try again.">
     <SafeAreaView testID="screen-home" style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -917,18 +972,12 @@ export default function Home() {
         {/* ─── Upcoming Events ─── */}
         {upcomingEvents.length > 0 && (
           <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>{'\uD83D\uDCC5'}  Your Upcoming Games</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(app)/(tabs)/discover');
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.seeAll}>See All</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="Your Upcoming Games"
+              accentColor={Colors.opticYellow}
+              actionLabel="See All"
+              onAction={() => router.push('/(app)/(tabs)/discover')}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -944,18 +993,12 @@ export default function Home() {
         {/* ─── Play This Week ─── */}
         {playThisWeek.length > 0 && (
           <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>{'\u26A1'}  Play This Week</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(app)/(tabs)/discover');
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.seeAll}>Browse All</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="Play This Week"
+              accentColor={Colors.aquaGreen}
+              actionLabel="Browse All"
+              onAction={() => router.push('/(app)/(tabs)/discover')}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -971,18 +1014,12 @@ export default function Home() {
         {/* ─── Activity Feed ─── */}
         {feedPosts.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>{'\uD83D\uDD25'}  Activity</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(app)/(tabs)/stats');
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.seeAll}>See All</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="Activity"
+              accentColor={Colors.violet}
+              actionLabel="See All"
+              onAction={() => router.push('/(app)/(tabs)/stats')}
+            />
             {feedPosts.map((p, index) => (
               <View key={p.id} testID={`card-tournament-${index}`}>
                 <FeedPostItem post={p} />
@@ -991,22 +1028,27 @@ export default function Home() {
           </Animated.View>
         ) : (
           <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>{'\uD83D\uDD25'}  Activity</Text>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(app)/(tabs)/stats');
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.seeAll}>See All</Text>
-              </Pressable>
-            </View>
+            <SectionHeader
+              label="Activity"
+              accentColor={Colors.violet}
+              actionLabel="See All"
+              onAction={() => router.push('/(app)/(tabs)/stats')}
+            />
             <View testID="state-home-empty" style={styles.emptyActivity}>
+              <Ionicons name="tennisball-outline" size={40} color={Colors.textMuted} />
               <Text style={styles.emptyActivityText}>
                 No recent activity yet.{'\n'}Play a match or join a tournament to get started!
               </Text>
+              <Pressable
+                testID="btn-empty-browse"
+                style={styles.emptyCtaBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(app)/(tabs)/discover');
+                }}
+              >
+                <Text style={styles.emptyCtaText}>Browse Events</Text>
+              </Pressable>
             </View>
           </Animated.View>
         )}
@@ -1033,6 +1075,7 @@ export default function Home() {
         </LinearGradient>
       </Pressable>
     </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -1132,7 +1175,7 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
   liveBadgeText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: '#fff',
     letterSpacing: 1,
   },
@@ -1147,7 +1190,7 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   liveMeta: { flexDirection: 'row', gap: Spacing[3], marginTop: Spacing[2] },
-  liveMetaItem: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted },
+  liveMetaItem: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
 
   // Sections
   section: { marginBottom: Spacing[4] },
@@ -1179,10 +1222,12 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1,
     borderColor: Colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.opticYellow,
   },
   ucDate: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.opticYellow,
     letterSpacing: 1,
     marginBottom: 2,
@@ -1195,7 +1240,7 @@ const styles = StyleSheet.create({
   },
   ucVenue: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     marginBottom: Spacing[2],
   },
@@ -1212,73 +1257,48 @@ const styles = StyleSheet.create({
   },
   ucFormatText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.violetLight,
   },
-  ucSpots: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.success },
+  ucSpots: { fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.success },
   ucSpotsLow: { color: Colors.warning },
   ucSpotsFull: { color: Colors.error },
 
-  // Play This Week Cards
-  ptwCard: {
-    width: 200,
+  // Play This Week — compact horizontal chips
+  ptwChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: Colors.card,
-    borderRadius: Radius.lg,
-    padding: 14,
-    gap: 4,
+    borderRadius: Radius.full,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing[4],
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Alpha.aqua12,
   },
-  ptwDate: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: Colors.aquaGreen,
-    letterSpacing: 1,
-    marginBottom: 2,
+  ptwChipFull: {
+    opacity: 0.5,
   },
-  ptwName: {
-    fontFamily: Fonts.bodyBold,
+  ptwChipVenue: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: 13,
     color: Colors.textPrimary,
-    lineHeight: 17,
+    flexShrink: 1,
   },
-  ptwVenue: {
+  ptwChipDivider: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 13,
     color: Colors.textMuted,
   },
-  ptwTime: {
+  ptwChipTime: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: Colors.textDim,
-    marginBottom: Spacing[1],
-  },
-  ptwBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing[1],
-  },
-  ptwPills: {
-    flexDirection: 'row',
-    gap: 4,
-    flex: 1,
-  },
-  ptwLevelPill: {
-    backgroundColor: Alpha.aqua12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
-  },
-  ptwLevelText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 9,
+    fontSize: 12,
     color: Colors.aquaGreen,
   },
-  ptwPrice: {
+  ptwChipSpots: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
-    color: Colors.textDim,
+    fontSize: 12,
+    color: Colors.warning,
   },
 
   // Feed Post
@@ -1288,6 +1308,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.surface,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.violet,
   },
   postHeader: {
     flexDirection: 'row',
@@ -1317,7 +1339,7 @@ const styles = StyleSheet.create({
   },
   postBadge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
   postBadgeText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 0.5 },
-  postTime: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted },
+  postTime: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
 
   // Tournament Result Card — violet-tinted background
   resultCard: {
@@ -1343,7 +1365,24 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 2,
   },
-  prcEventVenue: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted },
+  prcEventMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[2],
+    marginTop: 2,
+  },
+  prcFormatPill: {
+    backgroundColor: Alpha.yellow10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  prcFormatText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 12,
+    color: Colors.opticYellow,
+  },
+  prcEventVenue: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
   prcStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -1407,7 +1446,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 2,
   },
-  importVs: { fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginVertical: 2 },
+  importVs: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginVertical: 2 },
   importScoreBlock: { alignItems: 'flex-end' },
   importScore: {
     fontFamily: Fonts.bodyBold,
@@ -1415,7 +1454,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
-  importResult: { fontFamily: Fonts.mono, fontSize: 10, marginTop: 2 },
+  importResult: { fontFamily: Fonts.mono, fontSize: 12, marginTop: 2 },
   importSourceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1432,10 +1471,10 @@ const styles = StyleSheet.create({
   },
   importSourcePillText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.aquaGreen,
   },
-  importSourceVenue: { fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted },
+  importSourceVenue: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
 
   // Milestone Card
   milestoneCard: {
@@ -1530,11 +1569,27 @@ const styles = StyleSheet.create({
   emptyActivity: {
     alignItems: 'center',
     paddingVertical: 32,
+    paddingBottom: 100,
+    gap: Spacing[3],
   },
   emptyActivityText: {
     color: Colors.textMuted,
     fontFamily: Fonts.body,
     fontSize: 14,
     textAlign: 'center',
+  },
+  emptyCtaBtn: {
+    marginTop: Spacing[2],
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[6],
+    backgroundColor: Alpha.yellow10,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Alpha.yellow20,
+  },
+  emptyCtaText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.opticYellow,
   },
 });

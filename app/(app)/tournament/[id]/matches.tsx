@@ -20,6 +20,7 @@ import {
 } from '../../../../src/services/tournament-service';
 import { Alpha, Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { Badge } from '../../../../src/components/ui/Badge';
+import { EmptyState } from '../../../../src/components/ui/EmptyState';
 import type { Match, Tournament } from '../../../../src/lib/types';
 
 export default function TournamentMatches() {
@@ -77,7 +78,15 @@ export default function TournamentMatches() {
   if (loading) {
     return (
       <SafeAreaView testID="screen-tournament-matches" style={styles.safe}>
-        <Stack.Screen options={{ title: 'MATCHES', headerShown: true }} />
+        <Stack.Screen options={{
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>MATCHES</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
+          headerShown: true,
+        }} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.opticYellow} />
         </View>
@@ -89,7 +98,12 @@ export default function TournamentMatches() {
     <SafeAreaView testID="screen-tournament-matches" style={styles.safe} edges={['bottom']}>
       <Stack.Screen
         options={{
-          title: tournament?.name?.toUpperCase() ?? 'MATCHES',
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>MATCHES</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
           headerShown: true,
         }}
       />
@@ -243,10 +257,13 @@ export default function TournamentMatches() {
         ))}
 
         {matches.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="golf-outline" size={40} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No matches found</Text>
-          </View>
+          <EmptyState
+            icon="tennisball-outline"
+            iconColor={Colors.opticYellow}
+            title="No matches found"
+            subtitle="Matches will appear here once the tournament begins"
+            testID="state-matches-empty"
+          />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -305,7 +322,7 @@ const styles = StyleSheet.create({
   },
   roundTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
     letterSpacing: 1.5,
     marginBottom: Spacing[1],
@@ -371,15 +388,4 @@ const styles = StyleSheet.create({
     marginLeft: Spacing[2],
   },
 
-  // Empty state
-  emptyState: {
-    alignItems: 'center',
-    gap: Spacing[3],
-    paddingVertical: Spacing[10],
-  },
-  emptyText: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
 });

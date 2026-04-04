@@ -597,7 +597,12 @@ export default function Results() {
     <>
       <Stack.Screen
         options={{
-          headerTitle: 'Results',
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>RESULTS</Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+            </View>
+          ),
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: { fontFamily: Fonts.bodyBold, fontSize: 18 },
@@ -827,7 +832,7 @@ const styles = StyleSheet.create({
   },
   mvpLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.gold,
     letterSpacing: 3,
   },
@@ -884,7 +889,7 @@ const styles = StyleSheet.create({
   },
   mvpStatLabel: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
   mvpDivider: {
@@ -926,7 +931,7 @@ const styles = StyleSheet.create({
   },
   podiumPts: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
   podiumBlock: {
@@ -954,7 +959,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 2,
   },
@@ -967,7 +972,7 @@ const styles = StyleSheet.create({
   },
   lbColH: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -1003,7 +1008,7 @@ const styles = StyleSheet.create({
   },
   lbAvatarText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textPrimary,
   },
   lbNameCol: {
@@ -1113,7 +1118,7 @@ const styles = StyleSheet.create({
   },
   perfLabel: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 

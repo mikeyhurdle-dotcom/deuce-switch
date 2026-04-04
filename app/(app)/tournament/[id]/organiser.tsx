@@ -260,7 +260,14 @@ export default function OrganiserDashboard() {
 
   return (
     <>
-      <Stack.Screen options={{ headerTitle: 'Dashboard' }} />
+      <Stack.Screen options={{
+        headerTitle: () => (
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>DASHBOARD</Text>
+            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
+          </View>
+        ),
+      }} />
       <SafeAreaView testID="screen-organiser" style={styles.safe} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -621,7 +628,7 @@ const styles = StyleSheet.create({
   statusItem: { alignItems: 'center', gap: Spacing[1] },
   statusLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -652,7 +659,7 @@ const styles = StyleSheet.create({
   },
   courtText: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -706,7 +713,7 @@ const styles = StyleSheet.create({
   },
   editTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
     letterSpacing: 2,
     textAlign: 'center',
@@ -723,7 +730,7 @@ const styles = StyleSheet.create({
   },
   editScoreLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },
@@ -757,7 +764,7 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing[2],
@@ -808,7 +815,7 @@ const styles = StyleSheet.create({
   },
   standingsHeaderText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,
   },

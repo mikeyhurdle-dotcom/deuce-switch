@@ -6,12 +6,13 @@ import {
   Exo2_600SemiBold,
   Exo2_700Bold,
 } from '@expo-google-fonts/exo-2';
-import { Slot, router } from 'expo-router';
+import { Slot, router, useNavigationContainerRef } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
+import * as Sentry from '@sentry/react-native';
 
 import { AuthProvider } from '../src/providers/AuthProvider';
 import { ConsentGate } from '../src/providers/ConsentGate';
@@ -25,9 +26,31 @@ import { Colors } from '../src/lib/constants';
 
 export { ErrorBoundary } from 'expo-router';
 
+// ── Sentry ──────────────────────────────────────────────────────────────────
+
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: true,
+});
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
+  integrations: [navigationIntegration],
+  tracesSampleRate: __DEV__ ? 0 : 0.2,
+  enabled: !__DEV__,
+  environment: __DEV__ ? 'development' : 'production',
+});
+
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
+  const navRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    if (navRef?.current) {
+      navigationIntegration.registerNavigationContainer(navRef);
+    }
+  }, [navRef]);
+
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     // Exo 2 — body/heading font (replaces Outfit)
@@ -80,11 +103,11 @@ export default function RootLayout() {
 }
 
 function ThemedApp() {
-  const { scheme, colors } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       <ConsentGate>
         <AuthProvider>
           <PostHogProvider>
@@ -95,6 +118,8 @@ function ThemedApp() {
     </View>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
   root: {

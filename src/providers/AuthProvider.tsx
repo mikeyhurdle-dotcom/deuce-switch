@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { type Session, type User } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '../lib/supabase';
 import { removePushToken } from '../services/notification-service';
 import type { Profile } from '../lib/types';
@@ -136,8 +137,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setSession(session);
         if (session?.user) {
+          Sentry.setUser({ id: session.user.id });
           await resolveProfile(session.user);
         } else {
+          Sentry.setUser(null);
           setProfile(null);
           setLoading(false);
         }

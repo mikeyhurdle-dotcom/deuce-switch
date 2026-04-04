@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
+import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
 // ─── Format data ─────────────────────────────────────────────────────────────
 
@@ -149,6 +150,7 @@ export default function PlayScreen() {
   const createPress = useSpringPress();
 
   return (
+    <ErrorBoundary fallbackMessage="Play couldn't load. Tap retry to try again.">
     <SafeAreaView testID="screen-play" style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -256,6 +258,7 @@ export default function PlayScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -362,7 +365,7 @@ const styles = StyleSheet.create({
   },
   quickDesc: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
     marginTop: 1,
   },

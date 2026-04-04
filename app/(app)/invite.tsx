@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   },
   shareLabel: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     textAlign: 'center',
   },

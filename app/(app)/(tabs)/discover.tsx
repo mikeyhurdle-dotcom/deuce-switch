@@ -12,12 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useRouter } from 'expo-router';
 import { Colors, Fonts, Spacing, Radius, Shadows, Alpha } from '../../../src/lib/constants';
 import { getAlertSubscriptions, toggleEventAlert } from '../../../src/services/alert-service';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import { supabase } from '../../../src/lib/supabase';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
+import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -424,11 +426,13 @@ function TabButton({
   active,
   onPress,
   testID,
+  tintColor,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   testID?: string;
+  tintColor?: string;
 }) {
   return (
     <Pressable
@@ -439,7 +443,7 @@ function TabButton({
       }}
       accessibilityRole="tab"
       accessibilityState={{ selected: active }}
-      style={[styles.tabButton, active && styles.tabButtonActive]}
+      style={[styles.tabButton, active && styles.tabButtonActive, active && tintColor ? { backgroundColor: tintColor } : undefined]}
     >
       <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>
         {label}
@@ -711,16 +715,23 @@ function LoadingSkeleton() {
   );
 }
 
-function EmptyState({ city }: { city: string | null }) {
+function EmptyState({ city, onCreatePress }: { city: string | null; onCreatePress: () => void }) {
   return (
     <View style={styles.emptyState}>
-      <Ionicons name="search-outline" size={48} color={Colors.textMuted} />
+      <Ionicons name="calendar-outline" size={48} color={Colors.textMuted} />
       <Text style={styles.emptyTitle}>No events found</Text>
       <Text style={styles.emptySubtitle}>
         {city
-          ? `No upcoming events in ${city}. Try selecting "All" or check back later.`
-          : 'Try adjusting your filters or check back later for upcoming events.'}
+          ? `No upcoming events in ${city}. Try a different date or search term.`
+          : 'Try a different date or search term'}
       </Text>
+      <Pressable
+        testID="btn-discover-create"
+        style={styles.createBtn}
+        onPress={onCreatePress}
+      >
+        <Text style={styles.createBtnText}>Create Your Own</Text>
+      </Pressable>
     </View>
   );
 }
@@ -741,6 +752,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function DiscoverScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('play');
   const [dateFilter, setDateFilter] = useState<DateFilterKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -961,6 +973,7 @@ export default function DiscoverScreen() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
+    <ErrorBoundary fallbackMessage="Discover couldn't load. Tap retry to try again.">
     <SafeAreaView testID="screen-discover" style={styles.safe} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -987,12 +1000,14 @@ export default function DiscoverScreen() {
             active={activeTab === 'play'}
             onPress={() => setActiveTab('play')}
             testID="tab-play"
+            tintColor={Alpha.aqua12}
           />
           <TabButton
             label="Compete"
             active={activeTab === 'compete'}
             onPress={() => setActiveTab('compete')}
             testID="tab-compete"
+            tintColor={Alpha.yellow12}
           />
         </Animated.View>
 
@@ -1146,7 +1161,13 @@ export default function DiscoverScreen() {
         {/* Empty state */}
         {!isLoading && errorMsg === null && totalEvents === 0 && (
           <View testID="state-discover-empty">
-            <EmptyState city={selectedCity} />
+            <EmptyState
+              city={selectedCity}
+              onCreatePress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(app)/(tabs)/play');
+              }}
+            />
           </View>
         )}
 
@@ -1176,6 +1197,7 @@ export default function DiscoverScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -1396,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   dateCountText: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textDim,
   },
 
@@ -1408,6 +1430,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[3],
     borderWidth: 1,
     borderColor: Colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.aquaGreen,
     gap: Spacing[3],
   },
   eventCardFeatured: {
@@ -1429,7 +1453,7 @@ const styles = StyleSheet.create({
   },
   featuredBadgeText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.darkBg,
     letterSpacing: 0.5,
   },
@@ -1459,7 +1483,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
 
@@ -1513,7 +1537,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
+    fontSize: 12,
   },
 
   // Meta row
@@ -1674,6 +1698,20 @@ const styles = StyleSheet.create({
     marginTop: Spacing[2],
   },
   retryBtnText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 14,
+    color: Colors.opticYellow,
+  },
+  createBtn: {
+    marginTop: Spacing[2],
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[6],
+    backgroundColor: Alpha.yellow10,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Alpha.yellow20,
+  },
+  createBtnText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 14,
     color: Colors.opticYellow,

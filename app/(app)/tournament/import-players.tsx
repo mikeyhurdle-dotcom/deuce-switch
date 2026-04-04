@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   },
   platformChipText: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
   },
 
   // Processing
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   levelBadgeText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.violetLight,
   },
   removeBtn: {

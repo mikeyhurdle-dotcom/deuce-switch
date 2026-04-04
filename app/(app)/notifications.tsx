@@ -18,6 +18,7 @@ import { supabase } from '../../src/lib/supabase';
 import { getPendingRequests, respondToConnection } from '../../src/services/connection-service';
 import { Alpha, Colors, Fonts, Radius, Spacing } from '../../src/lib/constants';
 import { Button } from '../../src/components/ui/Button';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import type { PendingRequest, TournamentFormat } from '../../src/lib/types';
 
@@ -216,6 +217,7 @@ export default function NotificationsScreen() {
         options={{
           headerShown: true,
           headerTitle: 'Notifications',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: {
@@ -243,13 +245,14 @@ export default function NotificationsScreen() {
               ))}
             </View>
           ) : items.length === 0 ? (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.empty}>
-              <Ionicons name="notifications-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>All caught up</Text>
-              <Text style={styles.emptyDesc}>
-                Connection requests and tournament updates will appear here.
-              </Text>
-            </Animated.View>
+            <EmptyState
+              icon="notifications-outline"
+              iconColor={Colors.aquaGreen}
+              badgeIcon="checkmark-circle"
+              title="All caught up"
+              subtitle="Connection requests and tournament updates will appear here"
+              testID="state-notifications-empty"
+            />
           ) : (
             bucketOrder.map((bucket) => {
               const bucketItems = grouped[bucket];
@@ -364,25 +367,6 @@ const styles = StyleSheet.create({
     padding: Spacing[5],
     gap: Spacing[3],
   },
-  empty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing[3],
-    paddingVertical: Spacing[20],
-  },
-  emptyTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 18,
-    color: Colors.textPrimary,
-  },
-  emptyDesc: {
-    fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    maxWidth: 260,
-  },
-
   // Bucket sections
   bucketSection: {
     paddingHorizontal: Spacing[5],
@@ -391,7 +375,7 @@ const styles = StyleSheet.create({
   },
   bucketTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1.5,
     marginBottom: Spacing[1],
@@ -454,7 +438,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 

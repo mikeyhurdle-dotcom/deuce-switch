@@ -459,6 +459,7 @@ export default function ImportMatchesScreen() {
       <Stack.Screen
         options={{
           title: 'Import Matches',
+          headerBackTitle: '',
           headerStyle: { backgroundColor: Colors.darkBg },
           headerTintColor: Colors.textPrimary,
           headerTitleStyle: { fontFamily: Fonts.bodySemiBold },
@@ -1005,7 +1006,7 @@ const styles = StyleSheet.create({
   },
   platformChipText: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
   },
 
   // Processing
@@ -1156,7 +1157,7 @@ const styles = StyleSheet.create({
   },
   matchBadgeText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.opticYellow,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1179,7 +1180,7 @@ const styles = StyleSheet.create({
   },
   resultBadgeText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
   resultBadgeTextWin: {
@@ -1285,7 +1286,7 @@ const styles = StyleSheet.create({
   },
   editedHint: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.warning,
     textAlign: 'right',
     marginBottom: Spacing[2],
@@ -1342,7 +1343,7 @@ const styles = StyleSheet.create({
   },
   detailChipText: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textMuted,
   },
 

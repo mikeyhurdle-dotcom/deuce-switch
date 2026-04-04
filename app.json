@@ -94,7 +94,14 @@
           "sounds": []
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "playsmashd",
+          "project": "smashd-app"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
