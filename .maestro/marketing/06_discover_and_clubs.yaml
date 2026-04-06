@@ -6,7 +6,7 @@ name: "Marketing - Discover Events & Club Selection"
 
 # 1. Discover tab — event feed
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - assertVisible:
     id: "screen-discover"
 - waitForAnimationToEnd
@@ -21,9 +21,9 @@ name: "Marketing - Discover Events & Club Selection"
 
 # 3. Navigate to Settings > Club Selection
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - waitForAnimationToEnd
 
 # Scroll to Home Club

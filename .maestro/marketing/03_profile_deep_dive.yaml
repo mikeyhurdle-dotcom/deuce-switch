@@ -6,9 +6,9 @@ name: "Marketing - Profile & Stats Deep Dive"
 
 # Navigate to Profile
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - waitForAnimationToEnd
 
 # 1. Profile overview — level, stats card, recent tournaments

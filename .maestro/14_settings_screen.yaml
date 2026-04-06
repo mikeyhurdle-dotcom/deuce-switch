@@ -4,48 +4,49 @@ name: "Settings Screen - All Sections Visible"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# Navigate to Profile tab
+# Navigate to Stats → Settings via gear icon
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
-
-# Tap Settings button
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - extendedWaitUntil:
     visible:
       id: "screen-settings"
-    timeout: 5000
+    timeout: 10000
+- waitForAnimationToEnd
 
-# Verify profile card is visible
-- assertVisible: "Edit Profile →"
-
-# Verify section headers
-- assertVisible: "Linked Accounts"
-- assertVisible: "Appearance"
-- assertVisible: "Account"
-
-# Verify key action items
+# Verify avatar editor
 - assertVisible:
-    id: "btn-change-password"
-- assertVisible:
-    id: "btn-delete-account"
+    id: "btn-edit-avatar"
 
-# Scroll down to see remaining items
+# Verify Profile section at top
+- assertVisible: "Profile"
+
+# Scroll through sections one by one
 - scrollUntilVisible:
     element:
-      id: "btn-logout"
+      text: "Appearance"
     direction: DOWN
-    timeout: 5000
-- assertVisible:
-    id: "btn-privacy-policy"
-- assertVisible:
-    id: "btn-help-support"
-- assertVisible:
-    id: "btn-logout"
+    timeout: 15000
 
-# Verify app version info
-- assertVisible: "Smashd v1.0.0"
+- scrollUntilVisible:
+    element:
+      text: "Home Club"
+    direction: DOWN
+    timeout: 15000
 
-# Take screenshot
+- scrollUntilVisible:
+    element:
+      text: "Privacy Policy"
+    direction: DOWN
+    timeout: 15000
+
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+    direction: DOWN
+    timeout: 15000
+
+# Take screenshot at bottom
 - takeScreenshot: screenshots/settings_screen

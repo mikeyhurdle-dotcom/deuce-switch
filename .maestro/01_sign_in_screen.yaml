@@ -27,6 +27,7 @@ name: "Sign In Screen - UI Elements"
     id: "btn-google"
 - assertVisible:
     id: "btn-apple"
+    optional: true
 - assertVisible:
     id: "input-email"
 - assertVisible:

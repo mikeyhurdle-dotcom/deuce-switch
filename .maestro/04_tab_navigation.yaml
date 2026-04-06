@@ -11,33 +11,37 @@ name: "Tab Navigation - All Tabs Accessible"
 
 # Navigate to Discover
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - assertVisible:
     id: "screen-discover"
 - takeScreenshot: screenshots/discover_screen
 
-# Navigate to Play
+# Navigate to Coach
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-coach"
 - assertVisible:
-    id: "screen-play"
-- takeScreenshot: screenshots/play_screen
+    id: "screen-coach"
+- takeScreenshot: screenshots/coach_screen
+
+# Tap Log Match centre button (opens bottom sheet, not a screen)
+- tapOn:
+    id: "tab-log-match"
+- waitForAnimationToEnd
+# Dismiss by tapping outside / swiping down
+- swipe:
+    direction: DOWN
+    duration: 300
 
 # Navigate to Stats
 - tapOn:
-    text: "Stats, tab, 4 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
-- takeScreenshot: screenshots/stats_screen
-
-# Navigate to Profile
-- tapOn:
-    text: "Profile, tab, 5 of 6"
 - assertVisible:
-    id: "screen-profile"
-- takeScreenshot: screenshots/profile_screen
+    id: "screen-stats"
+- takeScreenshot: screenshots/stats_screen
 
 # Back to Home
 - tapOn:
-    text: "Home, tab, 1 of 6"
+    id: "tab-home"
 - assertVisible:
     id: "screen-home"

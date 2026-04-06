@@ -6,7 +6,7 @@ name: "Debug - Navigate to Settings"
 
 # Navigate to Profile
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 
 # Take screenshot of profile screen before tapping settings
@@ -19,5 +19,5 @@ name: "Debug - Navigate to Settings"
 
 # Now try settings
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - takeScreenshot: screenshots/debug_03_after_settings_tap

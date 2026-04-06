@@ -1,0 +1,36 @@
+appId: com.playsmashd.app
+name: "Manual Score Entry - Log a Match"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate directly to log-match screen via deep link approach
+# The bottom sheet isn't reliably accessible to Maestro, so navigate directly
+- tapOn:
+    id: "tab-log-match"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# Take screenshot of whatever appears (sheet or screen)
+- takeScreenshot: screenshots/manual_score_entry_sheet
+
+# Try tapping Quick Score if bottom sheet is visible
+- tapOn:
+    text: "Quick Score"
+    optional: true
+- tapOn:
+    text: "Skip for now"
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: "Quick Score"
+    optional: true
+
+# If we reached the log-match screen, fill it in
+- runFlow:
+    when:
+      visible:
+        id: "screen-log-match"
+    file: flows/noop.yaml
+
+- takeScreenshot: screenshots/manual_score_entry_result

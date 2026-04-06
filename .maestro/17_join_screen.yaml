@@ -6,10 +6,10 @@ name: "Join Tournament - Screen Loads and Code Input Works"
 
 # Navigate to Play tab and wait for content to load
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-home"
 - extendedWaitUntil:
     visible:
-      id: "btn-create-tournament"
+      id: "btn-host-tournament"
     timeout: 10000
 
 # Scroll down to find Join quick action (below format cards and Create button)

@@ -1,0 +1,33 @@
+appId: com.playsmashd.app
+name: "Avatar Upload - ActionSheet Appears in Settings"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Stats → Settings
+- tapOn:
+    id: "tab-stats"
+- waitForAnimationToEnd
+- tapOn:
+    id: "btn-stats-settings"
+- extendedWaitUntil:
+    visible:
+      id: "screen-settings"
+    timeout: 5000
+
+# Tap avatar edit button
+- tapOn:
+    id: "btn-edit-avatar"
+
+# Verify ActionSheet options appear
+- extendedWaitUntil:
+    visible: "Take Photo"
+    timeout: 5000
+- assertVisible: "Choose from Library"
+- assertVisible: "Cancel"
+
+# Cancel the action sheet
+- tapOn: "Cancel"
+
+# Take screenshot
+- takeScreenshot: screenshots/avatar_upload_sheet

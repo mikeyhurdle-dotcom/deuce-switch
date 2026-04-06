@@ -6,11 +6,11 @@ name: "Club Selection - Search and Set Home Club (Sprint 4)"
 
 # Navigate to Settings
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 
 # Scroll to find Home Club option and tap it
 - scrollUntilVisible:

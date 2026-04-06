@@ -6,9 +6,9 @@ name: "Marketing - Share Card Variants (H2H + Player)"
 
 # Navigate to Profile
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - waitForAnimationToEnd
 
 # Scroll to Frequent Partners section where opponent invite buttons are

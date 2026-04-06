@@ -17,28 +17,26 @@ name: "Import Matches OCR — Playtomic Screenshot → Review Cards"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# ── Navigate to Import Matches via History sub-tab ────────────────────
+# ── Navigate to Import Matches via Log Match sheet ────────────────────
 - tapOn:
-    text: "Profile, tab, 5 of 6"
-- extendedWaitUntil:
-    visible:
-      id: "screen-profile"
-    timeout: 10000
-
-- tapOn:
-    id: "tab-profile-history"
+    id: "tab-log-match"
 - waitForAnimationToEnd
-
-- scrollUntilVisible:
-    element:
-      text: "Import Match from Screenshot"
-    direction: DOWN
+- waitForAnimationToEnd
+# If first-time user sees tool setup, skip it first
+- tapOn:
+    text: "Skip for now"
+    optional: true
+- waitForAnimationToEnd
+# Wait for the sheet content to be fully interactive
+- extendedWaitUntil:
+    visible: "Import Screenshot"
     timeout: 10000
-- tapOn: "Import Match from Screenshot"
+- tapOn:
+    text: "Import Screenshot"
 - extendedWaitUntil:
     visible:
       id: "screen-import-matches"
-    timeout: 5000
+    timeout: 15000
 
 # ── Select Playtomic platform hint ──────────────────────────────────────
 - tapOn: "Playtomic"

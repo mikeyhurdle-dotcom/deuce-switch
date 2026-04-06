@@ -4,26 +4,35 @@ name: "Sign Out Flow"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# Sign out via Profile screen (avoids Expo dev-client overlay on btn-settings)
+# Navigate to Stats tab
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 
-# Scroll down to the Sign Out button on the Profile screen
+# Tap gear icon → Settings
+- tapOn:
+    id: "btn-stats-settings"
+- extendedWaitUntil:
+    visible:
+      id: "screen-settings"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Scroll to logout button
 - scrollUntilVisible:
     element:
-      id: "btn-sign-out"
+      text: "Log Out"
     direction: DOWN
-    timeout: 5000
+    timeout: 15000
 - tapOn:
-    id: "btn-sign-out"
+    text: "Log Out"
 
-# Wait for the confirmation alert to appear
+# Wait for the confirmation alert
 - extendedWaitUntil:
     visible: "Are you sure you want to sign out?"
     timeout: 5000
 
-# Confirm sign out in the alert (index 1 = alert button, not the profile button)
+# Confirm sign out
 - tapOn:
     text: "Sign Out"
     index: 1

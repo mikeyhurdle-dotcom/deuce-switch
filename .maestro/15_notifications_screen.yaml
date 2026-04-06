@@ -21,6 +21,5 @@ name: "Notifications Screen - Activity Feed"
 # Verify the notifications screen loaded (activity feed or empty state)
 - takeScreenshot: screenshots/notifications_screen
 
-# Navigate back
-- tapOn:
-    text: "Home, tab, 1 of 6"
+# Navigate back to Home
+- back

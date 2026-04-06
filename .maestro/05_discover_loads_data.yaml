@@ -6,7 +6,7 @@ name: "Discover Screen - Data Loads"
 
 # Navigate to Discover
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - assertVisible:
     id: "screen-discover"
 

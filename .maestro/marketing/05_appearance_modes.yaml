@@ -6,11 +6,11 @@ name: "Marketing - Dark/Light Mode Comparison"
 
 # Navigate to Profile > Settings
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - waitForAnimationToEnd
 
 # Find appearance section
@@ -39,15 +39,15 @@ name: "Marketing - Dark/Light Mode Comparison"
 
 # 4. Go to home in light mode
 - tapOn:
-    text: "Home, tab, 1 of 6"
+    id: "tab-home"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/appearance_04_home_light
 
 # 5. Reset to dark and capture home
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - scrollUntilVisible:
     element:
       id: "btn-appearance-dark"
@@ -57,6 +57,6 @@ name: "Marketing - Dark/Light Mode Comparison"
     id: "btn-appearance-dark"
 - back
 - tapOn:
-    text: "Home, tab, 1 of 6"
+    id: "tab-home"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/appearance_05_home_dark

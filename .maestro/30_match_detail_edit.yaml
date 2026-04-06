@@ -4,15 +4,13 @@ name: "Match Detail - View and Edit Score (Sprint 2)"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# Navigate to Profile > History
+# Navigate to Stats tab (match history is now here)
 - tapOn:
-    text: "Profile, tab, 5 of 6"
-- assertVisible:
-    id: "screen-profile"
-
-# Tap History sub-tab
-- tapOn:
-    text: "History"
+    id: "tab-stats"
+- extendedWaitUntil:
+    visible:
+      id: "screen-stats"
+    timeout: 5000
 - waitForAnimationToEnd
 
 # Tap first tournament in history (if exists)

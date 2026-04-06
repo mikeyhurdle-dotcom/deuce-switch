@@ -2,7 +2,7 @@ appId: com.playsmashd.app
 name: "Marketing - Sign Out Current User"
 ---
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 
 # Scroll to sign out on profile screen

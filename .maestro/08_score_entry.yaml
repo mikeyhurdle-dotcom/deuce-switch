@@ -6,9 +6,9 @@ name: "Score Entry - Double Digit Scores"
 
 # Create tournament
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-home"
 - tapOn:
-    id: "btn-create-tournament"
+    id: "btn-host-tournament"
 - tapOn:
     id: "input-tournament-name"
 - inputText: "Score Test"
@@ -26,15 +26,20 @@ name: "Score Entry - Double Digit Scores"
 - tapOn:
     id: "btn-wizard-create"
 - extendedWaitUntil:
-    visible: "JOIN CODE"
+    visible:
+      id: "screen-tournament-lobby"
     timeout: 20000
+- extendedWaitUntil:
+    visible: "Waiting for"
+    timeout: 10000
+- waitForAnimationToEnd
 
 # Scroll to Add Player button
 - scrollUntilVisible:
     element:
       id: "btn-add-player"
     direction: DOWN
-    timeout: 5000
+    timeout: 15000
 
 # Add 3 players (need 4 total including host)
 - tapOn:
@@ -48,6 +53,11 @@ name: "Score Entry - Double Digit Scores"
 - tapOn:
     id: "btn-confirm-add-player"
 - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "btn-add-player"
+    direction: DOWN
+    timeout: 10000
 
 - tapOn:
     id: "btn-add-player"
@@ -60,6 +70,11 @@ name: "Score Entry - Double Digit Scores"
 - tapOn:
     id: "btn-confirm-add-player"
 - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "btn-add-player"
+    direction: DOWN
+    timeout: 10000
 
 - tapOn:
     id: "btn-add-player"

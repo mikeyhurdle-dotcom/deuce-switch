@@ -18,6 +18,6 @@ name: "Profile Setup Wizard - 4 Step Onboarding (Sprint 3)"
 
 # If already set up, navigate to settings to verify profile fields saved
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
     optional: true
 - takeScreenshot: screenshots/profile_setup_state

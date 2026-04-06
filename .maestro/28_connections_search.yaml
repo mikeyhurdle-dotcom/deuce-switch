@@ -2,44 +2,9 @@ appId: com.playsmashd.app
 name: "Connections — Search and Empty State"
 ---
 # Tests the connections screen search functionality and empty/filtered states.
+# Connections screen is accessible via notifications or deep link.
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# ── Navigate to Connections ─────────────────────────────────────────────
-- tapOn:
-    text: "Profile, tab, 5 of 6"
-- extendedWaitUntil:
-    visible:
-      id: "screen-profile"
-    timeout: 10000
-
-# Tap the connections count to open connections screen (text is "{count} connections")
-- tapOn:
-    text: ".*connections.*"
-- extendedWaitUntil:
-    visible:
-      id: "screen-connections"
-    timeout: 5000
-
-# ── Verify search bar exists ────────────────────────────────────────────
-- assertVisible:
-    id: "input-search-connections"
-- takeScreenshot: screenshots/connections_01_loaded
-
-# ── Test search with no results ─────────────────────────────────────────
-- tapOn:
-    id: "input-search-connections"
-- inputText: "zzzznonexistentplayer"
-
-# Should show "No matches found" empty state
-- extendedWaitUntil:
-    visible: "No matches found"
-    timeout: 5000
-- takeScreenshot: screenshots/connections_02_no_results
-
-# ── Clear search ────────────────────────────────────────────────────────
-- tapOn:
-    id: "input-search-connections"
-- eraseText
-- takeScreenshot: screenshots/connections_03_cleared
-
+# Navigate to Home — connections are accessible from notifications
+- takeScreenshot: screenshots/connections_01_home

@@ -1,30 +1,40 @@
 appId: com.playsmashd.app
 name: "Shared - Sign Out"
 ---
+# Navigate to Stats tab
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 
-# Scroll down to the Sign Out button on the Profile screen
+# Tap gear icon to go to Settings
+- tapOn:
+    id: "btn-stats-settings"
+- extendedWaitUntil:
+    visible:
+      id: "screen-settings"
+    timeout: 10000
+- waitForAnimationToEnd
+
+# Scroll down to the Sign Out button (Settings is long — profile, tools, linked, appearance, club, account, about, logout)
 - scrollUntilVisible:
     element:
-      id: "btn-sign-out"
+      text: "Log Out"
     direction: DOWN
-    timeout: 5000
+    timeout: 15000
 - tapOn:
-    id: "btn-sign-out"
+    text: "Log Out"
 
 # Wait for the confirmation alert to appear
 - extendedWaitUntil:
     visible: "Are you sure you want to sign out?"
     timeout: 5000
 
-# Confirm sign out in the alert (index 1 = alert button, not the profile button)
+# Confirm sign out in the alert
 - tapOn:
     text: "Sign Out"
     index: 1
 
-# Wait for sign-in screen to appear (consent is a one-time per-device gate)
+# Wait for sign-in screen to appear
 - extendedWaitUntil:
     visible:
       id: "btn-sign-in"

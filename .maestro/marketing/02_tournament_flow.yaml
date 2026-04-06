@@ -6,7 +6,7 @@ name: "Marketing - Tournament Lifecycle (Create → Play → Results)"
 
 # Navigate to Play tab
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-home"
 - waitForAnimationToEnd
 
 # 1. Create tournament — tap the + FAB or create button
@@ -14,7 +14,7 @@ name: "Marketing - Tournament Lifecycle (Create → Play → Results)"
 
 # Navigate to Home and tap create if available
 - tapOn:
-    text: "Home, tab, 1 of 6"
+    id: "tab-home"
 - waitForAnimationToEnd
 
 # Look for an active tournament to showcase

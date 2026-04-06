@@ -6,11 +6,11 @@ name: "Settings - Appearance Toggle (Sprint 1)"
 
 # Navigate to Settings
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 
 # Verify appearance options exist (light mode disabled until palette ready)
 - scrollUntilVisible:

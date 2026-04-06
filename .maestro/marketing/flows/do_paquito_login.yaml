@@ -6,8 +6,9 @@ name: "Marketing - Perform Paquito Login"
 - inputText: "paquito.demo@playsmashd.com"
 - tapOn:
     id: "input-password"
-- inputText: "PaquitoSmashd2026!"
+- inputText: "SmashDemo2026!"
 
+# Tap sign in (iOS Password AutoFill disabled on simulator to prevent bar blocking this)
 - tapOn:
     id: "btn-sign-in"
 

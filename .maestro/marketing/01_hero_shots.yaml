@@ -16,7 +16,7 @@ name: "Marketing - Hero Shots (App Store & Social)"
 
 # 3. Discover — events near you
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - assertVisible:
     id: "screen-discover"
 - waitForAnimationToEnd
@@ -24,22 +24,22 @@ name: "Marketing - Hero Shots (App Store & Social)"
 
 # 4. Play hub
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-home"
 - assertVisible:
-    id: "screen-play"
+    id: "screen-home"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/hero_04_play
 
 # 5. Stats
 - tapOn:
-    text: "Stats, tab, 4 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/hero_05_stats
 
 # 6. Profile — the money shot (level, stats, tournaments)
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/hero_06_profile

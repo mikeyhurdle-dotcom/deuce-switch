@@ -1,0 +1,25 @@
+appId: com.playsmashd.app
+name: "Log Match - Bottom Sheet Opens"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Verify the Log Match button exists and is tappable
+- tapOn:
+    id: "tab-log-match"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# The bottom sheet opens via @gorhom/bottom-sheet which may not be fully
+# visible to Maestro's accessibility tree. Take screenshot to verify visually.
+- takeScreenshot: screenshots/log_match_sheet
+
+# Dismiss by swiping down
+- swipe:
+    direction: DOWN
+    duration: 300
+- waitForAnimationToEnd
+
+# Verify we're back on Home after dismissing
+- assertVisible:
+    id: "screen-home"

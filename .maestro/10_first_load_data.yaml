@@ -27,7 +27,7 @@ name: "First Load After Login - Data Loads"
 
 # Navigate to Discover — data should load on first visit
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - extendedWaitUntil:
     visible:
       id: "screen-discover"
@@ -35,12 +35,12 @@ name: "First Load After Login - Data Loads"
 
 # Navigate to Play — should work
 - tapOn:
-    text: "Play, tab, 3 of 6"
+    id: "tab-home"
 - assertVisible:
-    id: "btn-create-tournament"
+    id: "btn-host-tournament"
 
 # Navigate to Profile — should show stats
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - assertVisible:
-    id: "screen-profile"
+    id: "screen-stats"

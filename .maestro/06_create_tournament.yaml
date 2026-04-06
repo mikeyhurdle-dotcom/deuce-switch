@@ -4,14 +4,14 @@ name: "Tournament Creation - Full Wizard Flow"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# Navigate to Play tab
+# Navigate to Home and use Host tournament CTA
 - tapOn:
-    text: "Play, tab, 3 of 6"
-- takeScreenshot: screenshots/play_hub
+    id: "tab-home"
+- takeScreenshot: screenshots/home_screen
 
-# Create tournament
+# Create tournament via Host CTA
 - tapOn:
-    id: "btn-create-tournament"
+    id: "btn-host-tournament"
 
 # Step 1: Basics — enter name and dismiss keyboard
 - tapOn:

@@ -7,20 +7,35 @@ name: "Settings — Logout, Change Password, Delete Account Alerts"
 - launchApp
 - runFlow: flows/sign_in_email.yaml
 
-# ── Navigate to Settings ────────────────────────────────────────────────
+# ── Navigate to Settings via Stats → gear icon ─────────────────────────
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 - tapOn:
-    id: "btn-settings"
+    id: "btn-stats-settings"
 - extendedWaitUntil:
     visible:
       id: "screen-settings"
-    timeout: 5000
+    timeout: 10000
+- waitForAnimationToEnd
 
 # ── Test Change Password ────────────────────────────────────────────────
+# Scroll past profile edit section to find Account actions.
+# The settings screen is long — use generous timeouts and scroll past
+# intermediate sections that may match partial text.
+- scrollUntilVisible:
+    element:
+      text: "Account"
+    direction: DOWN
+    timeout: 20000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: "Change Password"
+    direction: DOWN
+    timeout: 15000
 - tapOn:
-    id: "btn-change-password"
+    text: "Change Password"
 # Should trigger a password reset email and show confirmation alert
 - extendedWaitUntil:
     visible: "Check Your Email"
@@ -30,7 +45,7 @@ name: "Settings — Logout, Change Password, Delete Account Alerts"
 
 # ── Test Delete Account ─────────────────────────────────────────────────
 - tapOn:
-    id: "btn-delete-account"
+    text: "Delete Account"
 # Should show confirmation alert with "Email Support" and "Cancel"
 - extendedWaitUntil:
     visible: "Delete Account"
@@ -43,11 +58,11 @@ name: "Settings — Logout, Change Password, Delete Account Alerts"
 # ── Test Logout ─────────────────────────────────────────────────────────
 - scrollUntilVisible:
     element:
-      id: "btn-logout"
+      text: "Log Out"
     direction: DOWN
-    timeout: 5000
+    timeout: 15000
 - tapOn:
-    id: "btn-logout"
+    text: "Log Out"
 # Should show "Sign Out" confirmation alert
 - extendedWaitUntil:
     visible: "Sign Out"
@@ -60,5 +75,4 @@ name: "Settings — Logout, Change Password, Delete Account Alerts"
 # ── Verify we're still on settings after cancelling everything ──────────
 - assertVisible:
     id: "screen-settings"
-- assertVisible: "Smashd v1.0.0"
-
+- assertVisible: "Smashd v1.0.1"

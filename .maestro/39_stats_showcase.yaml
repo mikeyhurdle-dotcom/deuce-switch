@@ -1,0 +1,21 @@
+appId: com.playsmashd.app
+name: "Stats Tab - Showcase Layout"
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Navigate to Stats tab
+- tapOn:
+    id: "tab-stats"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "screen-stats"
+
+# Verify Stats header elements
+- assertVisible:
+    id: "btn-stats-settings"
+- assertVisible:
+    id: "btn-stats-share"
+
+# Take screenshot — period tabs may or may not be visible depending on match count
+- takeScreenshot: screenshots/stats_showcase

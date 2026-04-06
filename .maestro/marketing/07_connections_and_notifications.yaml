@@ -20,7 +20,7 @@ name: "Marketing - Connections & Notifications"
 
 # 2. Navigate to Profile > Connections
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 
 # Tap connections count or search
@@ -33,6 +33,6 @@ name: "Marketing - Connections & Notifications"
 # 3. Back to profile — show suggestions with H2H records
 - back
 - tapOn:
-    text: "Profile, tab, 5 of 6"
+    id: "tab-stats"
 - waitForAnimationToEnd
 - takeScreenshot: marketing/social_03_profile_suggestions

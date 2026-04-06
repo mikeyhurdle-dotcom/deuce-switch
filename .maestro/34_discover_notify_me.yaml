@@ -6,7 +6,7 @@ name: "Discover - Notify Me Bell on Full Events (Sprint 4)"
 
 # Navigate to Discover
 - tapOn:
-    text: "Discover, tab, 2 of 6"
+    id: "tab-discover"
 - assertVisible:
     id: "screen-discover"
 
@@ -26,4 +26,4 @@ name: "Discover - Notify Me Bell on Full Events (Sprint 4)"
 
 # Back to home
 - tapOn:
-    text: "Home, tab, 1 of 6"
+    id: "tab-home"
