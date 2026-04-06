@@ -89,6 +89,60 @@ export const Alpha = {
   black40: 'rgba(0,0,0,0.4)',
   black50: 'rgba(0,0,0,0.5)',
   black60: 'rgba(0,0,0,0.6)',
+  black75: 'rgba(0,0,0,0.75)',
+
+  // Success (#22C55E)
+  success10: 'rgba(34,197,94,0.1)',
+  success12: 'rgba(34,197,94,0.12)',
+  success25: 'rgba(34,197,94,0.25)',
+
+  // Error (#EF4444)
+  error08: 'rgba(239,68,68,0.08)',
+  error10: 'rgba(239,68,68,0.1)',
+  error12: 'rgba(239,68,68,0.12)',
+  error25: 'rgba(239,68,68,0.25)',
+
+  // Warning (#FB923C)
+  warning10: 'rgba(251,146,60,0.1)',
+  warning12: 'rgba(251,146,60,0.12)',
+  warning25: 'rgba(251,146,60,0.25)',
+
+  // Gold (#FFD700)
+  gold06: 'rgba(255,215,0,0.06)',
+  gold10: 'rgba(255,215,0,0.1)',
+  gold12: 'rgba(255,215,0,0.12)',
+  gold20: 'rgba(255,215,0,0.2)',
+
+  // Purple / Electric Violet (#7C3AED)
+  purple07: 'rgba(124,58,237,0.07)',
+  purple08: 'rgba(124,58,237,0.08)',
+  purple15: 'rgba(124,58,237,0.15)',
+  purple20: 'rgba(124,58,237,0.2)',
+  purple25: 'rgba(124,58,237,0.25)',
+  purple30: 'rgba(124,58,237,0.3)',
+
+  // Slate (#94A3B8 / #334155)
+  slate08: 'rgba(148,163,184,0.08)',
+  slate30: 'rgba(51,65,85,0.3)',
+  slate50: 'rgba(51,65,85,0.5)',
+
+  // Pink (#F472B6)
+  pink10: 'rgba(244,114,182,0.1)',
+
+  // Silver (#C0C0C0)
+  silver10: 'rgba(192,192,192,0.1)',
+
+  // Bronze (#CD7F32)
+  bronze10: 'rgba(205,127,50,0.1)',
+
+  // Amber (#F59E0B)
+  amber10: 'rgba(245,158,11,0.1)',
+
+  // Blue (#3B82F6)
+  blue10: 'rgba(59,130,246,0.1)',
+
+  // Purple lighter (#A855F7)
+  purpleLight10: 'rgba(168,85,247,0.1)',
 } as const;
 
 // ─── Typography ──────────────────────────────────────────────────────────────

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Animated, {
   FadeInDown,
   useSharedValue,
@@ -32,6 +32,8 @@ import { SectionHeader } from '../../../src/components/ui/SectionHeader';
 import { SmashdWordmark } from '../../../src/components/ui/SmashdWordmark';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
+import { TournamentCTAs } from '../../../src/components/home/TournamentCTAs';
+import { HomeSkeleton } from '../../../src/components/home/HomeSkeleton';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -193,7 +195,7 @@ function LiveBanner({ tournament, onPress }: { tournament: ActiveTournament; onP
     >
       {/* Gradient background */}
       <LinearGradient
-        colors={['rgba(124,58,237,0.25)', 'rgba(204,255,0,0.07)']}
+        colors={[Alpha.purple25, Alpha.yellow08]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFillObject}
@@ -224,10 +226,10 @@ function LiveBanner({ tournament, onPress }: { tournament: ActiveTournament; onP
       </Text>
 
       <View style={styles.liveMeta}>
-        <Text style={styles.liveMetaItem}>{'\uD83D\uDC65'} Players</Text>
+        <Text style={styles.liveMetaItem}><Ionicons name="people-outline" size={12} color={Colors.textSecondary} /> Players</Text>
         {isLive && (
           <Text style={styles.liveMetaItem}>
-            {'\u23F1\uFE0F'} Round {tournament.tournament.current_round ?? 1}
+            <Ionicons name="timer-outline" size={12} color={Colors.textSecondary} /> Round {tournament.tournament.current_round ?? 1}
           </Text>
         )}
       </View>
@@ -245,13 +247,16 @@ function UpcomingCard({ event }: { event: UpcomingEvent }) {
       style={[styles.ucCard, spring.animatedStyle]}
       onPressIn={spring.onPressIn}
       onPressOut={spring.onPressOut}
-      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push(`/(app)/tournament/${event.id}/lobby`);
+      }}
       accessibilityRole="button"
       accessibilityLabel={`${event.name} at ${event.venue}, ${event.format}, ${isFull ? 'full' : `${event.spotsLeft} spots left`}`}
     >
       <Text style={styles.ucDate}>{event.date}</Text>
       <Text style={styles.ucName} numberOfLines={2}>{event.name}</Text>
-      <Text style={styles.ucVenue} numberOfLines={1}>{'\uD83D\uDCCD'} {event.venue}</Text>
+      <Text style={styles.ucVenue} numberOfLines={1}><Ionicons name="location-outline" size={12} color={Colors.textMuted} /> {event.venue}</Text>
       <View style={styles.ucBottom}>
         <View style={styles.ucFormatPill}>
           <Text style={styles.ucFormatText}>{event.format}</Text>
@@ -281,7 +286,7 @@ function PlayThisWeekCard({ event }: { event: PlayThisWeekEvent }) {
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (event.registrationUrl) {
-          Linking.openURL(event.registrationUrl);
+          WebBrowser.openBrowserAsync(event.registrationUrl);
         }
       }}
       accessibilityRole="button"
@@ -308,11 +313,11 @@ function getRankColor(rank: number): string {
 }
 
 function TournamentResultCard({ post }: { post: TournamentPost }) {
+  // Max 6 data points per card: rank, event name, format, record, points, win rate
   const stats = [
     { val: String(post.points), label: 'POINTS' },
     { val: post.record, label: 'RECORD' },
     { val: post.winRate, label: 'WIN RATE' },
-    ...(post.levelDelta ? [{ val: post.levelDelta, label: 'LEVEL \u0394' }] : []),
   ];
   return (
     <View style={styles.resultCard}>
@@ -326,9 +331,6 @@ function TournamentResultCard({ post }: { post: TournamentPost }) {
             <View style={styles.prcFormatPill}>
               <Text style={styles.prcFormatText}>{post.format}</Text>
             </View>
-            {post.roundCount > 0 && (
-              <Text style={styles.prcEventVenue}>{post.roundCount} rounds</Text>
-            )}
           </View>
         </View>
       </View>
@@ -340,15 +342,6 @@ function TournamentResultCard({ post }: { post: TournamentPost }) {
           </View>
         ))}
       </View>
-      {post.conditions && post.conditions.length > 0 && (
-        <View style={styles.prcConditions}>
-          {post.conditions.map((c) => (
-            <View key={c} style={styles.prcConditionPill}>
-              <Text style={styles.prcConditionText}>{c}</Text>
-            </View>
-          ))}
-        </View>
-      )}
     </View>
   );
 }
@@ -395,7 +388,7 @@ function FeedPostItem({ post }: { post: FeedPost }) {
   const badgeMap = {
     tournament: { bg: Alpha.yellow12, fg: Colors.opticYellow, label: 'TOURNAMENT' },
     imported:   { bg: Alpha.aqua12,  fg: Colors.aquaGreen,   label: 'IMPORTED' },
-    milestone:  { bg: 'rgba(255,215,0,0.12)',  fg: Colors.gold,        label: 'MILESTONE' },
+    milestone:  { bg: Alpha.gold12,  fg: Colors.gold,        label: 'MILESTONE' },
   };
   const badge = badgeMap[post.type];
 
@@ -430,6 +423,7 @@ function FeedPostItem({ post }: { post: FeedPost }) {
       <View style={styles.postActions}>
         <Pressable
           style={styles.postAction}
+          hitSlop={12}
           onPress={handleLike}
           accessibilityRole="button"
           accessibilityLabel={liked ? 'Unlike' : 'Like'}
@@ -445,19 +439,18 @@ function FeedPostItem({ post }: { post: FeedPost }) {
             </Text>
           )}
         </Pressable>
-        <Pressable
+        <View
           style={styles.postAction}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          accessibilityRole="button"
-          accessibilityLabel="Comment"
+          accessibilityLabel={`${post.comments} comments`}
         >
           <Ionicons name="chatbubble-outline" size={18} color={Colors.textMuted} />
           {post.comments > 0 && (
             <Text style={styles.paCount}>{post.comments}</Text>
           )}
-        </Pressable>
+        </View>
         <Pressable
           style={styles.postAction}
+          hitSlop={12}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
           accessibilityRole="button"
           accessibilityLabel="Share"
@@ -969,6 +962,9 @@ export default function Home() {
           <LiveBanner tournament={activeTournament} onPress={handleBannerPress} />
         )}
 
+        {/* ─── Host / Join CTAs ─── */}
+        <TournamentCTAs />
+
         {/* ─── Upcoming Events ─── */}
         {upcomingEvents.length > 0 && (
           <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.section}>
@@ -1018,7 +1014,7 @@ export default function Home() {
               label="Activity"
               accentColor={Colors.violet}
               actionLabel="See All"
-              onAction={() => router.push('/(app)/(tabs)/stats')}
+              onAction={() => router.push('/(app)/(tabs)/discover')}
             />
             {feedPosts.map((p, index) => (
               <View key={p.id} testID={`card-tournament-${index}`}>
@@ -1032,7 +1028,7 @@ export default function Home() {
               label="Activity"
               accentColor={Colors.violet}
               actionLabel="See All"
-              onAction={() => router.push('/(app)/(tabs)/stats')}
+              onAction={() => router.push('/(app)/(tabs)/discover')}
             />
             <View testID="state-home-empty" style={styles.emptyActivity}>
               <Ionicons name="tennisball-outline" size={40} color={Colors.textMuted} />
@@ -1055,25 +1051,7 @@ export default function Home() {
 
       </ScrollView>
 
-      {/* ─── FAB ─── */}
-      <Pressable
-        style={styles.fabWrapper}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/(app)/tournament/create');
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Create tournament"
-      >
-        <LinearGradient
-          colors={['#E0FF4D' /* opticYellow lighter variant for gradient */, Colors.opticYellow]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fab}
-        >
-          <Text style={styles.fabPlus}>{'\uFF0B'}</Text>
-        </LinearGradient>
-      </Pressable>
+      {/* FAB removed — tournament creation now via + Log Match tab and Host CTA */}
     </SafeAreaView>
     </ErrorBoundary>
   );
@@ -1119,9 +1097,9 @@ const styles = StyleSheet.create({
   },
   notifBadgeText: {
     fontFamily: Fonts.mono,
-    fontSize: 8,
+    fontSize: 12,
     color: '#fff',
-    lineHeight: 10,
+    lineHeight: 14,
   },
 
   // Loading
@@ -1148,7 +1126,7 @@ const styles = StyleSheet.create({
     padding: Spacing[4],
     paddingTop: Spacing[4] + 2,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.3)',
+    borderColor: Alpha.purple30,
     overflow: 'hidden',
     gap: Spacing[1],
   },
@@ -1250,7 +1228,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ucFormatPill: {
-    backgroundColor: 'rgba(124,58,237,0.15)',
+    backgroundColor: Alpha.purple15,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.sm,
@@ -1338,16 +1316,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   postBadge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
-  postBadgeText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 0.5 },
+  postBadgeText: { fontFamily: Fonts.bodySemiBold, fontSize: 11, letterSpacing: 0.5 },
   postTime: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted },
 
   // Tournament Result Card — violet-tinted background
   resultCard: {
     marginHorizontal: Spacing[5],
     marginBottom: Spacing[3],
-    backgroundColor: 'rgba(124,58,237,0.08)',
+    backgroundColor: Alpha.purple08,
     borderWidth: 1,
-    borderColor: 'rgba(124,58,237,0.2)',
+    borderColor: Alpha.purple20,
     borderRadius: Radius.lg,
     padding: Spacing[4],
   },
@@ -1394,7 +1372,7 @@ const styles = StyleSheet.create({
   prcStatVal: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.opticYellow },
   prcStatLabel: {
     fontFamily: Fonts.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: Colors.textMuted,
     letterSpacing: 0.5,
     marginTop: 2,
@@ -1418,7 +1396,7 @@ const styles = StyleSheet.create({
   },
   prcConditionText: {
     fontFamily: Fonts.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: Colors.opticYellow,
     letterSpacing: 0.5,
   },
@@ -1483,9 +1461,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing[4],
     alignItems: 'center',
-    backgroundColor: 'rgba(255,215,0,0.06)',
+    backgroundColor: Alpha.gold06,
     borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
+    borderColor: Alpha.gold20,
   },
   milestoneEmoji: { fontSize: 36, marginBottom: Spacing[2] },
   milestoneTitle: {

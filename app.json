@@ -2,7 +2,7 @@
   "expo": {
     "name": "Smashd",
     "slug": "smashd",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "smashd",
@@ -101,7 +101,8 @@
           "organization": "playsmashd",
           "project": "smashd-app"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,52 +12,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { useTheme, type AppearanceMode } from '../../src/providers/ThemeProvider';
 import { supabase } from '../../src/lib/supabase';
 import { Alpha, Colors, Fonts, Spacing, Radius } from '../../src/lib/constants';
 import { AnimatedPressable, useSpringPress } from '../../src/hooks/useSpringPress';
 import { getClub } from '../../src/services/club-service';
-import type { Club } from '../../src/lib/types';
+import { AvatarEditor } from '../../src/components/settings/AvatarEditor';
+import { ProfileEditSection } from '../../src/components/settings/ProfileEditSection';
+import { ConnectedToolsSection } from '../../src/components/settings/ConnectedToolsSection';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type IconName = keyof typeof Ionicons.glyphMap;
-
-// ── Profile Card ─────────────────────────────────────────────────────────────
-function ProfileCard() {
-  const { profile, user } = useAuth();
-  const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Player';
-  const email = user?.email ?? '';
-  const initials = displayName
-    .split(/\s+/)
-    .map((w: string) => w[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
-
-  return (
-    <Animated.View entering={FadeInDown.duration(350).damping(18)} style={styles.profileCard}>
-      <View style={styles.avatarRing}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarInitials}>{initials}</Text>
-        </View>
-      </View>
-      <View style={styles.profileInfo}>
-        <Text style={styles.profileName}>{displayName}</Text>
-        <Text style={styles.profileEmail}>{email}</Text>
-        <Pressable
-          testID="btn-edit-profile"
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/(app)/(tabs)/profile');
-          }}
-        >
-          <Text style={styles.profileEdit}>Edit Profile →</Text>
-        </Pressable>
-      </View>
-    </Animated.View>
-  );
-}
 
 // ── Section Label ────────────────────────────────────────────────────────────
 function SectionLabel({ title }: { title: string }) {
@@ -119,7 +85,7 @@ function ChevronRow({
   );
 }
 
-// ── Info Row (non-tappable, just displays a value) ──────────────────────────
+// ── Info Row ──────────────────────────────────────────────────────────────────
 function InfoRow({
   icon,
   iconColor,
@@ -183,8 +149,6 @@ function LinkedRow({
 // ── Appearance Picker ────────────────────────────────────────────────────────
 const APPEARANCE_OPTIONS: { value: AppearanceMode; label: string; icon: IconName }[] = [
   { value: 'system', label: 'System', icon: 'phone-portrait-outline' },
-  // Light mode disabled until palette is implemented across app screens
-  // { value: 'light', label: 'Light', icon: 'sunny-outline' },
   { value: 'dark', label: 'Dark', icon: 'moon-outline' },
 ];
 
@@ -202,7 +166,7 @@ function AppearancePicker() {
           {APPEARANCE_OPTIONS.map((opt) => {
             const active = mode === opt.value;
             return (
-              <Pressable
+              <AnimatedPressable
                 key={opt.value}
                 testID={`btn-appearance-${opt.value}`}
                 style={[styles.appearancePill, active && styles.appearancePillActive]}
@@ -226,7 +190,7 @@ function AppearancePicker() {
                 >
                   {opt.label}
                 </Text>
-              </Pressable>
+              </AnimatedPressable>
             );
           })}
         </View>
@@ -263,6 +227,8 @@ export default function SettingsScreen() {
   const { signOut, user, profile } = useAuth();
   const [changingPassword, setChangingPassword] = useState(false);
   const [homeClubName, setHomeClubName] = useState<string | null>(null);
+
+  const appVersion = Constants.expoConfig?.version ?? '1.0.1';
 
   // Fetch home club name if set
   useEffect(() => {
@@ -338,115 +304,133 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          {/* Profile Card */}
-          <ProfileCard />
+          {/* ── Avatar + Name ──────────────────── */}
+          {user && (
+            <AvatarEditor profile={profile} userId={user.id} />
+          )}
+
+          <Divider />
+
+          {/* ── Profile Fields ─────────────────── */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <SectionLabel title="Profile" />
+            {user && (
+              <ProfileEditSection profile={profile} userId={user.id} />
+            )}
+          </Animated.View>
+
+          <Divider />
+
+          {/* ── Connected Tools ──────────────────── */}
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <SectionLabel title="Connected Tools" />
+            <ConnectedToolsSection />
+          </Animated.View>
+
+          <Divider />
 
           {/* ── Linked Accounts ────────────────── */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
-          <SectionLabel title="Linked Accounts" />
-
-          <LinkedRow
-            logo="PT"
-            logoBg="#00C853"
-            name="Playtomic"
-            status="Coming Soon"
-            statusColor={Colors.textMuted}
-            btnLabel="Coming Soon"
-          />
-
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <SectionLabel title="Linked Accounts" />
+            <LinkedRow
+              logo="PT"
+              logoBg="#00C853"
+              name="Playtomic"
+              status="Coming Soon"
+              statusColor={Colors.textMuted}
+              btnLabel="Coming Soon"
+            />
           </Animated.View>
 
           <Divider />
 
           {/* ── Appearance ────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <SectionLabel title="Appearance" />
-          <AppearancePicker />
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <SectionLabel title="Appearance" />
+            <AppearancePicker />
           </Animated.View>
 
           <Divider />
 
           {/* ── Home Club ────────────────────── */}
           <Animated.View entering={FadeInDown.delay(300).springify()}>
-          <SectionLabel title="Home Club" />
-          <ChevronRow
-            icon="business"
-            iconColor={Colors.aquaGreen}
-            iconBg={Alpha.aqua12}
-            label="Home Club"
-            sub={homeClubName ?? 'Select your home club'}
-            onPress={() => router.push('/(app)/club-select')}
-            testID="btn-home-club"
-          />
+            <SectionLabel title="Home Club" />
+            <ChevronRow
+              icon="business"
+              iconColor={Colors.aquaGreen}
+              iconBg={Alpha.aqua12}
+              label="Home Club"
+              sub={homeClubName ?? 'Select your home club'}
+              onPress={() => router.push('/(app)/club-select')}
+              testID="btn-home-club"
+            />
           </Animated.View>
 
           <Divider />
 
-          {/* ── Privacy & Account ─────────────── */}
-          <Animated.View entering={FadeInDown.delay(400).springify()}>
-          <SectionLabel title="Account" />
-
-          <InfoRow
-            icon="eye"
-            iconColor={Colors.violet}
-            iconBg={Alpha.violet08}
-            label="Profile Visibility"
-            value="Public — other players can find you"
-          />
-          <ChevronRow
-            icon="lock-closed"
-            iconColor={Colors.warning}
-            iconBg="rgba(245,158,11,0.1)"
-            label="Change Password"
-            sub={changingPassword ? 'Sending reset email...' : 'Send a password reset email'}
-            onPress={handleChangePassword}
-            testID="btn-change-password"
-          />
-          <ChevronRow
-            icon="trash"
-            iconColor={Colors.error}
-            iconBg="rgba(239,68,68,0.08)"
-            label="Delete Account"
-            sub="Permanently delete your data"
-            onPress={handleDeleteAccount}
-            destructive
-            testID="btn-delete-account"
-          />
+          {/* ── Account ──────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(350).springify()}>
+            <SectionLabel title="Account" />
+            <InfoRow
+              icon="eye"
+              iconColor={Colors.violet}
+              iconBg={Alpha.violet08}
+              label="Profile Visibility"
+              value="Public — other players can find you"
+            />
+            <ChevronRow
+              icon="lock-closed"
+              iconColor={Colors.warning}
+              iconBg={Alpha.amber10}
+              label="Change Password"
+              sub={changingPassword ? 'Sending reset email...' : 'Send a password reset email'}
+              onPress={handleChangePassword}
+              testID="btn-change-password"
+            />
+            <ChevronRow
+              icon="trash"
+              iconColor={Colors.error}
+              iconBg={Alpha.error08}
+              label="Delete Account"
+              sub="Permanently delete your data"
+              onPress={handleDeleteAccount}
+              destructive
+              testID="btn-delete-account"
+            />
           </Animated.View>
 
           <Divider />
 
           {/* ── About ──────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(500).springify()}>
-          <SectionLabel title="About" />
-
-          <ChevronRow
-            icon="shield-checkmark"
-            iconColor="#3B82F6"
-            iconBg="rgba(59,130,246,0.1)"
-            label="Privacy Policy"
-            onPress={() => Linking.openURL('https://playsmashd.com/privacy')}
-            testID="btn-privacy-policy"
-          />
-          <ChevronRow
-            icon="chatbubble-ellipses"
-            iconColor={Colors.success}
-            iconBg="rgba(34,197,94,0.1)"
-            label="Help & Support"
-            sub="support@playsmashd.com"
-            onPress={() => Linking.openURL('mailto:support@playsmashd.com')}
-            testID="btn-help-support"
-          />
+          <Animated.View entering={FadeInDown.delay(400).springify()}>
+            <SectionLabel title="About" />
+            <ChevronRow
+              icon="shield-checkmark"
+              iconColor="#3B82F6"
+              iconBg={Alpha.blue10}
+              label="Privacy Policy"
+              onPress={() => Linking.openURL('https://playsmashd.com/privacy')}
+              testID="btn-privacy-policy"
+            />
+            <ChevronRow
+              icon="chatbubble-ellipses"
+              iconColor={Colors.success}
+              iconBg={Alpha.success10}
+              label="Help & Support"
+              sub="support@playsmashd.com"
+              onPress={() => Linking.openURL('mailto:support@playsmashd.com')}
+              testID="btn-help-support"
+            />
           </Animated.View>
 
           {/* ── Logout ─────────────────────────── */}
-          <Animated.View entering={FadeInDown.delay(600).springify()}>
-          <LogoutButton onPress={handleSignOut} />
+          <Animated.View entering={FadeInDown.delay(450).springify()}>
+            <LogoutButton onPress={handleSignOut} />
           </Animated.View>
 
           {/* ── App Info ────────────────────────── */}
           <Text style={styles.appInfo}>
-            Smashd v1.0.0{'\n'}Every point counts.
+            Smashd v{appVersion}{'\n'}Every point counts.
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -464,64 +448,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing[10],
   },
 
-  // Profile Card
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[4],
-    marginHorizontal: Spacing[5],
-    marginTop: Spacing[3],
-    marginBottom: Spacing[5],
-    backgroundColor: Colors.card,
-    borderRadius: Radius.lg,
-    padding: Spacing[5],
-  },
-  avatarRing: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: Colors.opticYellow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitials: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 18,
-    color: Colors.opticYellow,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 17,
-    color: Colors.textPrimary,
-  },
-  profileEmail: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  profileEdit: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.opticYellow,
-    marginTop: 4,
-  },
-
   // Section Label
   sectionLabel: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
     color: Colors.textMuted,
     letterSpacing: 1,

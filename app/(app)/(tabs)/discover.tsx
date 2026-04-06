@@ -1,5 +1,4 @@
 import {
-  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -8,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -152,7 +152,7 @@ function getStatusBadge(
   spots: number | null,
 ): { label: string; color: string; bg: string } | null {
   if (status === 'full') {
-    return { label: 'FULLY BOOKED', color: Colors.error, bg: 'rgba(239, 68, 68, 0.12)' };
+    return { label: 'FULLY BOOKED', color: Colors.error, bg: Alpha.error12 };
   }
   if (status === 'in_progress') {
     return { label: 'IN PROGRESS', color: Colors.aquaGreen, bg: Alpha.aqua12 };
@@ -161,7 +161,7 @@ function getStatusBadge(
     return {
       label: `${spots} SPOT${spots === 1 ? '' : 'S'} LEFT`,
       color: Colors.warning,
-      bg: 'rgba(251, 146, 60, 0.12)',
+      bg: Alpha.warning12,
     };
   }
   return null;
@@ -349,12 +349,12 @@ function formatBadgeBg(format: string): string {
     case 'mexicano': return Alpha.violet10;
     case 'mixicano': return Alpha.violet10;
     case 'team_americano': return Alpha.aqua10;
-    case 'tournament': return 'rgba(244, 114, 182, 0.1)';
-    case 'open_play': return 'rgba(148, 163, 184, 0.08)';
+    case 'tournament': return Alpha.pink10;
+    case 'open_play': return Alpha.slate08;
     case 'pairs': return Alpha.yellow10;
     case 'team': return Alpha.aqua10;
-    case 'individual': return 'rgba(168, 85, 247, 0.1)';
-    default: return 'rgba(148, 163, 184, 0.08)';
+    case 'individual': return Alpha.purpleLight10;
+    default: return Alpha.slate08;
   }
 }
 
@@ -370,11 +370,11 @@ function levelBadgeColor(level: string | null): string {
 
 function levelBadgeBg(level: string | null): string {
   switch (level) {
-    case 'beginner': return 'rgba(34, 197, 94, 0.1)';
+    case 'beginner': return Alpha.success10;
     case 'intermediate': return Alpha.aqua10;
-    case 'advanced': return 'rgba(251, 146, 60, 0.1)';
-    case 'all_levels': return 'rgba(148, 163, 184, 0.08)';
-    default: return 'rgba(148, 163, 184, 0.08)';
+    case 'advanced': return Alpha.warning10;
+    case 'all_levels': return Alpha.slate08;
+    default: return Alpha.slate08;
   }
 }
 
@@ -388,7 +388,7 @@ function categoryBadgeColor(category: CompetitionCategory): string {
 
 function categoryBadgeBg(category: CompetitionCategory): string {
   switch (category) {
-    case 'tournament': return 'rgba(244, 114, 182, 0.1)';
+    case 'tournament': return Alpha.pink10;
     case 'league': return Alpha.aqua10;
     case 'british_tour': return Alpha.yellow10;
   }
@@ -405,10 +405,10 @@ function gradeBadgeColor(grade: string): string {
 
 function gradeBadgeBg(grade: string): string {
   switch (grade) {
-    case 'grade_1': return 'rgba(255, 215, 0, 0.1)';
-    case 'grade_2': return 'rgba(192, 192, 192, 0.1)';
-    case 'grade_3': return 'rgba(205, 127, 50, 0.1)';
-    default: return 'rgba(148, 163, 184, 0.08)';
+    case 'grade_1': return Alpha.gold10;
+    case 'grade_2': return Alpha.silver10;
+    case 'grade_3': return Alpha.bronze10;
+    default: return Alpha.slate08;
   }
 }
 
@@ -675,9 +675,17 @@ function EventCard({
               </Text>
             </Pressable>
           ) : event.registrationUrl ? (
-            <View style={styles.registerBtn}>
+            <Pressable
+              style={styles.registerBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                WebBrowser.openBrowserAsync(event.registrationUrl!);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Register for event"
+            >
               <Text style={styles.registerBtnText}>Register</Text>
-            </View>
+            </Pressable>
           ) : (
             <View style={styles.detailsBtn}>
               <Text style={styles.detailsBtnText}>Details</Text>
@@ -958,7 +966,7 @@ export default function DiscoverScreen() {
 
   const handleEventPress = useCallback((event: NormalisedEvent) => {
     if (event.registrationUrl) {
-      Linking.openURL(event.registrationUrl);
+      WebBrowser.openBrowserAsync(event.registrationUrl);
     }
   }, []);
 
@@ -1327,7 +1335,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing[4],
     paddingVertical: Spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(51, 65, 85, 0.3)',
+    borderBottomColor: Alpha.slate30,
   },
   locationOptionActive: {
     backgroundColor: Alpha.yellow06,
@@ -1547,7 +1555,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing[1],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(51, 65, 85, 0.5)',
+    borderTopColor: Alpha.slate50,
   },
   metaLeft: {
     flexDirection: 'row',
@@ -1595,12 +1603,12 @@ const styles = StyleSheet.create({
     color: Colors.opticYellow,
   },
   waitlistBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: Alpha.error10,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[1] + 2,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderColor: Alpha.error25,
   },
   waitlistBtnText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1611,7 +1619,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(148, 163, 184, 0.08)',
+    backgroundColor: Alpha.slate08,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[1] + 2,
@@ -1631,7 +1639,7 @@ const styles = StyleSheet.create({
     color: Colors.opticYellow,
   },
   detailsBtn: {
-    backgroundColor: 'rgba(148, 163, 184, 0.08)',
+    backgroundColor: Alpha.slate08,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[1] + 2,

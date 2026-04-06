@@ -8,15 +8,16 @@
 
 import { useState } from 'react';
 import {
-  Linking,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radius } from '../lib/constants';
 import { Button } from './ui/Button';
+import { SmashdLogo } from './ui/SmashdLogo';
 
 type ConsentScreenProps = {
   onAccept: () => void;
@@ -35,7 +36,7 @@ export function ConsentScreen({ onAccept }: ConsentScreenProps) {
   };
 
   const openPrivacyPolicy = () => {
-    Linking.openURL('https://playsmashd.com/privacy');
+    WebBrowser.openBrowserAsync('https://playsmashd.com/privacy');
   };
 
   return (
@@ -43,7 +44,7 @@ export function ConsentScreen({ onAccept }: ConsentScreenProps) {
       <View style={styles.container}>
         {/* Hero Section */}
         <View style={styles.hero}>
-          <Ionicons name="tennisball" size={56} color={Colors.opticYellow} style={styles.heroIcon} />
+          <SmashdLogo size={64} />
           <Text style={styles.title}>Welcome to Smashd</Text>
           <Text style={styles.subtitle}>The Community Hub for Padel</Text>
         </View>

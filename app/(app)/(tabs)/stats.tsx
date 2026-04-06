@@ -10,41 +10,37 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../src/providers/AuthProvider';
 import { Alpha, Colors, Fonts, Spacing, Radius, Shadows } from '../../../src/lib/constants';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
-import { CountUp } from '../../../src/components/ui/CountUp';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { SectionHeader } from '../../../src/components/ui/SectionHeader';
 import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringPress';
 import {
   fetchPlayerStats,
-  fetchPlatformRatings,
   fetchMatchHistory,
   type PlayerStats,
   type Period,
-  type MatchTypeFilter,
-  type FormResult,
   type PartnerStat,
-  type RivalStat,
-  type FormatBreakdown,
-  type RatingPoint,
+  type FormResult,
   type MatchHistoryItem,
-  updateMatchDetails,
 } from '../../../src/services/stats-service';
-import { RatingProgressionChart, WinRateTrendChart, MatchHistoryFeed } from '../../../src/components/StatsCharts';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
+
+// New curated components
+import { StatsHeader } from '../../../src/components/stats/StatsHeader';
+import { PadelDNACard } from '../../../src/components/stats/PadelDNACard';
+import { HighlightGrid } from '../../../src/components/stats/HighlightGrid';
+import { RecentMatches } from '../../../src/components/stats/RecentMatches';
+import { PerformanceSection } from '../../../src/components/stats/PerformanceSection';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-// Partner avatar colours (cycled)
 const PARTNER_COLORS = [Colors.aquaGreen, Colors.violet, Colors.coral, Colors.opticYellow, Colors.gold];
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-/** Period selector tabs */
+// ─── Period Tabs ─────────────────────────────────────────────────────────────
 const PERIOD_TEST_IDS: Record<string, string> = {
   Week: 'tab-stats-week',
   Month: 'tab-stats-month',
@@ -67,7 +63,6 @@ function PeriodTabs({ active, onChange }: { active: Period; onChange: (p: Period
           }}
           accessibilityRole="button"
           accessibilityState={{ selected: active === p }}
-          accessibilityLabel={`${p} period`}
         >
           <Text style={[styles.periodTabText, active === p && styles.periodTabTextActive]}>
             {p}
@@ -78,121 +73,7 @@ function PeriodTabs({ active, onChange }: { active: Period; onChange: (p: Period
   );
 }
 
-/** Match type filter tabs */
-function MatchTypeTabs({ active, onChange }: { active: MatchTypeFilter; onChange: (f: MatchTypeFilter) => void }) {
-  const filters: { key: MatchTypeFilter; label: string; icon: IconName }[] = [
-    { key: 'all', label: 'All', icon: 'grid-outline' },
-    { key: 'competitive', label: 'Competitive', icon: 'trophy-outline' },
-    { key: 'friendly', label: 'Friendly', icon: 'happy-outline' },
-    { key: 'tournament', label: 'Tournament', icon: 'podium-outline' },
-  ];
-  return (
-    <View style={styles.matchTypeTabs}>
-      {filters.map((f) => (
-        <Pressable
-          key={f.key}
-          style={[styles.matchTypeTab, active === f.key && styles.matchTypeTabActive]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onChange(f.key);
-          }}
-          accessibilityRole="button"
-          accessibilityState={{ selected: active === f.key }}
-        >
-          <Ionicons
-            name={f.icon}
-            size={13}
-            color={active === f.key ? Colors.darkBg : Colors.textMuted}
-          />
-          <Text style={[styles.matchTypeTabText, active === f.key && styles.matchTypeTabTextActive]}>
-            {f.label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-/** Hero card with gradient background and key stats */
-function HeroCard({
-  name,
-  matchesPlayed,
-  winRate,
-  tournamentCount,
-  streak,
-  playingSince,
-}: {
-  name: string;
-  matchesPlayed: number;
-  winRate: number;
-  tournamentCount: number;
-  streak: { type: string; count: number };
-  playingSince: string;
-}) {
-  const createdDate = new Date(playingSince);
-  const monthsDiff = Math.max(1, Math.round((Date.now() - createdDate.getTime()) / (30 * 86_400_000)));
-  const sinceMonth = createdDate.toLocaleString('en', { month: 'short', year: 'numeric' });
-  const streakLabel = streak.count > 0 ? `${streak.type}${streak.count}` : '-';
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
-
-  return (
-    <View style={styles.heroCardOuter}>
-      {/* Hero card gradient — deep purple tints */}
-      <LinearGradient
-        colors={['#1A1328', '#2D2440']}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={styles.heroCard}
-      >
-        {/* Glow overlay (top-right) */}
-        <View style={styles.heroGlow} />
-
-        {/* Top row: avatar + info */}
-        <View style={styles.heroTop}>
-          <View style={styles.heroAvatar}>
-            <Text style={styles.heroAvatarText}>{initials}</Text>
-          </View>
-          <View style={styles.heroInfo}>
-            <Text style={styles.heroName}>{name}</Text>
-            <Text style={styles.heroSub}>
-              Playing since {sinceMonth} · {monthsDiff} month{monthsDiff !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
-
-        {/* Stats grid */}
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}>
-            <CountUp value={matchesPlayed} style={[styles.heroStatVal, { color: Colors.opticYellow }]} />
-            <Text style={styles.heroStatLbl}>GAMES</Text>
-          </View>
-          <View style={styles.heroStat}>
-            <CountUp value={winRate} suffix="%" style={[styles.heroStatVal, { color: Colors.aquaGreen }]} />
-            <Text style={styles.heroStatLbl}>WIN RATE</Text>
-          </View>
-          <View style={styles.heroStat}>
-            <CountUp value={tournamentCount} style={[styles.heroStatVal, { color: Colors.gold }]} />
-            <View style={styles.heroStatLblRow}>
-              <Ionicons name="trophy" size={11} color={Colors.textMuted} />
-              <Text style={styles.heroStatLbl}>TOURNAMENTS</Text>
-            </View>
-          </View>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatVal}>{streakLabel}</Text>
-            <Text style={styles.heroStatLbl}>STREAK</Text>
-          </View>
-        </View>
-      </LinearGradient>
-    </View>
-  );
-}
-
-/** Recent form strip */
+// ─── Form Strip ──────────────────────────────────────────────────────────────
 function FormStrip({ form }: { form: FormResult[] }) {
   const colors: Record<FormResult, { bg: string; text: string; border: string }> = {
     W: { bg: 'rgba(34,197,94,0.12)', text: Colors.success, border: 'rgba(34,197,94,0.25)' },
@@ -200,21 +81,15 @@ function FormStrip({ form }: { form: FormResult[] }) {
     D: { bg: 'rgba(251,146,60,0.12)', text: Colors.warning, border: 'rgba(251,146,60,0.25)' },
   };
   return (
-    <View>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Form</Text>
-        <Text style={styles.sectionSubtitle}>Last {form.length} matches</Text>
-      </View>
+    <View style={styles.formStripContainer}>
+      <Text style={styles.miniLabel}>Recent Form</Text>
       <View style={styles.formStrip}>
         {form.map((r, i) => (
           <View
             key={i}
             style={[
               styles.formDot,
-              {
-                backgroundColor: colors[r].bg,
-                borderColor: colors[r].border,
-              },
+              { backgroundColor: colors[r].bg, borderColor: colors[r].border },
             ]}
           >
             <Text style={[styles.formDotText, { color: colors[r].text }]}>{r}</Text>
@@ -225,256 +100,112 @@ function FormStrip({ form }: { form: FormResult[] }) {
   );
 }
 
-/** Highlighted text inside insight */
+// ─── Insight Card ────────────────────────────────────────────────────────────
 function Hl({ children }: { children: React.ReactNode }) {
   return <Text style={styles.insightHighlight}>{children}</Text>;
 }
 
-/** AI insight card */
-function InsightCard({ icon, children }: { icon: IconName; children: React.ReactNode }) {
-  return (
-    <View style={styles.insightCard}>
-      <View style={styles.insightIconWrap}>
-        <Ionicons name={icon} size={18} color={Colors.opticYellow} />
-      </View>
-      <Text style={styles.insightText}>{children}</Text>
-    </View>
-  );
-}
-
-/** Dynamic insight based on real stats */
 function StatsInsight({ stats }: { stats: PlayerStats }) {
   if (stats.currentStreak.count >= 3 && stats.currentStreak.type === 'W') {
     return (
-      <InsightCard icon="flash-outline">
-        You've won <Hl>{stats.currentStreak.count} in a row</Hl> — your best form yet.
-        Keep it up!
-      </InsightCard>
+      <View style={styles.insightCard}>
+        <Ionicons name="flash-outline" size={18} color={Colors.opticYellow} />
+        <Text style={styles.insightText}>
+          You've won <Hl>{stats.currentStreak.count} in a row</Hl> — your best form yet. Keep it up!
+        </Text>
+      </View>
     );
   }
   if (stats.partners.length > 0) {
     const best = stats.partners.reduce((a, b) => (a.winRate > b.winRate ? a : b));
     if (best.winRate >= 70 && best.matchesTogether >= 3) {
       return (
-        <InsightCard icon="bulb-outline">
-          Your win rate with <Hl>{best.name}</Hl> is <Hl>{best.winRate}%</Hl> across{' '}
-          {best.matchesTogether} matches. That's a partnership worth keeping.
-        </InsightCard>
+        <View style={styles.insightCard}>
+          <Ionicons name="bulb-outline" size={18} color={Colors.opticYellow} />
+          <Text style={styles.insightText}>
+            Your win rate with <Hl>{best.name}</Hl> is <Hl>{best.winRate}%</Hl> across {best.matchesTogether} matches.
+          </Text>
+        </View>
       );
     }
   }
   if (stats.winRate >= 60) {
     return (
-      <InsightCard icon="trending-up-outline">
-        A <Hl>{stats.winRate}%</Hl> win rate across {stats.matchesPlayed} matches — solid form.
-        Keep competing to unlock more insights.
-      </InsightCard>
+      <View style={styles.insightCard}>
+        <Ionicons name="trending-up-outline" size={18} color={Colors.opticYellow} />
+        <Text style={styles.insightText}>
+          A <Hl>{stats.winRate}%</Hl> win rate across {stats.matchesPlayed} matches — solid form.
+        </Text>
+      </View>
     );
   }
   return null;
 }
 
-/** Progress bar used in breakdown cards */
-function ProgressBar({ value, color }: { value: number; color: string }) {
-  return (
-    <View style={styles.bdBarBg}>
-      <View style={[styles.bdBarFill, { width: `${value}%`, backgroundColor: color }]} />
-    </View>
-  );
-}
-
-/** Generic breakdown card */
-function BreakdownCard({
-  title,
-  icon,
-  items,
-}: {
-  title: string;
-  icon: IconName;
-  items: FormatBreakdown[];
-}) {
-  const bdColors = [Colors.opticYellow, Colors.aquaGreen, Colors.violet, Colors.coral, Colors.gold];
-
-  if (items.length === 0) return null;
-  return (
-    <View style={styles.bdCard}>
-      <View style={styles.bdHeader}>
-        <Ionicons name={icon} size={14} color={Colors.textDim} style={styles.bdIcon} />
-        <Text style={styles.bdTitle}>{title}</Text>
-      </View>
-      {items.map((item, i) => (
-        <View key={item.label} style={i > 0 ? { marginTop: Spacing[1] + 2 } : undefined}>
-          <View style={styles.bdRow}>
-            <Text style={styles.bdLabel}>{item.label}</Text>
-            <Text style={[styles.bdValue, { color: bdColors[i % bdColors.length] }]}>
-              {item.winRate}%
-            </Text>
-          </View>
-          <ProgressBar value={item.winRate} color={bdColors[i % bdColors.length]} />
-        </View>
-      ))}
-    </View>
-  );
-}
-
-/** Partner row */
+// ─── Partner Row ─────────────────────────────────────────────────────────────
 function PartnerRow({ partner, colorIndex }: { partner: PartnerStat; colorIndex: number }) {
-  const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
   const wrColor = partner.winRate >= 70 ? Colors.success : partner.winRate >= 55 ? Colors.warning : Colors.error;
   const avatarColor = PARTNER_COLORS[colorIndex % PARTNER_COLORS.length];
 
   return (
-    <AnimatedPressable
-      style={[styles.partnerRow, animatedStyle]}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-      accessibilityRole="button"
-      accessibilityLabel={`${partner.name}, ${partner.matchesTogether} matches together, ${partner.winRate}% win rate`}
+    <View
+      style={styles.partnerRow}
+      accessibilityLabel={`${partner.name}, ${partner.matchesTogether} matches, ${partner.winRate}% win rate`}
     >
       <View style={[styles.partnerAvatar, { backgroundColor: avatarColor }]}>
         <Text style={styles.partnerInitials}>{partner.initials}</Text>
       </View>
       <View style={styles.partnerInfo}>
         <Text style={styles.partnerName}>{partner.name}</Text>
-        <Text style={styles.partnerGames}>{partner.matchesTogether} matches together</Text>
+        <Text style={styles.partnerGames}>{partner.matchesTogether} matches</Text>
       </View>
-      <View style={styles.partnerRight}>
-        <Text style={[styles.partnerWr, { color: wrColor }]}>{partner.winRate}%</Text>
-        <Text style={styles.partnerWrLabel}>Win Rate</Text>
-      </View>
-    </AnimatedPressable>
+      <Text style={[styles.partnerWr, { color: wrColor }]}>{partner.winRate}%</Text>
+    </View>
   );
 }
 
-/** Head-to-head rival card */
-function H2HCard({ rival }: { rival: RivalStat }) {
-  const { animatedStyle, onPressIn, onPressOut } = useSpringPress();
-  const total = rival.wins + rival.draws + rival.losses;
-  const wPct = total > 0 ? (rival.wins / total) * 100 : 0;
-  const dPct = total > 0 ? (rival.draws / total) * 100 : 0;
-  const lPct = total > 0 ? (rival.losses / total) * 100 : 0;
-  const recordColor = rival.wins > rival.losses ? Colors.success : rival.wins < rival.losses ? Colors.error : Colors.warning;
-
-  return (
-    <AnimatedPressable
-      style={[styles.h2hCard, animatedStyle]}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-      accessibilityRole="button"
-      accessibilityLabel={`${rival.name}, record ${rival.wins} wins ${rival.draws} draws ${rival.losses} losses`}
-    >
-      <View style={styles.h2hTop}>
-        <View style={[styles.h2hAvatar, { backgroundColor: Colors.surface }]}>
-          <Text style={styles.h2hInitials}>{rival.initials}</Text>
-        </View>
-        <Text style={styles.h2hName}>{rival.name}</Text>
-        <Text style={[styles.h2hRecord, { color: recordColor }]}>
-          {rival.wins}W-{rival.draws}D-{rival.losses}L
-        </Text>
-      </View>
-      <View style={styles.h2hBar}>
-        {wPct > 0 && <View style={[styles.h2hWins, { width: `${wPct}%` }]} />}
-        {dPct > 0 && <View style={[styles.h2hDraws, { width: `${dPct}%` }]} />}
-        {lPct > 0 && <View style={[styles.h2hLosses, { width: `${lPct}%` }]} />}
-      </View>
-    </AnimatedPressable>
-  );
-}
-
-/** Derived achievements from real stats */
-function DerivedAchievements({ stats, totalMatchesPlayed }: { stats: PlayerStats; totalMatchesPlayed: number }) {
-  type Achievement = {
-    id: string;
-    icon: IconName;
-    name: string;
-    earned: boolean;
-  };
+// ─── Achievements ────────────────────────────────────────────────────────────
+function Achievements({ stats, totalMatches }: { stats: PlayerStats; totalMatches: number }) {
+  type Achievement = { id: string; icon: IconName; name: string; earned: boolean };
 
   const achievements: Achievement[] = [
     { id: '1', icon: 'trophy-outline', name: 'First Win', earned: stats.matchesWon >= 1 },
     { id: '2', icon: 'flame-outline', name: '5-Win Streak', earned: stats.currentStreak.type === 'W' && stats.currentStreak.count >= 5 },
-    { id: '3', icon: 'checkmark-done-outline', name: '10 Matches', earned: totalMatchesPlayed >= 10 },
+    { id: '3', icon: 'checkmark-done-outline', name: '10 Matches', earned: totalMatches >= 10 },
     { id: '4', icon: 'people-outline', name: '3 Partners', earned: stats.partners.length >= 3 },
     { id: '5', icon: 'podium-outline', name: '5 Tournaments', earned: stats.tournamentCount >= 5 },
-    { id: '6', icon: 'star-outline', name: '50 Matches', earned: totalMatchesPlayed >= 50 },
-    { id: '7', icon: 'diamond-outline', name: '100 Matches', earned: totalMatchesPlayed >= 100 },
+    { id: '6', icon: 'star-outline', name: '50 Matches', earned: totalMatches >= 50 },
+    { id: '7', icon: 'diamond-outline', name: '100 Matches', earned: totalMatches >= 100 },
     { id: '8', icon: 'ribbon-outline', name: '10-Win Streak', earned: stats.currentStreak.type === 'W' && stats.currentStreak.count >= 10 },
   ];
 
   const earnedCount = achievements.filter((a) => a.earned).length;
 
   return (
-    <>
-      <View style={[styles.sectionHeader, { marginTop: Spacing[4] }]}>
-        <Text style={styles.sectionTitle}>Achievements</Text>
-        <Text style={styles.sectionSubtitle}>{earnedCount} / {achievements.length} earned</Text>
+    <View>
+      <View style={styles.achHeader}>
+        <Text style={styles.miniLabel}>Achievements</Text>
+        <Text style={styles.achCount}>{earnedCount}/{achievements.length}</Text>
       </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.achievementsRow}
+        contentContainerStyle={styles.achScroll}
       >
         {achievements.map((ach) => (
           <View
             key={ach.id}
             style={[styles.achBadge, ach.earned ? styles.achEarned : styles.achLocked]}
-            accessible
-            accessibilityRole="text"
-            accessibilityLabel={`${ach.name}, ${ach.earned ? 'earned' : 'locked'}`}
           >
             <Ionicons
               name={ach.icon}
-              size={22}
+              size={20}
               color={ach.earned ? Colors.opticYellow : Colors.textMuted}
-              style={styles.achIconWrap}
             />
             <Text style={[styles.achName, ach.earned && styles.achNameGold]}>{ach.name}</Text>
           </View>
         ))}
       </ScrollView>
-    </>
-  );
-}
-
-/** Empty state for new users with 0 matches */
-function EmptyStats({ name }: { name: string }) {
-  const router = useRouter();
-
-  return (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyIconWrap}>
-        <Ionicons name="stats-chart-outline" size={56} color={Colors.surfaceLight} />
-      </View>
-      <Text style={styles.emptyTitle}>No stats yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Play your first tournament or import your match history from another padel app.
-      </Text>
-      <Pressable
-        style={styles.emptyCta}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/(app)/import-matches');
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Import match history"
-      >
-        <Ionicons name="cloud-upload-outline" size={18} color={Colors.darkBg} />
-        <Text style={styles.emptyCtaText}>Import Match History</Text>
-      </Pressable>
-      <Pressable
-        style={styles.emptyCtaSecondary}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/(app)/(tabs)/play');
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Go to Play tab"
-      >
-        <Ionicons name="tennisball" size={16} color={Colors.opticYellow} />
-        <Text style={styles.emptyCtaSecondaryText}>Find a Game</Text>
-      </Pressable>
     </View>
   );
 }
@@ -485,251 +216,132 @@ export default function StatsScreen() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('All Time');
-  const [matchTypeFilter, setMatchTypeFilter] = useState<MatchTypeFilter>('all');
   const [stats, setStats] = useState<PlayerStats | null>(null);
-  const [ratings, setRatings] = useState<RatingPoint[]>([]);
   const [matchHistory, setMatchHistory] = useState<MatchHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const profileId = profile?.id;
-  const fetchStats = useCallback(async () => {
+  const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Player';
+  const totalMatches = profile?.matches_played ?? 0;
+
+  const fetchData = useCallback(async () => {
     if (!user || !profileId) { setLoading(false); return; }
-    setFetchError(null);
     try {
-      const [statsResult, ratingsResult, historyResult] = await Promise.allSettled([
-        fetchPlayerStats(user.id, period, matchTypeFilter),
-        fetchPlatformRatings(user.id),
-        fetchMatchHistory(user.id, 20, 0, matchTypeFilter),
+      const [statsResult, historyResult] = await Promise.allSettled([
+        fetchPlayerStats(user.id, period),
+        fetchMatchHistory(user.id, 5),
       ]);
       if (statsResult.status === 'fulfilled') setStats(statsResult.value);
-      if (ratingsResult.status === 'fulfilled') setRatings(ratingsResult.value);
       if (historyResult.status === 'fulfilled') setMatchHistory(historyResult.value);
-
-      // If all three failed, show error
-      const allFailed = statsResult.status === 'rejected' && ratingsResult.status === 'rejected' && historyResult.status === 'rejected';
-      if (allFailed) setFetchError('Could not load stats. Pull down to retry.');
     } catch {
-      setFetchError('Something went wrong. Pull down to retry.');
+      // Silently fail — user can pull to refresh
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user, profileId, period, matchTypeFilter]);
+  }, [user, profileId, period]);
 
   useEffect(() => {
-    if (!profileId) return; // Don't fetch until profile is ready
+    if (!profileId) return;
     setLoading(true);
-    fetchStats();
-  }, [fetchStats, profileId]);
-
-  const loadMoreHistory = useCallback(async () => {
-    if (!user) return;
-    try {
-      const more = await fetchMatchHistory(user.id, 20, matchHistory.length, matchTypeFilter);
-      setMatchHistory((prev) => [...prev, ...more]);
-    } catch {
-      // Silently fail
-    }
-  }, [user, matchHistory.length, matchTypeFilter]);
+    fetchData();
+  }, [fetchData, profileId]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchStats();
+    fetchData();
   };
 
-  const displayName = profile?.display_name ?? user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? 'Player';
-  const totalMatchesPlayed = profile?.matches_played ?? 0;
-  const playingSince = profile?.created_at ?? new Date().toISOString();
   const hasMatches = stats !== null && stats.matchesPlayed > 0;
 
   return (
-    <ErrorBoundary fallbackMessage="Stats couldn't load. Tap retry to try again.">
-    <SafeAreaView testID="screen-stats" style={styles.safe} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Stats</Text>
-        <View style={styles.headerActions}>
-          <Pressable
-            style={styles.headerIconImport}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/(app)/import-matches');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Import matches"
-          >
-            <Ionicons name="cloud-upload-outline" size={18} color={Colors.darkBg} />
-            <Text style={styles.headerImportText}>Import</Text>
-          </Pressable>
-          <Pressable
-            style={styles.headerIcon}
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-            accessibilityRole="button"
-            accessibilityLabel="Chart view"
-          >
-            <Ionicons name="bar-chart-outline" size={20} color={Colors.textDim} />
-          </Pressable>
-        </View>
-      </View>
+    <ErrorBoundary fallbackMessage="Stats couldn't load. Pull down to retry.">
+      <SafeAreaView testID="screen-stats" style={styles.safe} edges={['top']}>
+        {/* Header with avatar, name, settings, share */}
+        <StatsHeader profile={profile} displayName={displayName} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.opticYellow}
-          />
-        }
-      >
-        {loading ? (
-          <View testID="state-stats-loading" style={{ padding: Spacing[5], gap: Spacing[3] }}>
-            {/* Hero stat card */}
-            <Skeleton width="100%" height={120} borderRadius={Radius.lg} />
-            {/* Period filter row */}
-            <Skeleton width="100%" height={40} borderRadius={Radius.md} />
-            {/* Stat summary cards */}
-            <View style={{ flexDirection: 'row', gap: Spacing[3] }}>
-              <Skeleton width="48%" height={80} borderRadius={Radius.md} />
-              <Skeleton width="48%" height={80} borderRadius={Radius.md} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.opticYellow}
+            />
+          }
+        >
+          {loading ? (
+            <View style={styles.skeletonWrap}>
+              <Skeleton width="100%" height={80} borderRadius={Radius.lg} />
+              <Skeleton width="100%" height={40} borderRadius={Radius.md} />
+              <View style={{ flexDirection: 'row', gap: Spacing[2] }}>
+                <Skeleton width="48%" height={80} borderRadius={Radius.md} />
+                <Skeleton width="48%" height={80} borderRadius={Radius.md} />
+              </View>
+              <Skeleton width="100%" height={64} borderRadius={Radius.md} />
+              <Skeleton width="100%" height={64} borderRadius={Radius.md} />
             </View>
-            {/* Match history cards */}
-            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
-            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
-            <Skeleton width="100%" height={64} borderRadius={Radius.md} />
-          </View>
-        ) : fetchError ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
-            <Ionicons name="cloud-offline-outline" size={48} color={Colors.surfaceLight} />
-            <Text style={{ color: Colors.textDim, fontSize: 14, marginTop: 12, textAlign: 'center' }}>{fetchError}</Text>
-          </View>
-        ) : !hasMatches ? (
-          <>
-            {/* Period Tabs — show but disabled feel */}
-            <PeriodTabs active={period} onChange={setPeriod} />
-            <MatchTypeTabs active={matchTypeFilter} onChange={setMatchTypeFilter} />
+          ) : !hasMatches ? (
+            <View style={styles.content}>
+              <PadelDNACard />
+              <EmptyState
+                icon="stats-chart-outline"
+                title="No stats yet"
+                subtitle="Play your first tournament or log a match to see your stats here."
+                actions={[
+                  {
+                    label: 'Import Matches',
+                    onPress: () => router.push('/(app)/import-matches'),
+                    testID: 'btn-import-matches',
+                  },
+                ]}
+              />
+            </View>
+          ) : (
+            <View style={styles.content}>
+              {/* Padel DNA placeholder */}
+              <PadelDNACard />
 
-            {/* Empty hero with real profile data (level 0, 0 matches) */}
-            <HeroCard
-              name={displayName}
+              {/* Period filter */}
+              <PeriodTabs active={period} onChange={setPeriod} />
 
-              matchesPlayed={0}
-              winRate={0}
-              tournamentCount={0}
-              streak={{ type: 'W', count: 0 }}
-              playingSince={playingSince}
-            />
+              {/* Key metrics */}
+              <HighlightGrid stats={stats} />
 
-            {/* Empty state CTA */}
-            <View testID="state-stats-empty"><EmptyStats name={displayName} /></View>
-          </>
-        ) : (
-          <>
-            {/* Period Tabs */}
-            <PeriodTabs active={period} onChange={setPeriod} />
-            <MatchTypeTabs active={matchTypeFilter} onChange={setMatchTypeFilter} />
+              {/* Recent form */}
+              {stats.recentForm.length > 0 && (
+                <FormStrip form={stats.recentForm} />
+              )}
 
-            {/* Hero Card — real data */}
-            <HeroCard
-              name={displayName}
+              {/* AI insight */}
+              <StatsInsight stats={stats} />
 
-              matchesPlayed={stats.matchesPlayed}
-              winRate={stats.winRate}
-              tournamentCount={stats.tournamentCount}
-              streak={stats.currentStreak}
-              playingSince={playingSince}
-            />
+              {/* Recent matches */}
+              <RecentMatches matches={matchHistory} />
 
-            {/* Recent Form */}
-            {stats.recentForm.length > 0 && (
-              <FormStrip form={stats.recentForm} />
-            )}
+              {/* Collapsible performance breakdown */}
+              <PerformanceSection stats={stats} />
 
-            {/* Dynamic insight from real stats */}
-            <StatsInsight stats={stats} />
-
-            {/* Rating Progression Chart */}
-            <RatingProgressionChart ratings={ratings} />
-
-            {/* Win Rate Trend */}
-            <WinRateTrendChart data={stats.winRateTrend} />
-
-            {/* Performance Breakdowns */}
-            {(stats.formatBreakdown.length > 0 ||
-              stats.conditionsBreakdown.length > 0 ||
-              stats.courtSideBreakdown.length > 0 ||
-              stats.intensityBreakdown.length > 0) && (
-              <>
-                <SectionHeader label="Performance Breakdown" />
-                <View style={styles.breakdownGrid}>
-                  <BreakdownCard title="BY FORMAT" icon="analytics-outline" items={stats.formatBreakdown} />
-                  <BreakdownCard title="CONDITIONS" icon="partly-sunny-outline" items={stats.conditionsBreakdown} />
-                  <BreakdownCard title="COURT SIDE" icon="swap-horizontal-outline" items={stats.courtSideBreakdown} />
-                  <BreakdownCard title="INTENSITY" icon="flame-outline" items={stats.intensityBreakdown} />
-                  <BreakdownCard title="GAME TYPE" icon="trophy-outline" items={stats.matchTypeBreakdown} />
+              {/* Partners (top 3) */}
+              {stats.partners.length > 0 && (
+                <View>
+                  <Text style={styles.miniLabel}>Partners</Text>
+                  {stats.partners.slice(0, 3).map((p, i) => (
+                    <PartnerRow key={p.id} partner={p} colorIndex={i} />
+                  ))}
                 </View>
-              </>
-            )}
+              )}
 
-            {/* Best Partners */}
-            {stats.partners.length > 0 && (
-              <>
-                <SectionHeader label="Best Partners" accentColor={Colors.violet} />
-                {stats.partners.map((p, i) => (
-                  <PartnerRow key={p.id} partner={p} colorIndex={i} />
-                ))}
-              </>
-            )}
+              {/* Achievements */}
+              <Achievements stats={stats} totalMatches={totalMatches} />
 
-            {/* Head-to-Head Rivals */}
-            {stats.rivals.length > 0 && (
-              <>
-                <View style={{ marginTop: Spacing[4] }}>
-                  <SectionHeader label="Head-to-Head Rivals" accentColor={Colors.violet} />
-                </View>
-                {stats.rivals.map((r) => (
-                  <H2HCard key={r.id} rival={r} />
-                ))}
-              </>
-            )}
-
-            {/* Achievements — derived from real stats */}
-            <DerivedAchievements stats={stats} totalMatchesPlayed={totalMatchesPlayed} />
-
-            {/* Match History */}
-            <MatchHistoryFeed
-              matches={matchHistory}
-              onLoadMore={loadMoreHistory}
-              onUpdateMatch={async (matchId, updates) => {
-                try {
-                  await updateMatchDetails(matchId, updates as Parameters<typeof updateMatchDetails>[1]);
-                  // Optimistically update local state
-                  setMatchHistory((prev) =>
-                    prev.map((m) => {
-                      if (m.id !== matchId) return m;
-                      return {
-                        ...m,
-                        intensity: 'intensity' in updates ? (updates.intensity ?? null) : m.intensity,
-                        conditions: 'conditions' in updates ? (updates.conditions ?? null) : m.conditions,
-                        courtSide: 'court_side' in updates ? (updates.court_side ?? null) : m.courtSide,
-                      };
-                    }),
-                  );
-                } catch {
-                  // Silently fail — user can retry
-                }
-              }}
-            />
-
-            {/* Bottom spacing */}
-            <View style={{ height: Spacing[10] }} />
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              <View style={{ height: Spacing[10] }} />
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
     </ErrorBoundary>
   );
 }
@@ -741,38 +353,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.darkBg,
   },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[2],
-    paddingBottom: Spacing[3],
+  scrollContent: {
+    paddingBottom: Spacing[10],
   },
-  headerTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: 24,
-    color: Colors.opticYellow,
-  },
-  headerActions: {
-    flexDirection: 'row',
+  skeletonWrap: {
+    padding: Spacing[5],
     gap: Spacing[3],
   },
-  headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Scroll
-  scrollContent: {
+  content: {
     paddingHorizontal: Spacing[4],
-    paddingBottom: Spacing[10],
+    gap: Spacing[4],
   },
 
   // Period Tabs
@@ -781,7 +371,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: Radius.md,
     padding: 3,
-    marginBottom: Spacing[4],
   },
   periodTab: {
     flex: 1,
@@ -802,121 +391,18 @@ const styles = StyleSheet.create({
     color: Colors.darkBg,
   },
 
-  // Hero Card (gradient)
-  heroCardOuter: {
-    borderRadius: Radius.lg,
-    marginBottom: Spacing[4],
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.surfaceLight,
-    ...Shadows.md,
-  },
-  heroCard: {
-    padding: Spacing[5],
-    borderRadius: Radius.lg,
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: -40,
-    right: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Alpha.yellow10,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[4],
-    marginBottom: Spacing[4],
-  },
-  // Hero avatar
-  heroAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: Colors.opticYellow,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroAvatarText: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 18,
-    color: Colors.opticYellow,
-  },
-  heroInfo: {
-    flex: 1,
-  },
-  heroName: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 18,
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  heroSub: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  heroStats: {
-    flexDirection: 'row',
+  // Form Strip
+  formStripContainer: {
     gap: Spacing[2],
   },
-  heroStat: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing[2] + 2,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 10,
-  },
-  heroStatVal: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 22,
-    lineHeight: 26,
-  },
-  heroStatLbl: {
-    fontFamily: Fonts.mono,
-    fontSize: 9,
-    color: Colors.textMuted,
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  heroStatLblRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-
-  // Section headers
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing[2] + 2,
-  },
-  sectionTitle: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 14,
-    color: Colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-
-  // Form strip
   formStrip: {
     flexDirection: 'row',
-    gap: 4,
-    marginBottom: Spacing[4],
+    gap: 6,
   },
   formDot: {
-    flex: 1,
-    height: 32,
-    borderRadius: Radius.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -926,106 +412,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  // Insight card
+  // Insight
   insightCard: {
     flexDirection: 'row',
-    gap: Spacing[2] + 2,
     alignItems: 'flex-start',
+    gap: Spacing[3],
     backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Alpha.violet15,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.violet,
     borderRadius: Radius.md,
-    padding: 14,
-    marginBottom: Spacing[4],
-  },
-  insightIconWrap: {
-    marginTop: 2,
+    padding: Spacing[4],
   },
   insightText: {
     flex: 1,
     fontFamily: Fonts.body,
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 19,
   },
   insightHighlight: {
     fontFamily: Fonts.bodyBold,
     color: Colors.opticYellow,
   },
 
-  // Breakdown grid
-  breakdownGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing[2] + 2,
-    marginBottom: Spacing[4],
-  },
-  bdCard: {
-    width: '48%',
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.aquaGreen,
-    borderRadius: Radius.md,
-    padding: 14,
-  },
-  bdHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[1] + 2,
-    marginBottom: Spacing[2] + 2,
-  },
-  bdIcon: {
-    marginRight: 2,
-  },
-  bdTitle: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 12,
-    color: Colors.textSecondary,
-    letterSpacing: 0.5,
-  },
-  bdRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 2,
-  },
-  bdLabel: {
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    color: Colors.textDim,
-  },
-  bdValue: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 12,
-  },
-  bdBarBg: {
-    height: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: 2,
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  bdBarFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-
-  // Partner row
+  // Partners
   partnerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[2] + 2,
-    paddingVertical: Spacing[2] + 2,
-    paddingHorizontal: Spacing[3],
     backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: Radius.md,
-    marginBottom: Spacing[2],
+    padding: Spacing[3],
+    gap: Spacing[3],
+    marginBottom: Spacing[1],
   },
   partnerAvatar: {
     width: 36,
@@ -1037,14 +453,14 @@ const styles = StyleSheet.create({
   partnerInitials: {
     fontFamily: Fonts.bodyBold,
     fontSize: 13,
-    color: Colors.textPrimary,
+    color: Colors.darkBg,
   },
   partnerInfo: {
     flex: 1,
   },
   partnerName: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.textPrimary,
   },
   partnerGames: {
@@ -1052,220 +468,57 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
   },
-  partnerRight: {
-    alignItems: 'flex-end',
-  },
   partnerWr: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 16,
-  },
-  partnerWrLabel: {
-    fontFamily: Fonts.body,
-    fontSize: 9,
-    color: Colors.textMuted,
-  },
-
-  // H2H Card
-  h2hCard: {
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    padding: 14,
-    marginBottom: Spacing[2],
-  },
-  h2hTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[2] + 2,
-    marginBottom: Spacing[2],
-  },
-  h2hAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.border,
-  },
-  h2hInitials: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.textDim,
-  },
-  h2hName: {
-    flex: 1,
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 13,
-    color: Colors.textPrimary,
-  },
-  h2hRecord: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 12,
-  },
-  h2hBar: {
-    flexDirection: 'row',
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-    gap: 2,
-  },
-  h2hWins: {
-    backgroundColor: Colors.success,
-    borderRadius: 3,
-  },
-  h2hDraws: {
-    backgroundColor: Colors.warning,
-    borderRadius: 3,
-  },
-  h2hLosses: {
-    backgroundColor: Colors.error,
-    borderRadius: 3,
+    fontSize: 15,
   },
 
   // Achievements
-  achievementsRow: {
-    gap: Spacing[2] + 2,
-    paddingBottom: Spacing[1],
-  },
-  achBadge: {
-    width: 90,
+  achHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing[3],
-    paddingHorizontal: Spacing[2],
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  achEarned: {
-    backgroundColor: 'rgba(255,215,0,0.12)',
-    borderColor: Colors.gold,
-  },
-  achLocked: {
-    backgroundColor: Colors.card,
-    borderColor: Colors.border,
-    opacity: 0.4,
-  },
-  achIconWrap: {
-    marginBottom: 4,
-  },
-  achName: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 9,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  achNameGold: {
-    color: Colors.gold,
-  },
-
-  // Empty state
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: Spacing[8],
-    paddingHorizontal: Spacing[6],
-  },
-  emptyIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing[5],
-  },
-  emptyTitle: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 20,
-    color: Colors.textPrimary,
     marginBottom: Spacing[2],
   },
-  emptySubtitle: {
+  achCount: {
     fontFamily: Fonts.body,
-    fontSize: 14,
-    color: Colors.textDim,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: Spacing[6],
-  },
-  emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[2],
-    backgroundColor: Colors.opticYellow,
-    paddingHorizontal: Spacing[6],
-    paddingVertical: Spacing[3],
-    borderRadius: Radius.lg,
-  },
-  emptyCtaText: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 16,
-    color: Colors.darkBg,
-  },
-  emptyCtaSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing[2],
-    paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[3],
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.opticYellow,
-    marginTop: Spacing[3],
-  },
-  emptyCtaSecondaryText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 14,
-    color: Colors.opticYellow,
-  },
-
-  // Match type filter tabs
-  matchTypeTabs: {
-    flexDirection: 'row',
-    gap: Spacing[2],
-    marginBottom: Spacing[4],
-  },
-  matchTypeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: Spacing[2],
-    borderRadius: Radius.md,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  matchTypeTabActive: {
-    backgroundColor: Colors.opticYellow,
-    borderColor: Colors.opticYellow,
-  },
-  matchTypeTabText: {
-    fontFamily: Fonts.bodySemiBold,
     fontSize: 12,
     color: Colors.textMuted,
   },
-  matchTypeTabTextActive: {
-    color: Colors.darkBg,
+  achScroll: {
+    gap: Spacing[2],
+    paddingRight: Spacing[4],
   },
-
-  // Header import button
-  headerIconImport: {
-    flexDirection: 'row',
+  achBadge: {
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: Colors.opticYellow,
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[2],
+    gap: 4,
+    width: 72,
+    paddingVertical: Spacing[3],
     borderRadius: Radius.md,
   },
-  headerImportText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.darkBg,
+  achEarned: {
+    backgroundColor: Alpha.yellow08,
+    borderWidth: 1,
+    borderColor: Alpha.yellow15,
+  },
+  achLocked: {
+    backgroundColor: Colors.card,
+    opacity: 0.5,
+  },
+  achName: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  achNameGold: {
+    color: Colors.opticYellow,
+  },
+
+  // Labels
+  miniLabel: {
+    fontFamily: Fonts.heading,
+    fontSize: 15,
+    color: Colors.textPrimary,
   },
 });

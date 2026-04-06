@@ -100,8 +100,8 @@ export function useTournament(tournamentId: string | null): UseTournamentReturn 
     try {
       setError(null);
       await Promise.all([fetchTournament(), fetchMatches(), fetchPlayers()]);
-    } catch (err: any) {
-      if (mountedRef.current) setError(err.message ?? 'Failed to load');
+    } catch (err: unknown) {
+      if (mountedRef.current) setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       if (mountedRef.current) setLoading(false);
     }
