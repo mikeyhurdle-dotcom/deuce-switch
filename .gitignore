@@ -42,3 +42,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local-only state, secrets, and scratch
+credentials.json
+screenshots/
+.maestro-pending/
+supabase/.temp/
