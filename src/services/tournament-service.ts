@@ -100,29 +100,66 @@ export async function addGuestPlayer(
 }
 
 /**
- * Removes a player from a tournament (before it starts).
- * If the player is a ghost profile, also deletes the ghost profile.
+ * Removes a player from a tournament.
+ *
+ * PLA-456: Behaviour depends on tournament status.
+ *
+ *   Draft (lobby): Hard-delete the tournament_players row + ghost profile
+ *     if applicable. No match history exists yet, so nothing to orphan.
+ *
+ *   Running / Completed (mid-tournament or after): Soft-drop by setting
+ *     tournament_status = 'dropped' instead of deleting. The engine
+ *     already filters by tournament_status === 'active' for round
+ *     generation, so dropped players are excluded from future rounds
+ *     but their past match scores stay intact in standings and history.
+ *     Hard-deleting here would orphan match rows that reference the
+ *     player_id, breaking historical leaderboards and H2H records.
+ *
+ * Mirrors the web implementation in smashd-web PlayerRoster.tsx.
  */
 export async function removePlayerFromTournament(
   tournamentId: string,
   playerId: string,
 ): Promise<void> {
+  // Fetch tournament status to decide between hard-delete and soft-drop.
+  const { data: tournament, error: tournamentErr } = await supabase
+    .from('tournaments')
+    .select('status')
+    .eq('id', tournamentId)
+    .single();
+  if (tournamentErr) throw tournamentErr;
+
+  const isDraft = tournament?.status === 'draft';
+
+  if (isDraft) {
+    // Hard-delete: no match history to preserve.
+    const { error } = await supabase
+      .from('tournament_players')
+      .delete()
+      .eq('tournament_id', tournamentId)
+      .eq('player_id', playerId);
+    if (error) throw error;
+
+    // Clean up ghost profile if applicable.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_ghost')
+      .eq('id', playerId)
+      .single();
+    if (profile?.is_ghost) {
+      await supabase.from('profiles').delete().eq('id', playerId);
+    }
+    return;
+  }
+
+  // Soft-drop: tournament is running or completed. Preserve match history
+  // by flipping the row's tournament_status instead of deleting.
   const { error } = await supabase
     .from('tournament_players')
-    .delete()
+    .update({ tournament_status: 'dropped' })
     .eq('tournament_id', tournamentId)
     .eq('player_id', playerId);
   if (error) throw error;
-
-  // Clean up ghost profile if applicable
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_ghost')
-    .eq('id', playerId)
-    .single();
-  if (profile?.is_ghost) {
-    await supabase.from('profiles').delete().eq('id', playerId);
-  }
 }
 
 // ─── Claim Ghost Player ─────────────────────────────────────────────────────
