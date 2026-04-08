@@ -12,12 +12,14 @@ import type {
   AmericanoMatch,
   AmericanoResult,
   AmericanoStanding,
+  RankingMode,
 } from '../lib/types';
 
 export function computeStandings(
   players: AmericanoPlayer[],
   results: AmericanoResult[],
   matches: AmericanoMatch[],
+  rankingMode: RankingMode = 'total_points',
 ): AmericanoStanding[] {
   const stats = new Map<
     string,
@@ -132,7 +134,6 @@ export function computeStandings(
       const s = stats.get(byeId);
       if (!s) continue;
       s.pointsFor += avgScore;
-      s.pointsAgainst += avgScore; // Balanced: bye player also receives avg against
       s.matchesPlayed += 1;
       s.draws += 1;
     }
@@ -151,12 +152,18 @@ export function computeStandings(
       gameFaceUrl: p.gameFaceUrl,
       ...s,
       winRate: total === 0 ? 0 : s.wins / total,
+      avgPointsPerRound: s.matchesPlayed === 0 ? 0 : s.pointsFor / s.matchesPlayed,
     };
   });
 
-  // Sort: points descending, then win rate, then name
+  // Sort based on ranking mode
   standings.sort((a, b) => {
-    if (b.pointsFor !== a.pointsFor) return b.pointsFor - a.pointsFor;
+    if (rankingMode === 'avg_points') {
+      if (b.avgPointsPerRound !== a.avgPointsPerRound)
+        return b.avgPointsPerRound - a.avgPointsPerRound;
+    } else {
+      if (b.pointsFor !== a.pointsFor) return b.pointsFor - a.pointsFor;
+    }
     if (b.winRate !== a.winRate) return b.winRate - a.winRate;
     return a.displayName.localeCompare(b.displayName);
   });

@@ -235,7 +235,7 @@ export function useTournament(tournamentId: string | null): UseTournamentReturn 
         teamBScore: m.team_b_score!,
       }));
 
-    return computeStandings(enginePlayers, engineResults, engineMatches);
+    return computeStandings(enginePlayers, engineResults, engineMatches, tournament?.ranking_mode);
   })();
 
   // ─── Computed: Current Round Matches ─────────────────────────────────────────

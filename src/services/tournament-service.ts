@@ -515,6 +515,22 @@ export async function toggleAnonymisePlayers(
   if (error) throw error;
 }
 
+/**
+ * Set the ranking mode for a tournament.
+ * 'total_points' = rank by cumulative points (default)
+ * 'avg_points' = rank by average points per round (fairer when rounds are incomplete)
+ */
+export async function setRankingMode(
+  tournamentId: string,
+  mode: 'total_points' | 'avg_points',
+): Promise<void> {
+  const { error } = await supabase
+    .from('tournaments')
+    .update({ ranking_mode: mode })
+    .eq('id', tournamentId);
+  if (error) throw error;
+}
+
 // ─── Match Detail & Editing ─────────────────────────────────────────────────
 
 /**

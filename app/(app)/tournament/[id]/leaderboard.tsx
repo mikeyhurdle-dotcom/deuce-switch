@@ -44,6 +44,7 @@ interface Standing {
   playerId: string;
   displayName: string;
   pointsFor: number;
+  avgPointsPerRound: number;
   wins: number;
   losses?: number;
   matchesPlayed: number;
@@ -53,10 +54,12 @@ function LeaderboardRow({
   entry,
   index,
   isMe,
+  rankByAvg,
 }: {
   entry: Standing;
   index: number;
   isMe: boolean;
+  rankByAvg: boolean;
 }) {
   const medal = getMedalColor(index);
   const translateY = useSharedValue(24);
@@ -133,7 +136,8 @@ function LeaderboardRow({
       {/* Stats */}
       <Text style={[styles.stat, styles.wCol, styles.winText]}>{entry.wins}</Text>
       <Text style={[styles.stat, styles.lCol, styles.lossText]}>{losses}</Text>
-      <Text style={[styles.points, styles.ptsCol]}>{entry.pointsFor}</Text>
+      <Text style={[styles.stat, styles.ptsCol, !rankByAvg && styles.points]}>{entry.pointsFor}</Text>
+      <Text style={[styles.stat, styles.avgCol, rankByAvg && styles.points]}>{entry.avgPointsPerRound.toFixed(1)}</Text>
     </Animated.View>
   );
 }
@@ -230,7 +234,8 @@ export default function Leaderboard() {
                 </View>
                 <Text style={[styles.headerText, styles.wCol]}>W</Text>
                 <Text style={[styles.headerText, styles.lCol]}>L</Text>
-                <Text style={[styles.headerText, styles.ptsCol]}>PTS</Text>
+                <Text style={[styles.headerText, styles.ptsCol, tournament?.ranking_mode === 'total_points' && { color: Colors.opticYellow }]}>PTS</Text>
+                <Text style={[styles.headerText, styles.avgCol, tournament?.ranking_mode === 'avg_points' && { color: Colors.opticYellow }]}>AVG</Text>
               </View>
 
               {/* Rows */}
@@ -240,6 +245,7 @@ export default function Leaderboard() {
                   entry={entry}
                   index={i}
                   isMe={entry.playerId === user?.id}
+                  rankByAvg={tournament?.ranking_mode === 'avg_points'}
                 />
               ))}
             </View>
@@ -331,7 +337,8 @@ const styles = StyleSheet.create({
   },
   wCol: { width: 34, textAlign: 'center' as const },
   lCol: { width: 34, textAlign: 'center' as const },
-  ptsCol: { width: 44, textAlign: 'center' as const },
+  ptsCol: { width: 38, textAlign: 'center' as const },
+  avgCol: { width: 42, textAlign: 'center' as const },
 
   // ── Rank
   rank: {

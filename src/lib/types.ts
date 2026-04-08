@@ -4,6 +4,7 @@
 // ─── Format Types ─────────────────────────────────────────────────────────────
 
 export type TournamentFormat = 'americano' | 'mexicano' | 'team_americano' | 'mixicano';
+export type RankingMode = 'total_points' | 'avg_points';
 
 export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
   americano: 'Americano',
@@ -55,7 +56,57 @@ export type Profile = {
   shoe_brand: string | null;
   shoe_model: string | null;
   home_club_id: string | null;
+  tracking_tools: TrackingTool[] | null;
   created_at: string;
+};
+
+export type TrackingTool =
+  | 'padelio'
+  | 'padelplay'
+  | 'padel_point'
+  | 'padel_pointer'
+  | 'padeltick'
+  | 'apple_health'
+  | 'strava'
+  | 'manual';
+
+export type MatchRecord = {
+  id: string;
+  creator_id: string;
+  played_at: string;
+  match_type: 'competitive' | 'friendly' | 'tournament';
+  format: string | null;
+  partner_id: string | null;
+  opponent1_id: string | null;
+  opponent2_id: string | null;
+  partner_name: string | null;
+  opponent1_name: string | null;
+  opponent2_name: string | null;
+  venue: string | null;
+  notes: string | null;
+  source: string;
+  created_at: string;
+};
+
+export type MatchScore = {
+  id: string;
+  match_record_id: string;
+  set_number: number;
+  team_a_score: number;
+  team_b_score: number;
+};
+
+export type TrainingVideo = {
+  id: string;
+  title: string;
+  youtube_url: string;
+  channel_name: string | null;
+  shot_type: string | null;
+  skill_level: string | null;
+  duration_minutes: number | null;
+  description: string | null;
+  tags: string[] | null;
+  featured: boolean;
 };
 
 export type Tournament = {
@@ -74,6 +125,7 @@ export type Tournament = {
   current_round_duration_seconds: number | null;
   master_clock_running: boolean;
   anonymise_players: boolean;
+  ranking_mode: RankingMode;
   created_at: string;
 };
 
@@ -405,6 +457,7 @@ export type AmericanoStanding = {
   losses: number;
   draws: number;
   winRate: number;
+  avgPointsPerRound: number;
 };
 
 export type TeamStanding = {

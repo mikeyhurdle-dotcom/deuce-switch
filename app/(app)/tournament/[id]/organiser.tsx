@@ -23,6 +23,7 @@ import {
   resetClock,
   getTotalRounds,
   toggleAnonymisePlayers,
+  setRankingMode,
 } from '../../../../src/services/tournament-service';
 import { Alpha, Colors, Fonts, Radius, Spacing } from '../../../../src/lib/constants';
 import { Button } from '../../../../src/components/ui/Button';
@@ -203,6 +204,18 @@ export default function OrganiserDashboard() {
       Alert.alert('Error', e.message);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleToggleRankingMode = async () => {
+    if (!id || !tournament) return;
+    const newMode = tournament.ranking_mode === 'avg_points' ? 'total_points' : 'avg_points';
+    try {
+      await setRankingMode(id, newMode);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', e.message);
     }
   };
 
@@ -523,8 +536,8 @@ export default function OrganiserDashboard() {
                   <Text style={[styles.standingsRank, styles.standingsHeaderText]}>#</Text>
                   <Text style={[styles.standingsName, styles.standingsHeaderText]}>PLAYER</Text>
                   <Text style={[styles.standingsStat, styles.standingsHeaderText]}>W</Text>
-                  <Text style={[styles.standingsStat, styles.standingsHeaderText]}>P</Text>
-                  <Text style={[styles.standingsPts, styles.standingsHeaderText]}>PTS</Text>
+                  <Text style={[styles.standingsStat, styles.standingsHeaderText, tournament.ranking_mode === 'total_points' && { color: Colors.opticYellow }]}>PTS</Text>
+                  <Text style={[styles.standingsPts, styles.standingsHeaderText, tournament.ranking_mode === 'avg_points' && { color: Colors.opticYellow }]}>AVG</Text>
                 </View>
                 {/* Rows */}
                 {standings.map((entry, i) => {
@@ -546,8 +559,8 @@ export default function OrganiserDashboard() {
                         {entry.displayName}
                       </Text>
                       <Text style={styles.standingsStat}>{entry.wins}</Text>
-                      <Text style={styles.standingsStat}>{entry.matchesPlayed}</Text>
-                      <Text style={styles.standingsPts}>{entry.pointsFor}</Text>
+                      <Text style={[styles.standingsStat, tournament.ranking_mode === 'total_points' && { color: Colors.opticYellow, fontWeight: '700' }]}>{entry.pointsFor}</Text>
+                      <Text style={[styles.standingsPts, tournament.ranking_mode === 'avg_points' && { fontWeight: '700' }]}>{entry.avgPointsPerRound.toFixed(1)}</Text>
                     </View>
                   );
                 })}
@@ -558,6 +571,26 @@ export default function OrganiserDashboard() {
           {/* Settings */}
           <Animated.View entering={FadeInDown.delay(500).duration(400).springify()} style={styles.section}>
             <Text style={styles.sectionTitle}>SETTINGS</Text>
+            <Card>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleTextWrap}>
+                  <Text style={styles.toggleLabel}>Rank by Average Points</Text>
+                  <Text style={styles.toggleHint}>
+                    Use avg pts/round instead of total (fairer for incomplete tournaments)
+                  </Text>
+                </View>
+                <Switch
+                  testID="switch-ranking-mode"
+                  value={tournament.ranking_mode === 'avg_points'}
+                  onValueChange={handleToggleRankingMode}
+                  trackColor={{ false: Colors.surface, true: Colors.opticYellow }}
+                  thumbColor={
+                    tournament.ranking_mode === 'avg_points' ? Colors.darkBg : Colors.textSecondary
+                  }
+                  ios_backgroundColor={Colors.surface}
+                />
+              </View>
+            </Card>
             <Card>
               <View style={styles.toggleRow}>
                 <View style={styles.toggleTextWrap}>

@@ -53,6 +53,7 @@ type Standing = {
   matchesPlayed: number;
   draws: number;
   winRate: number;
+  avgPointsPerRound: number;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -261,11 +262,13 @@ function PodiumColumn({
   rank,
   height,
   isMe,
+  rankByAvg = false,
 }: {
   entry: Standing;
   rank: number;
   height: number;
   isMe: boolean;
+  rankByAvg?: boolean;
 }) {
   const medal = getMedalColor(rank - 1);
   const avatarSize = rank === 1 ? 56 : 48;
@@ -335,7 +338,9 @@ function PodiumColumn({
           <Text style={styles.youTagSmallText}>YOU</Text>
         </View>
       )}
-      <Text style={styles.podiumPts}>{entry.pointsFor} pts</Text>
+      <Text style={styles.podiumPts}>
+        {rankByAvg ? `${entry.avgPointsPerRound.toFixed(1)} avg` : `${entry.pointsFor} pts`}
+      </Text>
       <Animated.View
         style={[
           styles.podiumBlock,
@@ -355,9 +360,11 @@ function PodiumColumn({
 function Podium({
   standings,
   userId,
+  rankByAvg = false,
 }: {
   standings: Standing[];
   userId?: string;
+  rankByAvg?: boolean;
 }) {
   if (standings.length < 3) return null;
   return (
@@ -367,18 +374,21 @@ function Podium({
         rank={2}
         height={60}
         isMe={standings[1].playerId === userId}
+        rankByAvg={rankByAvg}
       />
       <PodiumColumn
         entry={standings[0]}
         rank={1}
         height={80}
         isMe={standings[0].playerId === userId}
+        rankByAvg={rankByAvg}
       />
       <PodiumColumn
         entry={standings[2]}
         rank={3}
         height={46}
         isMe={standings[2].playerId === userId}
+        rankByAvg={rankByAvg}
       />
     </Animated.View>
   );
@@ -430,8 +440,11 @@ function LeaderboardRow({
         </View>
         <Text style={styles.lbW}>{entry.wins}</Text>
         <Text style={styles.lbL}>{losses < 0 ? 0 : losses}</Text>
-        <Text style={[styles.lbPts, medal ? { color: medal } : undefined]}>
+        <Text style={[styles.lbPts, { width: 36 }, medal ? { color: medal } : undefined]}>
           {entry.pointsFor}
+        </Text>
+        <Text style={[styles.lbPts, { width: 40 }]}>
+          {entry.avgPointsPerRound.toFixed(1)}
         </Text>
       </View>
     </Animated.View>
@@ -449,13 +462,10 @@ function YourPerformance({
   total: number;
 }) {
   const losses = standing.matchesPlayed - standing.wins - standing.draws;
-  const avgScore =
-    standing.matchesPlayed > 0
-      ? (standing.pointsFor / standing.matchesPlayed).toFixed(1)
-      : '0';
 
   const stats = [
     { label: 'Total Pts', value: String(standing.pointsFor), color: Colors.opticYellow },
+    { label: 'Avg / Round', value: standing.avgPointsPerRound.toFixed(1), color: Colors.warning },
     { label: 'Wins', value: String(standing.wins), color: Colors.success },
     { label: 'Losses', value: String(losses < 0 ? 0 : losses), color: Colors.error },
     {
@@ -463,7 +473,6 @@ function YourPerformance({
       value: `${Math.round(standing.winRate * 100)}%`,
       color: Colors.aquaGreen,
     },
-    { label: 'Avg Score', value: avgScore, color: Colors.warning },
     { label: 'Pt Diff', value: standing.pointsFor > 0 ? `${standing.pointsFor - standing.pointsAgainst >= 0 ? '+' : ''}${standing.pointsFor - standing.pointsAgainst}` : '0', color: Colors.violetLight },
   ];
 
@@ -636,7 +645,7 @@ export default function Results() {
           {winner && <MVPCard winner={winner} />}
 
           {/* Podium */}
-          <Podium standings={standings} userId={user?.id} />
+          <Podium standings={standings} userId={user?.id} rankByAvg={tournament.ranking_mode === 'avg_points'} />
 
           {/* Leaderboard Filter */}
           <LeaderboardFilterRow
@@ -657,8 +666,11 @@ export default function Results() {
                 <Text style={[styles.lbColH, { flex: 1 }]}>PLAYER</Text>
                 <Text style={[styles.lbColH, { width: 28 }]}>W</Text>
                 <Text style={[styles.lbColH, { width: 28 }]}>L</Text>
-                <Text style={[styles.lbColH, { width: 40, textAlign: 'right' }]}>
+                <Text style={[styles.lbColH, { width: 36, textAlign: 'right' }, tournament.ranking_mode === 'total_points' && { color: Colors.opticYellow }]}>
                   PTS
+                </Text>
+                <Text style={[styles.lbColH, { width: 40, textAlign: 'right' }, tournament.ranking_mode === 'avg_points' && { color: Colors.opticYellow }]}>
+                  AVG
                 </Text>
               </View>
               {standings.map((entry, i) => (
@@ -763,6 +775,7 @@ export default function Results() {
               createdAt={tournament.created_at}
               standings={standings}
               theme={shareTheme}
+              rankByAvg={tournament.ranking_mode === 'avg_points'}
             />
           </ViewShot>
         </View>
