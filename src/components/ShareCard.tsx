@@ -12,6 +12,7 @@ type ShareCardProps = {
   createdAt: string;
   standings: AmericanoStanding[];
   theme?: ShareTheme;
+  rankByAvg?: boolean;
 };
 
 const THEME_BG: Record<ShareTheme, string> = {
@@ -27,6 +28,7 @@ export function ShareCard({
   createdAt,
   standings,
   theme = 'dark',
+  rankByAvg = false,
 }: ShareCardProps) {
   const isLight = theme === 'light';
   const winner = standings[0] ?? null;
@@ -75,7 +77,7 @@ export function ShareCard({
           </View>
           <Text style={styles.championName}>{winner.displayName}</Text>
           <Text style={[styles.championPoints, { color: textDim }]}>
-            {winner.pointsFor} points
+            {rankByAvg ? `${winner.avgPointsPerRound.toFixed(1)} avg/round` : `${winner.pointsFor} points`}
           </Text>
         </View>
       )}
@@ -123,7 +125,9 @@ export function ShareCard({
               >
                 {entry.displayName}
               </Text>
-              <Text style={styles.playerPoints}>{entry.pointsFor}</Text>
+              <Text style={styles.playerPoints}>
+                {rankByAvg ? entry.avgPointsPerRound.toFixed(1) : entry.pointsFor}
+              </Text>
             </View>
           );
         })}

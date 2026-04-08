@@ -1,9 +1,12 @@
 import {
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Colors, Fonts, Spacing, Radius, Alpha } from '../../lib/constants';
 import type { RecentTournament } from './types';
 
@@ -33,11 +36,21 @@ type ProfileFeedProps = {
 };
 
 export function ProfileFeed({ tournaments }: ProfileFeedProps) {
+  const router = useRouter();
   if (tournaments.length === 0) return <EmptyTab title="Activity Feed" />;
   return (
     <View style={styles.feedList}>
       {tournaments.map((t) => (
-        <View key={t.tournament_id} style={styles.feedCard}>
+        <Pressable
+          key={t.tournament_id}
+          style={styles.feedCard}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/(app)/tournament/${t.tournament_id}/results` as any);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${t.name} results`}
+        >
           <View style={styles.feedHeader}>
             <View style={styles.feedAvatar}>
               <Text style={styles.feedAvatarText}>ME</Text>
@@ -67,7 +80,7 @@ export function ProfileFeed({ tournaments }: ProfileFeedProps) {
               <Text style={[styles.resultChipText, { color: Colors.aquaGreen }]}>{t.playerCount} players</Text>
             </View>
           </View>
-        </View>
+        </Pressable>
       ))}
     </View>
   );
