@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
 
@@ -106,7 +107,7 @@ function ThemedApp() {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.bg }]}>
       <StatusBar style="light" />
       <ConsentGate>
         <AuthProvider>
@@ -115,7 +116,7 @@ function ThemedApp() {
           </PostHogProvider>
         </AuthProvider>
       </ConsentGate>
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
