@@ -124,6 +124,7 @@ export type ProfileUpdate = Partial<
     | 'game_face_url'
     | 'smashd_level'
     | 'home_club_id'
+    | 'tracking_tools'
   >
 >;
 

@@ -75,3 +75,17 @@ export function trackGuestPlayerAdded(props: {
 }) {
   capture('guest_player_added', props);
 }
+
+// ─── OCR Import Events ──────────────────────────────────────────────────────
+
+export function trackOcrImportCompleted(props: {
+  matchesImported: number;
+  batchId: string;
+  platformSource: string | null;
+}) {
+  capture('ocr_import_completed', {
+    matches_imported: props.matchesImported,
+    batch_id: props.batchId,
+    platform_source: props.platformSource,
+  });
+}

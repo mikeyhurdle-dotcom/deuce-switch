@@ -1,7 +1,11 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-react-native';
 import { useAuth } from './AuthProvider';
 import { setPostHogInstance } from '../services/analytics';
+
+const APP_FIRST_OPEN_KEY = '@smashd/first_open_tracked';
 
 const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? '';
 const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
@@ -14,8 +18,40 @@ function PostHogIdentifier({ children }: { children: ReactNode }) {
   const posthog = usePostHog();
   const { user, profile } = useAuth();
 
+  const appOpenTracked = useRef(false);
+
   useEffect(() => {
     if (posthog) setPostHogInstance(posthog);
+  }, [posthog]);
+
+  // Track first-ever app open and every subsequent foreground
+  useEffect(() => {
+    if (!posthog) return;
+
+    const trackOpen = async () => {
+      if (appOpenTracked.current) return;
+      appOpenTracked.current = true;
+
+      // Check if this is the very first open
+      const alreadyTracked = await AsyncStorage.getItem(APP_FIRST_OPEN_KEY);
+      if (!alreadyTracked) {
+        posthog.capture('app_first_open', { platform: 'ios' });
+        await AsyncStorage.setItem(APP_FIRST_OPEN_KEY, new Date().toISOString());
+      }
+
+      posthog.capture('app_opened');
+    };
+
+    trackOpen();
+
+    // Also track when app returns to foreground
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') {
+        posthog.capture('app_opened');
+      }
+    });
+
+    return () => sub.remove();
   }, [posthog]);
 
   useEffect(() => {
