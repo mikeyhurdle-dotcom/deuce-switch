@@ -210,13 +210,32 @@ export default function OrganiserDashboard() {
   const handleToggleRankingMode = async () => {
     if (!id || !tournament) return;
     const newMode = tournament.ranking_mode === 'avg_points' ? 'total_points' : 'avg_points';
-    try {
-      await setRankingMode(id, newMode);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', e.message);
-    }
+    const newModeLabel = newMode === 'avg_points' ? 'Average points per round' : 'Total points';
+
+    // PLA-477: confirm before flipping mid-tournament. Spectators on the
+    // leaderboard / TV mode see the standings reorder live via the existing
+    // postgres_changes subscription — no accidental taps allowed during
+    // active play.
+    Alert.alert(
+      'Change ranking mode?',
+      `This will reorder the leaderboard for everyone watching this tournament. The new ranking will be: ${newModeLabel}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Change',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await setRankingMode(id, newMode);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            } catch (e: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleToggleAnonymise = async (enabled: boolean) => {
