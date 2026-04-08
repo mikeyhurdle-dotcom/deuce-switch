@@ -7,6 +7,8 @@ import { Colors, Fonts, Radius, Spacing } from '../../../src/lib/constants';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { supabase } from '../../../src/lib/supabase';
 import { extractYouTubeId } from '../../../src/services/training-service';
+import { trackCoachVideoOpened } from '../../../src/services/analytics';
+import { useAuth } from '../../../src/providers/AuthProvider';
 import type { TrainingVideo } from '../../../src/lib/types';
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -17,6 +19,7 @@ const LEVEL_COLORS: Record<string, string> = {
 
 export default function VideoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { profile } = useAuth();
   const [video, setVideo] = useState<TrainingVideo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,12 +33,29 @@ export default function VideoDetailScreen() {
           .eq('id', id)
           .single();
         setVideo(data);
+
+        // PLA-482: fire coach_video_opened with per-user profile
+        // properties for the creator partnership reporting.
+        if (data) {
+          trackCoachVideoOpened({
+            videoId: data.id,
+            channelName: data.channel_name ?? null,
+            shotType: data.shot_type ?? null,
+            skillLevel: data.skill_level ?? null,
+            userSmashdLevel: profile?.smashd_level ?? null,
+            userPreferredPosition: profile?.preferred_position ?? null,
+            userMatchesPlayed: profile?.matches_played ?? 0,
+          });
+        }
       } catch {
         // Video not found — loading will finish, UI shows fallback
       } finally {
         setLoading(false);
       }
     })();
+    // profile intentionally not in deps — we capture it at open time
+    // and don't want to re-fire on profile refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const videoId = video ? extractYouTubeId(video.youtube_url) : null;

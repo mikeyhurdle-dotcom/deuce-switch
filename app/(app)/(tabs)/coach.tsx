@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -18,6 +18,7 @@ import {
   fetchFeaturedVideos,
   fetchVideos,
 } from '../../../src/services/training-service';
+import { trackCoachFilterApplied } from '../../../src/services/analytics';
 import type { TrainingVideo } from '../../../src/lib/types';
 import { useAuth } from '../../../src/providers/AuthProvider';
 
@@ -59,6 +60,18 @@ export default function CoachScreen() {
     setLoading(true);
     loadData();
   }, [authLoading, loadData]);
+
+  // PLA-482: Fire coach_filter_applied when either filter chip changes.
+  // Skip the initial render so we don't log a "null,null" event on
+  // first mount — only report genuine user interactions.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    trackCoachFilterApplied({ shotType, skillLevel });
+  }, [shotType, skillLevel]);
 
   const onRefresh = () => {
     setRefreshing(true);
