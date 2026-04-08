@@ -75,7 +75,7 @@ const QUICK_ACTIONS: {
     desc: 'Past games',
     icon: 'time-outline',
     color: Colors.textDim,
-    route: '/(app)/(tabs)/stats',
+    route: '/(app)/(tabs)/history',
   },
 ];
 
@@ -222,7 +222,7 @@ export default function PlayScreen() {
               <FormatCard
                 key={format.key}
                 format={format}
-                onPress={() => router.push('/tournament/create')}
+                onPress={() => router.push(`/tournament/create?format=${format.key}` as any)}
               />
             ))}
           </View>
