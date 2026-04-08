@@ -24,10 +24,16 @@ export async function fetchFeaturedVideos(): Promise<TrainingVideo[]> {
 
 /**
  * Fetch training videos with optional filters.
+ *
+ * PLA-481: Defaults to featured=true so the Coach tab only shows the
+ * curated launch creator set (6 partners for v1.2.0 — see migration
+ * 017_coach_featured_curation.sql). Callers that want the full library
+ * (e.g. a future "Browse All" view) can pass `includeUnfeatured: true`.
  */
 export async function fetchVideos(filters?: {
   shot_type?: string;
   skill_level?: string;
+  includeUnfeatured?: boolean;
 }): Promise<TrainingVideo[]> {
   let query = supabase
     .from('training_videos')
@@ -35,6 +41,9 @@ export async function fetchVideos(filters?: {
     .order('featured', { ascending: false })
     .order('created_at', { ascending: false });
 
+  if (!filters?.includeUnfeatured) {
+    query = query.eq('featured', true);
+  }
   if (filters?.shot_type) {
     query = query.eq('shot_type', filters.shot_type);
   }

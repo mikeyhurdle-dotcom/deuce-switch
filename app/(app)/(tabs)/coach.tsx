@@ -90,6 +90,7 @@ export default function CoachScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Coach</Text>
+        <Text style={styles.headerSubtitle}>Curated training from our launch partners — more coaches coming soon.</Text>
       </View>
 
       {/* Filters */}
@@ -116,8 +117,8 @@ export default function CoachScreen() {
         <EmptyState
           icon="videocam-outline"
           iconColor={Colors.aquaGreen}
-          title="No videos found"
-          subtitle="Try clearing your filters or check back later for new training content."
+          title="No videos match these filters"
+          subtitle="Clear your filters to see all curated content, or check back soon — we're adding more coaches."
         />
       ) : (
         <FlatList
@@ -169,6 +170,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.heading,
     fontSize: 24,
     color: Colors.textPrimary,
+  },
+  headerSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textDim,
+    marginTop: Spacing[1],
   },
   skeletonWrap: {
     padding: Spacing[4],
