@@ -19,9 +19,11 @@ import {
   fetchVideos,
 } from '../../../src/services/training-service';
 import type { TrainingVideo } from '../../../src/lib/types';
+import { useAuth } from '../../../src/providers/AuthProvider';
 
 export default function CoachScreen() {
   const router = useRouter();
+  const { loading: authLoading } = useAuth();
   const [featured, setFeatured] = useState<TrainingVideo[]>([]);
   const [videos, setVideos] = useState<TrainingVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,10 +50,15 @@ export default function CoachScreen() {
     }
   }, [shotType, skillLevel]);
 
+  // PLA-471: Wait for AuthProvider to settle before firing any fetches.
+  // training_videos is public-read so this isn't strictly required, but
+  // gating consistently across all tabs eliminates the cold-start race
+  // perception even on otherwise auth-independent screens.
   useEffect(() => {
+    if (authLoading) return;
     setLoading(true);
     loadData();
-  }, [loadData]);
+  }, [authLoading, loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);

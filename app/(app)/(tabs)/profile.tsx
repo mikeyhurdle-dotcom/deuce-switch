@@ -35,7 +35,7 @@ import type { RecentTournament, ProfileTab } from '../../../src/components/profi
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function Profile() {
-  const { profile, user, signOut, refreshProfile } = useAuth();
+  const { profile, user, signOut, refreshProfile, loading: authLoading } = useAuth();
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -179,9 +179,11 @@ export default function Profile() {
     }
   }, [user]);
 
+  // PLA-471: Wait for AuthProvider to settle before firing any fetches.
   useEffect(() => {
+    if (authLoading) return;
     fetchExtraData();
-  }, [fetchExtraData]);
+  }, [authLoading, fetchExtraData]);
 
   // ── Handlers ───────────────────────────────────────────────────────────
 

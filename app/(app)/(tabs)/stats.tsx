@@ -213,7 +213,7 @@ function Achievements({ stats, totalMatches }: { stats: PlayerStats; totalMatche
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('All Time');
   const [stats, setStats] = useState<PlayerStats | null>(null);
@@ -242,11 +242,13 @@ export default function StatsScreen() {
     }
   }, [user, profileId, period]);
 
+  // PLA-471: Wait for AuthProvider to settle before firing any fetches.
   useEffect(() => {
+    if (authLoading) return;
     if (!profileId) return;
     setLoading(true);
     fetchData();
-  }, [fetchData, profileId]);
+  }, [authLoading, fetchData, profileId]);
 
   const onRefresh = () => {
     setRefreshing(true);

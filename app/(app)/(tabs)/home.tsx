@@ -491,7 +491,7 @@ function FeedPostItem({ post }: { post: FeedPost }) {
 // "The most important step a man can take is the next one."
 
 export default function Home() {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile, loading: authLoading } = useAuth();
   const [activeTournament, setActiveTournament] = useState<ActiveTournament | null>(null);
   const [loadingActive, setLoadingActive] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
@@ -872,18 +872,24 @@ export default function Home() {
     }
   }, [user, profile]);
 
+  // PLA-471: Wait for AuthProvider to settle before firing any fetches.
+  // Without this gate, screens mount with user=null on cold start, fetches
+  // early-return, and the user sees a permanently empty home until they
+  // restart the app.
   useEffect(() => {
+    if (authLoading) return;
     fetchActive();
     fetchUnreadCount();
     refreshProfile();
-  }, [fetchActive, fetchUnreadCount, refreshProfile]);
+  }, [authLoading, fetchActive, fetchUnreadCount, refreshProfile]);
 
   // Fetch upcoming + feed + play this week after active tournament is resolved
   useEffect(() => {
+    if (authLoading) return;
     fetchUpcoming();
     fetchFeed();
     fetchPlayThisWeek();
-  }, [fetchUpcoming, fetchFeed, fetchPlayThisWeek]);
+  }, [authLoading, fetchUpcoming, fetchFeed, fetchPlayThisWeek]);
 
   const handleBannerPress = () => {
     if (!activeTournament) return;
