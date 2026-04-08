@@ -50,10 +50,9 @@ const ACTIONS: ActionDef[] = [
 
 type Props = {
   onDismiss: () => void;
-  hasTools: boolean;
 };
 
-export function QuickActions({ onDismiss, hasTools }: Props) {
+export function QuickActions({ onDismiss }: Props) {
   const router = useRouter();
 
   const handlePress = (key: string) => {
@@ -75,8 +74,12 @@ export function QuickActions({ onDismiss, hasTools }: Props) {
     }
   };
 
-  // Filter: only show import if user has tracking tools configured
-  const actions = hasTools ? ACTIONS : ACTIONS.filter((a) => a.key !== 'import');
+  // PLA-480: show all actions unconditionally. "Import Screenshot" (OCR)
+  // has no real dependency on which tracking platforms a user has toggled
+  // in profile preferences — the service reads image pixels, not profile
+  // flags. Previously gated on hasTools, which caused the OCR path to
+  // silently disappear for fresh users and users who skipped the setup.
+  const actions = ACTIONS;
 
   return (
     <View style={styles.container}>

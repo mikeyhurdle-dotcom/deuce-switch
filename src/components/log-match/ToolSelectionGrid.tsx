@@ -9,16 +9,21 @@ type ToolDef = {
   logo: string;
   color: string;
   badges: string[];
+  /** PLA-479: true when the direct integration is not yet wired.
+   *  Everything except Manual is currently preference-only (we store
+   *  the selection on profiles.tracking_tools but no data syncs yet).
+   *  Shown as a "Coming Soon" pill on the card. */
+  comingSoon?: boolean;
 };
 
 export const TRACKING_TOOLS: ToolDef[] = [
-  { key: 'padelio', name: 'Padelio', logo: 'PA', color: '#4CAF50', badges: ['Shots', 'Fitness'] },
-  { key: 'padelplay', name: 'PadelPlay', logo: 'PP', color: '#2196F3', badges: ['Shots'] },
-  { key: 'padel_point', name: 'Padel Point', logo: 'PT', color: '#FF5722', badges: ['Score', 'Fitness'] },
-  { key: 'padel_pointer', name: 'Padel Pointer', logo: 'PR', color: '#9C27B0', badges: ['Score', 'Service'] },
-  { key: 'padeltick', name: 'PadelTick', logo: 'TK', color: '#FF9800', badges: ['Score'] },
-  { key: 'apple_health', name: 'Apple Health', logo: 'AH', color: '#FF2D55', badges: ['Fitness'] },
-  { key: 'strava', name: 'Strava', logo: 'ST', color: '#FC4C02', badges: ['Fitness'] },
+  { key: 'padelio', name: 'Padelio', logo: 'PA', color: '#4CAF50', badges: ['Shots', 'Fitness'], comingSoon: true },
+  { key: 'padelplay', name: 'PadelPlay', logo: 'PP', color: '#2196F3', badges: ['Shots'], comingSoon: true },
+  { key: 'padel_point', name: 'Padel Point', logo: 'PT', color: '#FF5722', badges: ['Score', 'Fitness'], comingSoon: true },
+  { key: 'padel_pointer', name: 'Padel Pointer', logo: 'PR', color: '#9C27B0', badges: ['Score', 'Service'], comingSoon: true },
+  { key: 'padeltick', name: 'PadelTick', logo: 'TK', color: '#FF9800', badges: ['Score'], comingSoon: true },
+  { key: 'apple_health', name: 'Apple Health', logo: 'AH', color: '#FF2D55', badges: ['Fitness'], comingSoon: true },
+  { key: 'strava', name: 'Strava', logo: 'ST', color: '#FC4C02', badges: ['Fitness'], comingSoon: true },
   { key: 'manual', name: 'Manual', logo: 'M', color: Colors.textDim, badges: ['Score'] },
 ];
 
@@ -49,11 +54,15 @@ export function ToolSelectionGrid({ selected, onToggle }: Props) {
               <Text style={styles.logoText}>{tool.logo}</Text>
             </View>
             <Text style={[styles.name, active && styles.nameActive]}>{tool.name}</Text>
-            <View style={styles.badges}>
-              {tool.badges.map((b) => (
-                <Text key={b} style={styles.badge}>{b}</Text>
-              ))}
-            </View>
+            {tool.comingSoon ? (
+              <Text style={styles.comingSoon}>Coming Soon</Text>
+            ) : (
+              <View style={styles.badges}>
+                {tool.badges.map((b) => (
+                  <Text key={b} style={styles.badge}>{b}</Text>
+                ))}
+              </View>
+            )}
           </Pressable>
         );
       })}
@@ -113,6 +122,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
+    overflow: 'hidden',
+  },
+  comingSoon: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 9,
+    color: Colors.violet,
+    backgroundColor: Alpha.violet10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
     overflow: 'hidden',
   },
 });

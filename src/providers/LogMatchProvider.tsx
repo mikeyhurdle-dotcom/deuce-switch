@@ -3,6 +3,7 @@ import { AccessibilityInfo, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '../lib/constants';
 import { LogMatchSheet } from '../components/log-match/LogMatchSheet';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 type LogMatchContextValue = {
   openLogSheet: () => void;
@@ -51,7 +52,14 @@ export function LogMatchProvider({ children }: { children: React.ReactNode }) {
         )}
       >
         <BottomSheetScrollView>
-          <LogMatchSheet onDismiss={handleDismiss} />
+          {/* PLA-478: wrap the sheet in an error boundary so a render
+              crash inside the Log Match flow surfaces a retry UI
+              instead of silently falling through to the tab redirect
+              shim. Sentry capture is wired in the shared
+              ErrorBoundary component. */}
+          <ErrorBoundary fallbackMessage="Couldn't open Log Match. Dismiss and try again.">
+            <LogMatchSheet onDismiss={handleDismiss} />
+          </ErrorBoundary>
         </BottomSheetScrollView>
       </BottomSheet>
     </LogMatchContext.Provider>
