@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../providers/AuthProvider';
 import { fetchTopRivals, type HeadToHeadRecord } from '../../services/stats-service';
@@ -112,15 +112,17 @@ export function RivalriesSection() {
 
   const handlePress = useCallback((rivalry: HeadToHeadRecord) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // TODO (v1.3 Stats 2.0): open per-rivalry detail screen with match history.
-    // For v1.2.0 the tap is a placeholder; we log a PostHog event so we know
-    // whether users try to drill into rivalry detail (justifies the detail
-    // screen investment in v1.3).
-    // Using a dynamic import to avoid adding analytics as a sync dependency
-    // for a section that otherwise has no direct analytics footprint.
-    import('../../services/analytics').then(({ trackCoachFilterApplied: _ }) => {
-      // Note: placeholder — v1.3 adds a proper trackRivalryRowTapped event.
-    });
+    // v1.2.0 ships the rivalry list read-only. The per-rivalry detail
+    // screen (match-by-match breakdown, partner splits, court-side
+    // splits, venue history) is the v1.3 Stats 2.0 sprint — see
+    // project_stats_2_0_core_differentiation.md memory and PLA-488.
+    // Show a friendly "coming soon" alert so the tap isn't a silent
+    // haptic-without-action failure.
+    Alert.alert(
+      `${rivalry.opponentName} — Coming soon`,
+      "Rivalry detail view lands in the next update: every match against this opponent, broken down by partner, court side, venue, and conditions. You'll see exactly when and why the tide turns.",
+      [{ text: 'Got it', style: 'default' }],
+    );
   }, []);
 
   // Hide the section entirely if the user has no qualifying rivalries —
@@ -136,7 +138,7 @@ export function RivalriesSection() {
       <View style={styles.header}>
         <Text style={styles.title}>Your Rivalries</Text>
         <Text style={styles.subtitle}>
-          Most-played opponents — tap for more
+          Your most-played opponents and who's leading
         </Text>
       </View>
 
