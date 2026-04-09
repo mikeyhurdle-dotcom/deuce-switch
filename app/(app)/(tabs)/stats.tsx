@@ -34,6 +34,7 @@ import { PadelDNACard } from '../../../src/components/stats/PadelDNACard';
 import { HighlightGrid } from '../../../src/components/stats/HighlightGrid';
 import { RecentMatches } from '../../../src/components/stats/RecentMatches';
 import { PerformanceSection } from '../../../src/components/stats/PerformanceSection';
+import { RivalriesSection } from '../../../src/components/stats/RivalriesSection';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -325,6 +326,13 @@ export default function StatsScreen() {
 
               {/* Collapsible performance breakdown */}
               <PerformanceSection stats={stats} />
+
+              {/* PLA-489: Rivalries — top opponents by match count with
+                  W-L records. Tier 2 quick win for v1.2.0; full Stats 2.0
+                  sprint (PLA-488) is the v1.3 headline. Section hides
+                  itself if the user has no qualifying rivalries
+                  (opponents played ≥2 times). */}
+              <RivalriesSection />
 
               {/* Partners (top 3) */}
               {stats.partners.length > 0 && (
