@@ -147,7 +147,7 @@ function AnimatedTournamentCard({
 }
 
 export default function History() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [tournaments, setTournaments] = useState<TournamentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -203,9 +203,11 @@ export default function History() {
     }
   }, [user]);
 
+  // PLA-471: Wait for AuthProvider to settle before firing any fetches.
   useEffect(() => {
+    if (authLoading) return;
     fetchHistory();
-  }, [fetchHistory]);
+  }, [authLoading, fetchHistory]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

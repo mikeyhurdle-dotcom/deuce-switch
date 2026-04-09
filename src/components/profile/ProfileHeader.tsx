@@ -483,15 +483,11 @@ export function ProfileHeader({
             label="TOURNAMENTS"
             color={Colors.violetLight}
           />
-          <View style={styles.statCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="flame" size={16} color={Colors.warning} />
-              <Text style={[styles.statValue, { color: Colors.warning }]}>
-                {profile?.matches_played ? profile.matches_played : '—'}
-              </Text>
-            </View>
-            <Text style={styles.statLabel}>GAMES</Text>
-          </View>
+          <StatCard
+            value={connectionCount}
+            label="CONNECTIONS"
+            color={Colors.violet}
+          />
         </Animated.View>
       )}
 

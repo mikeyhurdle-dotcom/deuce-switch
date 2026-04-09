@@ -1,0 +1,84 @@
+appId: com.playsmashd.app
+name: "Log Match Sheet - Quick Actions Content"
+# Covers PLA-478 (error boundary), PLA-479 (Coming Soon + skippable),
+# PLA-480 (OCR decoupling). Extends the existing 37_log_match_sheet
+# flow which only verified the sheet opens — this flow verifies the
+# actual content of Quick Actions and the tracking tools setup.
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 10000
+
+# ── OPEN LOG MATCH SHEET ──────────────────────────────────────────
+- tapOn:
+    id: "tab-log-match"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# The sheet uses @gorhom/bottom-sheet whose content may not be fully
+# visible to Maestro's accessibility tree on first render. Take a
+# screenshot to capture actual state for visual diff.
+- takeScreenshot: screenshots/log_match_sheet_open
+
+# ── VERIFY QUICK ACTIONS VISIBLE (PLA-479 — no gate) ─────────────
+# First-time users previously hit the mandatory tool picker before
+# Quick Actions. Now Quick Actions shows on every open.
+- assertVisible:
+    id: "btn-quick-score"
+- assertVisible:
+    id: "btn-sheet-host"
+- assertVisible:
+    id: "btn-sheet-join"
+
+# ── VERIFY IMPORT SCREENSHOT ALWAYS VISIBLE (PLA-480) ────────────
+# Previously this was filtered out when hasTools was false. Must now
+# render unconditionally.
+- assertVisible:
+    id: "btn-import-screenshot"
+
+# ── VERIFY CONNECT TRACKING TOOLS LINK (PLA-479 — opt-in setup) ──
+- assertVisible:
+    id: "btn-connect-tools"
+- takeScreenshot: screenshots/log_match_quick_actions
+
+# ── OPEN TRACKING TOOLS SETUP ────────────────────────────────────
+- tapOn:
+    id: "btn-connect-tools"
+- waitForAnimationToEnd
+
+# ── VERIFY COMING SOON LABELS (PLA-479) ──────────────────────────
+# Every integration except Manual should show "Coming Soon".
+- assertVisible: "Coming Soon"
+- assertVisible:
+    id: "btn-tool-padelio"
+- assertVisible:
+    id: "btn-tool-strava"
+- takeScreenshot: screenshots/log_match_coming_soon
+
+# ── VERIFY SKIP FOR NOW BUTTON (PLA-479) ─────────────────────────
+- assertVisible:
+    id: "btn-skip-setup"
+
+# ── TAP SKIP FOR NOW ─────────────────────────────────────────────
+- tapOn:
+    id: "btn-skip-setup"
+- waitForAnimationToEnd
+
+# Skip returns to Quick Actions view with no DB write. Verify we're
+# back on the actions grid.
+- assertVisible:
+    id: "btn-quick-score"
+- assertVisible:
+    id: "btn-import-screenshot"
+
+# ── DISMISS SHEET ────────────────────────────────────────────────
+- swipe:
+    direction: DOWN
+    duration: 300
+- waitForAnimationToEnd
+- assertVisible:
+    id: "screen-home"

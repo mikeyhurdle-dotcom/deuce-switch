@@ -166,12 +166,31 @@ export default function Play() {
           try {
             await advanceRound(id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            // PLA-476 follow-up: explicitly refetch after success instead
+            // of waiting for realtime. Observed during smoke that the
+            // realtime update sometimes lags, leaving the UI visually on
+            // the old round — organiser then thinks advance failed and
+            // taps again. Explicit refetch makes the navigation
+            // deterministic even if realtime is slow or dropped.
+            await refetch();
           } catch (e: any) {
             if (e.message?.includes('No more rounds')) {
               Alert.alert('Last Round', 'All rounds are complete. End the tournament?', [
                 { text: 'Not yet', style: 'cancel' },
                 { text: 'End Tournament', style: 'destructive', onPress: () => handleEndTournament(true) },
               ]);
+            } else if (e.message?.includes('already advanced')) {
+              // PLA-476: the CAS guard in advanceRound fired, meaning the
+              // tournament state has already moved past this round —
+              // either because of a second tap on this device, or
+              // another organiser/client advanced first. Show a gentle
+              // message and refetch instead of surfacing a scary error.
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              await refetch();
+              Alert.alert(
+                'Already Advanced',
+                "This round has already moved on. You're now seeing the latest state.",
+              );
             } else {
               Alert.alert('Error', e.message);
             }
@@ -426,6 +445,22 @@ export default function Play() {
               <Text style={{ fontFamily: Fonts.heading, fontSize: 14, color: Colors.textPrimary, letterSpacing: 2 }}>ROUND {tournament.current_round ?? 1}</Text>
               <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>{tournament?.name ?? ''}</Text>
             </View>
+          ),
+          // PLA-477 follow-up: organiser settings (including ranking mode
+          // toggle) live on the organiser.tsx route but there was no
+          // in-app navigation to reach it from the play screen. Without
+          // this headerRight, the ranking mode toggle is unreachable.
+          headerRight: () => (
+            <Pressable
+              testID="btn-open-organiser"
+              onPress={() => router.push(`/tournament/${id}/organiser` as any)}
+              hitSlop={12}
+              style={{ paddingHorizontal: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Tournament settings"
+            >
+              <Ionicons name="settings-outline" size={22} color={Colors.opticYellow} />
+            </Pressable>
           ),
         }}
       />

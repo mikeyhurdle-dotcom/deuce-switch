@@ -163,7 +163,25 @@ export function useTournament(tournamentId: string | null): UseTournamentReturn 
           if (payload.eventType === 'INSERT') {
             setMatches((prev) => {
               const incoming = payload.new as Match;
-              if (prev.some((m) => m.id === incoming.id)) return prev;
+              // PLA-475: Dedupe by the (tournament_id, round_number,
+              // player1_id, player2_id) tuple as well as by id. If a
+              // client inserts a match via the API and the realtime
+              // echo arrives near-simultaneously, both paths can pass
+              // an id-only check and produce a duplicate row in UI
+              // state. The tuple is the actual logical uniqueness
+              // constraint for an Americano round.
+              if (
+                prev.some(
+                  (m) =>
+                    m.id === incoming.id ||
+                    (m.tournament_id === incoming.tournament_id &&
+                      m.round_number === incoming.round_number &&
+                      m.player1_id === incoming.player1_id &&
+                      m.player2_id === incoming.player2_id),
+                )
+              ) {
+                return prev;
+              }
               return [...prev, incoming];
             });
           } else if (payload.eventType === 'UPDATE') {
@@ -235,7 +253,7 @@ export function useTournament(tournamentId: string | null): UseTournamentReturn 
         teamBScore: m.team_b_score!,
       }));
 
-    return computeStandings(enginePlayers, engineResults, engineMatches);
+    return computeStandings(enginePlayers, engineResults, engineMatches, tournament?.ranking_mode);
   })();
 
   // ─── Computed: Current Round Matches ─────────────────────────────────────────

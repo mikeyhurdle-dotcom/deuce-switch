@@ -100,29 +100,66 @@ export async function addGuestPlayer(
 }
 
 /**
- * Removes a player from a tournament (before it starts).
- * If the player is a ghost profile, also deletes the ghost profile.
+ * Removes a player from a tournament.
+ *
+ * PLA-456: Behaviour depends on tournament status.
+ *
+ *   Draft (lobby): Hard-delete the tournament_players row + ghost profile
+ *     if applicable. No match history exists yet, so nothing to orphan.
+ *
+ *   Running / Completed (mid-tournament or after): Soft-drop by setting
+ *     tournament_status = 'dropped' instead of deleting. The engine
+ *     already filters by tournament_status === 'active' for round
+ *     generation, so dropped players are excluded from future rounds
+ *     but their past match scores stay intact in standings and history.
+ *     Hard-deleting here would orphan match rows that reference the
+ *     player_id, breaking historical leaderboards and H2H records.
+ *
+ * Mirrors the web implementation in smashd-web PlayerRoster.tsx.
  */
 export async function removePlayerFromTournament(
   tournamentId: string,
   playerId: string,
 ): Promise<void> {
+  // Fetch tournament status to decide between hard-delete and soft-drop.
+  const { data: tournament, error: tournamentErr } = await supabase
+    .from('tournaments')
+    .select('status')
+    .eq('id', tournamentId)
+    .single();
+  if (tournamentErr) throw tournamentErr;
+
+  const isDraft = tournament?.status === 'draft';
+
+  if (isDraft) {
+    // Hard-delete: no match history to preserve.
+    const { error } = await supabase
+      .from('tournament_players')
+      .delete()
+      .eq('tournament_id', tournamentId)
+      .eq('player_id', playerId);
+    if (error) throw error;
+
+    // Clean up ghost profile if applicable.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_ghost')
+      .eq('id', playerId)
+      .single();
+    if (profile?.is_ghost) {
+      await supabase.from('profiles').delete().eq('id', playerId);
+    }
+    return;
+  }
+
+  // Soft-drop: tournament is running or completed. Preserve match history
+  // by flipping the row's tournament_status instead of deleting.
   const { error } = await supabase
     .from('tournament_players')
-    .delete()
+    .update({ tournament_status: 'dropped' })
     .eq('tournament_id', tournamentId)
     .eq('player_id', playerId);
   if (error) throw error;
-
-  // Clean up ghost profile if applicable
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_ghost')
-    .eq('id', playerId)
-    .single();
-  if (profile?.is_ghost) {
-    await supabase.from('profiles').delete().eq('id', playerId);
-  }
 }
 
 // ─── Claim Ghost Player ─────────────────────────────────────────────────────
@@ -276,7 +313,8 @@ export async function advanceRound(tournamentId: string): Promise<void> {
   const tournament = await getTournament(tournamentId);
   if (!tournament) throw new Error('Tournament not found');
 
-  const nextRound = (tournament.current_round ?? 1) + 1;
+  const currentRound = tournament.current_round ?? 1;
+  const nextRound = currentRound + 1;
 
   // Check if next round has matches
   const { data: nextMatches } = await supabase
@@ -289,7 +327,22 @@ export async function advanceRound(tournamentId: string): Promise<void> {
     throw new Error('No more rounds — tournament is complete');
   }
 
-  const { error } = await supabase
+  // PLA-476 (unparked during smoke testing, 2026-04-09): CAS guard on the
+  // update so a double-invocation of advanceRound doesn't skip a round.
+  //
+  // Observed during smoke: organiser tapped Advance Round, the server
+  // successfully moved round 1 → 2, but the UI didn't visually update
+  // (realtime subscription hadn't landed yet). Organiser assumed it
+  // failed and tapped again. Second call then saw current_round = 2
+  // and advanced 2 → 3, silently skipping round 2 entirely and
+  // losing all scores that should have been entered in it.
+  //
+  // Fix: only perform the update if current_round is STILL the value
+  // we read above. If it isn't, the server has already advanced and
+  // we throw RoundAlreadyAdvancedError so the caller can refetch
+  // and surface a gentle "already on round N" message instead of
+  // double-advancing.
+  const { data: updated, error } = await supabase
     .from('tournaments')
     .update({
       current_round: nextRound,
@@ -297,8 +350,14 @@ export async function advanceRound(tournamentId: string): Promise<void> {
       current_round_duration_seconds: tournament.time_per_round_seconds,
       master_clock_running: true,
     })
-    .eq('id', tournamentId);
+    .eq('id', tournamentId)
+    .eq('current_round', currentRound) // ← CAS guard
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error('Round already advanced — refresh to see the latest');
+  }
 
   trackRoundAdvanced({ tournamentId, roundNumber: nextRound });
 
@@ -511,6 +570,22 @@ export async function toggleAnonymisePlayers(
   const { error } = await supabase
     .from('tournaments')
     .update({ anonymise_players: enabled })
+    .eq('id', tournamentId);
+  if (error) throw error;
+}
+
+/**
+ * Set the ranking mode for a tournament.
+ * 'total_points' = rank by cumulative points (default)
+ * 'avg_points' = rank by average points per round (fairer when rounds are incomplete)
+ */
+export async function setRankingMode(
+  tournamentId: string,
+  mode: 'total_points' | 'avg_points',
+): Promise<void> {
+  const { error } = await supabase
+    .from('tournaments')
+    .update({ ranking_mode: mode })
     .eq('id', tournamentId);
   if (error) throw error;
 }

@@ -20,6 +20,7 @@ import { AnimatedPressable, useSpringPress } from '../../../src/hooks/useSpringP
 import { supabase } from '../../../src/lib/supabase';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { ErrorBoundary } from '../../../src/components/ErrorBoundary';
+import { useAuth } from '../../../src/providers/AuthProvider';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -782,9 +783,16 @@ export default function DiscoverScreen() {
   // Spot alert subscriptions
   const [alertSubs, setAlertSubs] = useState<Set<string>>(new Set());
 
+  // PLA-471: Wait for AuthProvider to settle before fetching auth-scoped data.
+  // getAlertSubscriptions reads RLS-gated rows; firing it before the session
+  // is rehydrated returns empty and the user sees no subscriptions until they
+  // restart the app. Public-read scout/compete fetches below are intentionally
+  // not gated — they have their own retry logic.
+  const { loading: authLoading } = useAuth();
   useEffect(() => {
+    if (authLoading) return;
     getAlertSubscriptions().then(setAlertSubs).catch(() => {});
-  }, []);
+  }, [authLoading]);
 
   const handleToggleAlert = useCallback(async (eventId: string) => {
     const nowActive = await toggleEventAlert(eventId);

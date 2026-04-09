@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { type Session, type User } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react-native';
 import { supabase } from '../lib/supabase';
@@ -154,7 +154,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signOut = async () => {
+  // Memoised so consumer effects (e.g. Home's mount fetch) don't re-fire on every
+  // AuthProvider re-render. This was a major contributor to the cold-start data
+  // race tracked in PLA-471 — unstable callback identities caused screens to
+  // thrash through dep-change cycles before the session had settled.
+  const signOut = useCallback(async () => {
     try {
       // Clean up push token before signing out (non-blocking)
       if (session?.user?.id) {
@@ -167,13 +171,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setProfile(null);
     }
-  };
+  }, [session]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (!session?.user) return;
     const p = await fetchProfile(session.user.id);
     if (p) setProfile(p);
-  };
+  }, [session]);
 
   return (
     <AuthContext.Provider

@@ -683,3 +683,66 @@ export async function batchHeadToHead(
 
   return result;
 }
+
+// ─── Rivalries ─────────────────────────────────────────────────────────────
+
+/**
+ * PLA-489 / Stats 2.0 Tier 2: return the user's top rivals — opponents
+ * they have played ≥2 times, sorted by total match count descending.
+ *
+ * Reuses `batchHeadToHead` for the W-L aggregation so this stays
+ * consistent with the rivalry badges already shown on profile cards
+ * and player suggestions.
+ *
+ * Returns an array of HeadToHeadRecord so the caller can render
+ * directly without any additional shape translation.
+ */
+export async function fetchTopRivals(
+  userId: string,
+  limit = 10,
+): Promise<HeadToHeadRecord[]> {
+  // 1. Pull every opponent id from the user's match history in a single
+  //    targeted query. We only need the two opponent columns here — no
+  //    need for full result rows until we know who the top opponents are.
+  const { data: rows, error } = await supabase
+    .from('player_match_results')
+    .select('opponent1_id, opponent2_id')
+    .eq('player_id', userId);
+  if (error) throw error;
+
+  // 2. Count matches per opponent. A single match row can reference up
+  //    to two opponents, so we count both.
+  const counts = new Map<string, number>();
+  for (const r of rows ?? []) {
+    const row = r as { opponent1_id: string | null; opponent2_id: string | null };
+    if (row.opponent1_id) {
+      counts.set(row.opponent1_id, (counts.get(row.opponent1_id) ?? 0) + 1);
+    }
+    if (row.opponent2_id) {
+      counts.set(row.opponent2_id, (counts.get(row.opponent2_id) ?? 0) + 1);
+    }
+  }
+
+  // 3. Filter to opponents the user has played ≥2 times — a single
+  //    match isn't a rivalry, it's a one-off. Sort by match count
+  //    descending and trim to the limit.
+  const topIds = Array.from(counts.entries())
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
+
+  if (topIds.length === 0) return [];
+
+  // 4. Call the existing batch H2H aggregator to get W-L records for
+  //    the top opponents. This reuses the same service that renders
+  //    the rivalry badges elsewhere in the app, so the numbers stay
+  //    consistent across surfaces.
+  const h2hMap = await batchHeadToHead(userId, topIds);
+
+  // 5. Return in the same order as topIds (most-played first), keeping
+  //    any opponent whose record came back non-null.
+  return topIds
+    .map((id) => h2hMap.get(id))
+    .filter((r): r is HeadToHeadRecord => r !== undefined);
+}

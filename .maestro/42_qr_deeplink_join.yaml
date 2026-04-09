@@ -1,0 +1,44 @@
+appId: com.playsmashd.app
+name: "QR / Deep Link Join - Lands in Join Screen"
+# PLA-483: covers the QR join critical path. Maestro can't scan an
+# actual QR code in a simulator, but it can trigger the underlying
+# deep link which is exactly what a QR scan produces. This flow
+# exercises the same path real users hit when they scan an organiser's
+# printed QR card.
+---
+- launchApp
+- runFlow: flows/sign_in_email.yaml
+
+# Sanity check: we land on Home after sign-in
+- extendedWaitUntil:
+    visible:
+      id: "screen-home"
+    timeout: 10000
+
+# Deep link to the join route with a deliberately invalid code.
+# We're testing that the deep link TRANSPORTS the user into the join
+# screen — not that any particular tournament exists. Using a test
+# code means the test is hermetic and doesn't depend on live data.
+- openLink: "smashd://join/TEST"
+
+# Expect the join screen to appear. The route is app/(app)/join.tsx
+# which renders screen-join and accepts an initialCode from params.
+- extendedWaitUntil:
+    visible:
+      id: "screen-join"
+    timeout: 10000
+
+# The invalid "TEST" code should flow through and, when the user taps
+# JOIN, surface the "Not found" alert (same behaviour as flow 17).
+- assertVisible: "Enter Join Code"
+- assertVisible: "JOIN"
+
+# Tap JOIN to verify the join endpoint gets called with the deep-link
+# code. Invalid code -> "Not found" alert.
+- tapOn: "JOIN"
+- extendedWaitUntil:
+    visible: "Not found"
+    timeout: 10000
+- tapOn: "OK"
+
+- takeScreenshot: screenshots/qr_deeplink_join

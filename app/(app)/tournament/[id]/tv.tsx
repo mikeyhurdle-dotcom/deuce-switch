@@ -134,9 +134,11 @@ function RotateProgressBar({
 function LeaderboardView({
   standings,
   players,
+  rankByAvg = false,
 }: {
   standings: any[];
   players: { playerId: string; displayName: string }[];
+  rankByAvg?: boolean;
 }) {
   return (
     <View style={styles.leaderboardContainer}>
@@ -144,10 +146,10 @@ function LeaderboardView({
       <View style={styles.lbHeaderRow}>
         <Text style={[styles.lbHeaderText, styles.lbRankCol]}>#</Text>
         <Text style={[styles.lbHeaderText, styles.lbPlayerCol]}>PLAYER</Text>
-        <Text style={[styles.lbHeaderText, styles.lbStatCol]}>PTS</Text>
+        <Text style={[styles.lbHeaderText, styles.lbStatCol, !rankByAvg && { color: Colors.opticYellow }]}>PTS</Text>
+        <Text style={[styles.lbHeaderText, styles.lbStatCol, rankByAvg && { color: Colors.opticYellow }]}>AVG</Text>
         <Text style={[styles.lbHeaderText, styles.lbStatCol]}>W</Text>
         <Text style={[styles.lbHeaderText, styles.lbStatCol]}>L</Text>
-        <Text style={[styles.lbHeaderText, styles.lbStatCol]}>+/-</Text>
         <Text style={[styles.lbHeaderText, styles.lbStatColWide]}>WIN%</Text>
       </View>
 
@@ -204,21 +206,14 @@ function LeaderboardView({
               </Text>
             </View>
 
-            <Text style={[styles.lbPoints, styles.lbStatCol]}>
+            <Text style={[styles.lbStatCol, !rankByAvg ? styles.lbPoints : styles.lbDiff]}>
               {entry.pointsFor}
+            </Text>
+            <Text style={[styles.lbStatCol, rankByAvg ? styles.lbPoints : styles.lbDiff]}>
+              {entry.avgPointsPerRound?.toFixed(1) ?? '0.0'}
             </Text>
             <Text style={[styles.lbWin, styles.lbStatCol]}>{entry.wins}</Text>
             <Text style={[styles.lbLoss, styles.lbStatCol]}>{losses}</Text>
-            <Text
-              style={[
-                styles.lbDiff,
-                styles.lbStatCol,
-                diff > 0 && { color: Colors.success },
-                diff < 0 && { color: Colors.error },
-              ]}
-            >
-              {diffStr}
-            </Text>
             <Text style={[styles.lbWinPct, styles.lbStatColWide]}>
               {getWinPercent(entry.wins, entry.matchesPlayed)}
             </Text>
@@ -551,7 +546,7 @@ export default function TVMode() {
               exiting={FadeOut.duration(200)}
               style={styles.viewContainer}
             >
-              <LeaderboardView standings={displayStandings} players={displayPlayers} />
+              <LeaderboardView standings={displayStandings} players={displayPlayers} rankByAvg={tournament.ranking_mode === 'avg_points'} />
             </Animated.View>
           ) : (
             <Animated.View

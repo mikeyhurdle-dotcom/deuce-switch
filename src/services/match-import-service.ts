@@ -10,6 +10,7 @@
 
 import { randomUUID } from 'expo-crypto';
 import { supabase } from '../lib/supabase';
+import { trackOcrImportCompleted } from './analytics';
 import type {
   Profile,
   MatchType,
@@ -265,6 +266,16 @@ export async function saveImportedMatches(
           .eq('id', userId);
       }
     }
+  }
+
+  // Fire analytics event for OCR import
+  if (saved > 0) {
+    const primaryPlatform = matches[0]?.platform_source ?? null;
+    trackOcrImportCompleted({
+      matchesImported: saved,
+      batchId,
+      platformSource: primaryPlatform === 'unknown' ? null : primaryPlatform,
+    });
   }
 
   return { saved, batchId, ratingsRecorded };

@@ -75,3 +75,55 @@ export function trackGuestPlayerAdded(props: {
 }) {
   capture('guest_player_added', props);
 }
+
+// ─── OCR Import Events ──────────────────────────────────────────────────────
+
+export function trackOcrImportCompleted(props: {
+  matchesImported: number;
+  batchId: string;
+  platformSource: string | null;
+}) {
+  capture('ocr_import_completed', {
+    matches_imported: props.matchesImported,
+    batch_id: props.batchId,
+    platform_source: props.platformSource,
+  });
+}
+
+// ─── Coach Tab Events ───────────────────────────────────────────────────────
+// PLA-482: Groundwork for the 5-coach partnership data-sharing offer.
+// See project_coach_launch_campaign.md memory for strategy. The
+// per-video + per-user profile properties let us later produce per-
+// creator reports like "viewers of The Padel School average a Smashd
+// level of 6.2 and prefer the backhand side" — data YouTube Analytics
+// cannot provide.
+
+export function trackCoachVideoOpened(props: {
+  videoId: string;
+  channelName: string | null;
+  shotType: string | null;
+  skillLevel: string | null;
+  userSmashdLevel: number | null;
+  userPreferredPosition: string | null;
+  userMatchesPlayed: number;
+}) {
+  capture('coach_video_opened', {
+    video_id: props.videoId,
+    channel_name: props.channelName,
+    shot_type: props.shotType,
+    skill_level: props.skillLevel,
+    user_smashd_level: props.userSmashdLevel,
+    user_preferred_position: props.userPreferredPosition,
+    user_matches_played: props.userMatchesPlayed,
+  });
+}
+
+export function trackCoachFilterApplied(props: {
+  shotType: string | null;
+  skillLevel: string | null;
+}) {
+  capture('coach_filter_applied', {
+    shot_type: props.shotType,
+    skill_level: props.skillLevel,
+  });
+}

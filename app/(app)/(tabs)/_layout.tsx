@@ -3,17 +3,18 @@ import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Alpha, Colors, Fonts } from '../../../src/lib/constants';
+import { LogMatchTabButton } from '../../../src/components/ui/LogMatchTabButton';
+import { LogMatchProvider, useLogMatch } from '../../../src/providers/LogMatchProvider';
 
 // ─── Tab Icon ────────────────────────────────────────────────────────────────
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TAB_ICONS: Record<string, { active: IconName; inactive: IconName }> = {
-  home:     { active: 'home',       inactive: 'home-outline' },
-  discover: { active: 'compass',    inactive: 'compass-outline' },
-  play:     { active: 'tennisball', inactive: 'tennisball-outline' },
+  home:     { active: 'home',        inactive: 'home-outline' },
+  discover: { active: 'compass',     inactive: 'compass-outline' },
+  coach:    { active: 'videocam',    inactive: 'videocam-outline' },
   stats:    { active: 'stats-chart', inactive: 'stats-chart-outline' },
-  profile:  { active: 'person',     inactive: 'person-outline' },
 };
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
@@ -38,9 +39,11 @@ function makeListeners() {
   };
 }
 
-// ─── Layout ──────────────────────────────────────────────────────────────────
+// ─── Inner Tabs (needs LogMatch context) ─────────────────────────────────────
 
-export default function TabLayout() {
+function TabsInner() {
+  const { openLogSheet } = useLogMatch();
+
   return (
     <Tabs
       screenOptions={{
@@ -70,12 +73,29 @@ export default function TabLayout() {
         } as any}
         listeners={makeListeners()}
       />
+
+      {/* ─── Centre raised button ─── */}
       <Tabs.Screen
-        name="play"
+        name="log"
         options={{
-          title: 'Play',
-          tabBarTestID: 'tab-play',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="play" focused={focused} />,
+          title: '',
+          tabBarTestID: 'tab-log-match',
+          tabBarIcon: () => null,
+          tabBarButton: (_props: any) => (
+            <LogMatchTabButton
+              testID="tab-log-match"
+              onPress={openLogSheet}
+            />
+          ),
+        } as any}
+      />
+
+      <Tabs.Screen
+        name="coach"
+        options={{
+          title: 'Coach',
+          tabBarTestID: 'tab-coach',
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="coach" focused={focused} />,
         } as any}
         listeners={makeListeners()}
       />
@@ -88,21 +108,22 @@ export default function TabLayout() {
         } as any}
         listeners={makeListeners()}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarTestID: 'tab-profile',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name="profile" focused={focused} />,
-        } as any}
-        listeners={makeListeners()}
-      />
-      {/* history.tsx kept as hidden route — content absorbed into Profile tab */}
-      <Tabs.Screen
-        name="history"
-        options={{ href: null }}
-      />
+
+      {/* ─── Hidden routes (content migrated elsewhere) ─── */}
+      <Tabs.Screen name="play"    options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="history" options={{ href: null }} />
     </Tabs>
+  );
+}
+
+// ─── Layout (wraps tabs with bottom sheet provider) ──────────────────────────
+
+export default function TabLayout() {
+  return (
+    <LogMatchProvider>
+      <TabsInner />
+    </LogMatchProvider>
   );
 }
 
