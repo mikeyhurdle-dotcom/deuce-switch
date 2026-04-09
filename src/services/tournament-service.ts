@@ -313,7 +313,8 @@ export async function advanceRound(tournamentId: string): Promise<void> {
   const tournament = await getTournament(tournamentId);
   if (!tournament) throw new Error('Tournament not found');
 
-  const nextRound = (tournament.current_round ?? 1) + 1;
+  const currentRound = tournament.current_round ?? 1;
+  const nextRound = currentRound + 1;
 
   // Check if next round has matches
   const { data: nextMatches } = await supabase
@@ -326,7 +327,22 @@ export async function advanceRound(tournamentId: string): Promise<void> {
     throw new Error('No more rounds — tournament is complete');
   }
 
-  const { error } = await supabase
+  // PLA-476 (unparked during smoke testing, 2026-04-09): CAS guard on the
+  // update so a double-invocation of advanceRound doesn't skip a round.
+  //
+  // Observed during smoke: organiser tapped Advance Round, the server
+  // successfully moved round 1 → 2, but the UI didn't visually update
+  // (realtime subscription hadn't landed yet). Organiser assumed it
+  // failed and tapped again. Second call then saw current_round = 2
+  // and advanced 2 → 3, silently skipping round 2 entirely and
+  // losing all scores that should have been entered in it.
+  //
+  // Fix: only perform the update if current_round is STILL the value
+  // we read above. If it isn't, the server has already advanced and
+  // we throw RoundAlreadyAdvancedError so the caller can refetch
+  // and surface a gentle "already on round N" message instead of
+  // double-advancing.
+  const { data: updated, error } = await supabase
     .from('tournaments')
     .update({
       current_round: nextRound,
@@ -334,8 +350,14 @@ export async function advanceRound(tournamentId: string): Promise<void> {
       current_round_duration_seconds: tournament.time_per_round_seconds,
       master_clock_running: true,
     })
-    .eq('id', tournamentId);
+    .eq('id', tournamentId)
+    .eq('current_round', currentRound) // ← CAS guard
+    .select('id')
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) {
+    throw new Error('Round already advanced — refresh to see the latest');
+  }
 
   trackRoundAdvanced({ tournamentId, roundNumber: nextRound });
 

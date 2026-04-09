@@ -59,8 +59,44 @@ export default function VideoDetailScreen() {
   }, [id]);
 
   const videoId = video ? extractYouTubeId(video.youtube_url) : null;
-  const embedUrl = videoId
-    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`
+
+  // PLA-481 follow-up: YouTube Error 153 was firing on every video
+  // during smoke testing because React Native WebView loads the embed
+  // URL with an `about:blank` effective origin, which YouTube's IFrame
+  // API rejects. Switched from loading the embed URL directly to
+  // injecting an HTML page that hosts the YT IFrame player inside the
+  // WebView itself — bypasses the origin verification entirely.
+  // Also: `allowsFullscreenVideo` + `mediaPlaybackRequiresUserAction=false`
+  // for inline playback, and `playsinline=1` in player vars.
+  const playerHtml = videoId
+    ? `<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <style>
+      html, body { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
+      #player { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="player"></div>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+      function onYouTubeIframeAPIReady() {
+        new YT.Player('player', {
+          videoId: '${videoId}',
+          playerVars: {
+            autoplay: 1,
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1,
+            origin: 'https://www.youtube.com',
+          },
+        });
+      }
+    </script>
+  </body>
+</html>`
     : null;
   const levelColor = LEVEL_COLORS[video?.skill_level ?? ''] ?? Colors.textMuted;
 
@@ -90,14 +126,17 @@ export default function VideoDetailScreen() {
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Video Player */}
-            {embedUrl ? (
+            {playerHtml ? (
               <View style={styles.playerWrap}>
                 <WebView
-                  source={{ uri: embedUrl }}
+                  source={{ html: playerHtml, baseUrl: 'https://www.youtube.com' }}
                   style={styles.player}
                   allowsInlineMediaPlayback
                   mediaPlaybackRequiresUserAction={false}
                   javaScriptEnabled
+                  domStorageEnabled
+                  allowsFullscreenVideo
+                  originWhitelist={['*']}
                 />
               </View>
             ) : (
