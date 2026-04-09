@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import { Colors, Fonts, Radius, Spacing } from '../../../src/lib/constants';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { supabase } from '../../../src/lib/supabase';
@@ -60,45 +60,18 @@ export default function VideoDetailScreen() {
 
   const videoId = video ? extractYouTubeId(video.youtube_url) : null;
 
-  // PLA-481 follow-up: YouTube Error 153 was firing on every video
-  // during smoke testing because React Native WebView loads the embed
-  // URL with an `about:blank` effective origin, which YouTube's IFrame
-  // API rejects. Switched from loading the embed URL directly to
-  // injecting an HTML page that hosts the YT IFrame player inside the
-  // WebView itself — bypasses the origin verification entirely.
-  // Also: `allowsFullscreenVideo` + `mediaPlaybackRequiresUserAction=false`
-  // for inline playback, and `playsinline=1` in player vars.
-  const playerHtml = videoId
-    ? `<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <style>
-      html, body { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
-      #player { width: 100%; height: 100%; }
-    </style>
-  </head>
-  <body>
-    <div id="player"></div>
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-      function onYouTubeIframeAPIReady() {
-        new YT.Player('player', {
-          videoId: '${videoId}',
-          playerVars: {
-            autoplay: 1,
-            playsinline: 1,
-            rel: 0,
-            modestbranding: 1,
-            origin: 'https://www.youtube.com',
-          },
-        });
-      }
-    </script>
-  </body>
-</html>`
-    : null;
+  // PLA-481 follow-up: YouTube player implementation history —
+  // 1. First tried WebView { uri: youtube-nocookie/embed/ID } —
+  //    Error 153 (origin verification failure)
+  // 2. Then tried WebView { html: <iframe_api> } — Error 152-4
+  //    (video unavailable, user-agent rejection)
+  // 3. Now using react-native-youtube-iframe — purpose-built wrapper
+  //    that handles origin, user-agent, playerVars, WebView props
+  //    and all the edge cases around YouTube's embed API. This is
+  //    what every production RN app uses for YouTube playback.
   const levelColor = LEVEL_COLORS[video?.skill_level ?? ''] ?? Colors.textMuted;
+  const playerWidth = Dimensions.get('window').width;
+  const playerHeight = Math.round(playerWidth * (9 / 16));
 
   return (
     <>
@@ -125,18 +98,19 @@ export default function VideoDetailScreen() {
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Video Player */}
-            {playerHtml ? (
+            {/* Video Player — react-native-youtube-iframe */}
+            {videoId ? (
               <View style={styles.playerWrap}>
-                <WebView
-                  source={{ html: playerHtml, baseUrl: 'https://www.youtube.com' }}
-                  style={styles.player}
-                  allowsInlineMediaPlayback
-                  mediaPlaybackRequiresUserAction={false}
-                  javaScriptEnabled
-                  domStorageEnabled
-                  allowsFullscreenVideo
-                  originWhitelist={['*']}
+                <YoutubePlayer
+                  height={playerHeight}
+                  width={playerWidth}
+                  videoId={videoId}
+                  play={true}
+                  webViewProps={{
+                    allowsInlineMediaPlayback: true,
+                    mediaPlaybackRequiresUserAction: false,
+                    allowsFullscreenVideo: true,
+                  }}
                 />
               </View>
             ) : (
